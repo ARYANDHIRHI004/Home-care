@@ -1,0 +1,1124 @@
+'use client';
+
+import React, { useState, useEffect } from 'react';
+import { motion, AnimatePresence } from 'framer-motion';
+import {
+  Star,
+  CheckCircle2,
+  ShieldCheck,
+  Clock,
+  CreditCard,
+  Headphones,
+  FileText,
+  Sparkles,
+  Zap,
+  Wrench,
+  Paintbrush,
+  Hammer,
+  Wind,
+  Tv,
+  Bug,
+  Droplets,
+  ChevronDown,
+  Phone,
+  ArrowRight,
+  UserCheck,
+  DollarSign,
+  Smile,
+  ChevronRight,
+  Smartphone,
+  MapPin,
+  Lock,
+  Building,
+  Heart,
+  Eye,
+  Check,
+  X,
+  SlidersHorizontal,
+  Download,
+  QrCode,
+  MessageCircle,
+  FileCheck,
+  Receipt
+} from 'lucide-react';
+
+// ==========================================
+// MOCK DATA & CONFIGURATION
+// ==========================================
+
+const TRUST_BAR_ITEMS = [
+  { icon: ShieldCheck, label: 'Verified Experts' },
+  { icon: DollarSign, label: 'Transparent Pricing' },
+  { icon: Clock, label: 'Same-Day Service' },
+  { icon: Lock, label: 'Secure Payments' },
+  { icon: Headphones, label: '24/7 Support' },
+  { icon: FileText, label: 'GST Billing' },
+];
+
+const SERVICE_CATEGORIES = [
+  {
+    id: 'cleaning',
+    name: 'Home Cleaning',
+    price: '₹499',
+    description: 'Deep bathroom, kitchen & full house sanitization by experts.',
+    icon: Sparkles,
+    image: 'https://images.unsplash.com/photo-1581578731548-c64695cc6952?auto=format&fit=crop&q=80&w=600',
+  },
+  {
+    id: 'electrical',
+    name: 'Electrical Fixes',
+    price: '₹99',
+    description: 'Wiring, switchboards, fan fittings, and emergency repairs.',
+    icon: Zap,
+    image: 'https://images.unsplash.com/photo-1621905252507-b35492cc74b4?auto=format&fit=crop&q=80&w=600',
+  },
+  {
+    id: 'plumbing',
+    name: 'Plumbing Solutions',
+    price: '₹99',
+    description: 'Pipe leaks, tap replacement, drainage & motor installations.',
+    icon: Wrench,
+    image: 'https://images.unsplash.com/photo-1585704032915-c3400ca199e7?auto=format&fit=crop&q=80&w=600',
+  },
+  {
+    id: 'painting',
+    name: 'House Painting',
+    price: '₹9/sq.ft',
+    description: 'Waterproofing, texture painting, and interior/exterior renewal.',
+    icon: Paintbrush,
+    image: 'https://images.unsplash.com/photo-1589939705384-5185137a7f0f?auto=format&fit=crop&q=80&w=600',
+  },
+  {
+    id: 'carpentry',
+    name: 'Carpentry Repairs',
+    price: '₹149',
+    description: 'Door lock repair, custom furniture assembly, and hinges fix.',
+    icon: Hammer,
+    image: 'https://images.unsplash.com/photo-1538688525198-9b88f6f53126?auto=format&fit=crop&q=80&w=600',
+  },
+  {
+    id: 'ac-service',
+    name: 'AC Servicing & Jet Clean',
+    price: '₹399',
+    category: 'Cooling',
+    description: 'Foam jet cleaning, gas check, and cooling repair.',
+    icon: Wind,
+    image: 'https://images.unsplash.com/photo-1621905251189-08b45d6a269e?auto=format&fit=crop&q=80&w=600',
+  },
+  {
+    id: 'appliance',
+    name: 'Appliance Repair',
+    price: '₹249',
+    description: 'Washing machine, refrigerator, microwave & RO repair.',
+    icon: Tv,
+    image: 'https://images.unsplash.com/photo-1581092160607-ee22621dd758?auto=format&fit=crop&q=80&w=600',
+  },
+  {
+    id: 'pest-control',
+    name: 'Pest Control',
+    price: '₹799',
+    description: 'Odourless, eco-friendly cockroach, termite & bed bug removal.',
+    icon: Bug,
+    image: 'https://images.unsplash.com/photo-1615873968403-89e068629265?auto=format&fit=crop&q=80&w=600',
+  },
+  {
+    id: 'deep-cleaning',
+    name: 'Full Home Deep Clean',
+    price: '₹1,999',
+    description: 'Complete floor scrubbing, cobweb removal, and balcony washing.',
+    icon: Sparkles,
+    image: 'https://images.unsplash.com/photo-1527515637462-cff94eecc1ac?auto=format&fit=crop&q=80&w=600',
+  },
+  {
+    id: 'water-tank',
+    name: 'Water Tank Cleaning',
+    price: '₹599',
+    description: '4-stage mechanized cleaning for overhead and sump tanks.',
+    icon: Droplets,
+    image: 'https://images.unsplash.com/photo-1541888946425-d0fbb186a5b3?auto=format&fit=crop&q=80&w=600',
+  },
+];
+
+const WHY_CHOOSE_US = [
+  {
+    title: 'Verified Professionals',
+    description: 'Aadhaar and police-background verified staff trained in hospitality etiquette.',
+    icon: UserCheck,
+  },
+  {
+    title: 'Transparent Pricing',
+    description: 'Fixed rate cards and digital estimates. No surprise costs or post-service hikes.',
+    icon: DollarSign,
+  },
+  {
+    title: 'Fast Response Guarantee',
+    description: 'Get an executive callback in under 15 minutes with same-day slot allocation.',
+    icon: Clock,
+  },
+  {
+    title: '100% Satisfaction or Re-Service',
+    description: '7-day service warranty on all jobs with free re-service if you are unsatisfied.',
+    icon: Smile,
+  },
+];
+
+const PROCESS_STEPS = [
+  { step: '01', title: 'Book Service', desc: 'Select service online or request an instant call back.' },
+  { step: '02', title: 'Receive Estimate', desc: 'Our office reviews your scope & sends an official quote.' },
+  { step: '03', title: 'Professional Assigned', desc: 'Background-verified expert is dispatched with live status.' },
+  { step: '04', title: 'Service Completed', desc: 'Expert carries out work following strict safety standards.' },
+  { step: '05', title: 'Invoice & Payment', desc: 'Inspect work, receive digital GST bill & pay via UPI/Cash.' },
+];
+
+const STATS = [
+  { label: 'Bookings Completed', value: 10000, suffix: '+' },
+  { label: 'Average Rating', value: 4.9, suffix: '★', isDecimal: true },
+  { label: 'Verified Professionals', value: 50, suffix: '+' },
+  { label: 'Avg Response Time', value: 15, suffix: ' Mins' },
+  { label: 'Customer Satisfaction', value: 98, suffix: '%' },
+];
+
+const BEFORE_AFTER_DATA = [
+  {
+    title: 'Kitchen Deep Cleaning',
+    subtitle: 'Oil & grease stain removal with mechanized degreasing jet.',
+    before: 'https://images.unsplash.com/photo-1556911220-e15b29be8c8f?auto=format&fit=crop&q=80&w=800',
+    after: 'https://images.unsplash.com/photo-1556911220-e15b29be8c8f?auto=format&fit=crop&q=80&w=800', // Visually represented in slider
+  },
+  {
+    title: 'Bathroom Restoration',
+    subtitle: 'Hard water scale scrubbing and grout whitening.',
+    before: 'https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&q=80&w=800',
+    after: 'https://images.unsplash.com/photo-1584622650111-993a426fbf0a?auto=format&fit=crop&q=80&w=800',
+  },
+  {
+    title: 'Sofa Fabric Renewal',
+    subtitle: 'Shampoo extraction cleaning for velvet & linen sofas.',
+    before: 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&q=80&w=800',
+    after: 'https://images.unsplash.com/photo-1555041469-a586c61ea9bc?auto=format&fit=crop&q=80&w=800',
+  },
+];
+
+const TESTIMONIALS = [
+  {
+    name: 'Aakash Sharma',
+    city: 'Raipur',
+    rating: 5,
+    review: 'Booked AC jet cleaning in the morning, and the team arrived by 2 PM. Transparent pricing of ₹399 as quoted. Very clean work!',
+    image: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200',
+  },
+  {
+    name: 'Priya Verma',
+    city: 'Bhilai - Durg',
+    rating: 5,
+    review: 'The full house deep cleaning team was extremely polite and thorough. They spent 5 hours and made the tiles shine like new.',
+    image: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&q=80&w=200',
+  },
+  {
+    name: 'Ramesh Patel',
+    city: 'Nagpur',
+    rating: 5,
+    review: 'I love that they send a GST invoice directly to WhatsApp. Background-verified electrician fixed my main trip issue safely.',
+    image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=200',
+  },
+  {
+    name: 'Sneh Lata Sahu',
+    city: 'Raipur',
+    rating: 5,
+    review: 'Prompt response time! Got a call within 10 minutes of submitting my enquiry. Great platform for Tier-2 cities.',
+    image: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=200',
+  },
+  {
+    name: 'Vikramjit Singh',
+    city: 'Bhilai',
+    rating: 5,
+    review: 'Plumber came with proper tools, identified the hidden pipe leakage, and fixed it without damaging the surrounding wall.',
+    image: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&q=80&w=200',
+  },
+  {
+    name: 'Ananya Deshmukh',
+    city: 'Durg',
+    rating: 5,
+    review: 'Used their water tank cleaning service. Mechanized 4-step process made the sump tank completely silt-free. Highly recommended.',
+    image: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200',
+  },
+];
+
+const FAQS = [
+  {
+    q: 'How quickly will I receive a call after placing an enquiry?',
+    a: 'Our customer support office team contacts you within 10–15 minutes of receiving your request to discuss scope and confirm the estimate.',
+  },
+  {
+    q: 'Are your service partners background checked?',
+    a: 'Yes, 100% of our professionals undergo mandatory Aadhaar verification, police background checks, and skill certifications before joining.',
+  },
+  {
+    q: 'Are there any hidden visit charges?',
+    a: 'No. All estimates and visit charges are shared upfront via a digital quotation. You only pay what you approve.',
+  },
+  {
+    q: 'What payment methods do you accept?',
+    a: 'We support all major payment modes including Cash, UPI (GPay, PhonePe, Paytm), Credit/Debit Cards, and online payment via Razorpay.',
+  },
+  {
+    q: 'Do I get an official GST invoice?',
+    a: 'Yes! An automated PDF GST invoice is sent directly to your email and WhatsApp immediately upon service completion and payment.',
+  },
+  {
+    q: 'What if I am not satisfied with the service provided?',
+    a: 'We offer a 7-day hassle-free service guarantee. If you notice any defects or issues, we send a technician for a free re-service.',
+  },
+];
+
+// ==========================================
+// COMPONENT
+// ==========================================
+
+export default function HomeServiceLandingPage() {
+  const [isScrolled, setIsScrolled] = useState(false);  
+  const [activeFaq, setActiveFaq] = useState(null);
+  const [sliderPos, setSliderPos] = useState({ 0: 50, 1: 50, 2: 50 });
+
+  // Handle sticky header scroll transition
+  useEffect(() => {
+    const handleScroll = () => {
+      if (window.scrollY > 40) {
+        setIsScrolled(true);
+      } else {
+        setIsScrolled(false);
+      }
+    };
+    window.addEventListener('scroll', handleScroll);
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
+
+  return (
+    <div className="min-h-screen bg-white text-[#111827] font-['Inter',sans-serif] selection:bg-[#2563EB] selection:text-white">
+      {/* ==========================================
+          1. STICKY NAVIGATION BAR
+      ========================================== */}
+      <header
+        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
+          isScrolled
+            ? 'bg-white/95 backdrop-blur-md shadow-sm border-b border-[#E5E7EB] py-3.5'
+            : 'bg-transparent py-5'
+        }`}
+      >
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between">
+          {/* Logo */}
+          <a href="#" className="flex items-center gap-2.5 group">
+            <div className="w-10 h-10 rounded-xl bg-[#2563EB] flex items-center justify-center text-white font-extrabold text-xl shadow-md shadow-blue-500/20 group-hover:scale-105 transition-transform">
+              HC
+            </div>
+            <div className="flex flex-col">
+              <span className="font-['Poppins',sans-serif] font-bold text-xl leading-none text-[#111827] tracking-tight">
+                HomeCare<span className="text-[#2563EB]">.</span>
+              </span>
+              <span className="text-[10px] font-semibold text-[#F97316] uppercase tracking-widest mt-0.5">
+                Verified Services
+              </span>
+            </div>
+          </a>
+
+          {/* Navigation Items */}
+          <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-[#111827]/80">
+            <a href="#" className="hover:text-[#2563EB] transition-colors">Home</a>
+            <a href="#services" className="hover:text-[#2563EB] transition-colors">Services</a>
+            <a href="#pricing" className="hover:text-[#2563EB] transition-colors">Pricing</a>
+            <a href="#about" className="hover:text-[#2563EB] transition-colors">About</a>
+            <a href="#faq" className="hover:text-[#2563EB] transition-colors">FAQ</a>
+            <a href="#contact" className="hover:text-[#2563EB] transition-colors">Contact</a>
+          </nav>
+
+          {/* Action CTAs */}
+          <div className="flex items-center gap-3">
+            <button className="hidden sm:inline-flex px-4 py-2 text-sm font-semibold text-[#111827] hover:text-[#2563EB] transition-colors">
+              Login
+            </button>
+            <a
+              href="#book"
+              className="inline-flex items-center gap-2 bg-[#2563EB] hover:bg-blue-700 text-white font-semibold text-sm px-5 py-2.5 rounded-xl shadow-md shadow-blue-500/20 hover:shadow-lg hover:shadow-blue-500/30 transition-all duration-200 transform hover:-translate-y-0.5"
+            >
+              <span>Book Service</span>
+              <ArrowRight className="w-4 h-4" />
+            </a>
+          </div>
+        </div>
+      </header>
+
+      {/* ==========================================
+          2. HERO SECTION
+      ========================================== */}
+      <section className="relative pt-32 pb-20 lg:pt-40 lg:pb-32 overflow-hidden bg-gradient-to-b from-blue-50/40 via-white to-white">
+        {/* Subtle Decorative Background Glow */}
+        <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-blue-400/10 rounded-full blur-3xl pointer-events-none" />
+
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 items-center">
+            {/* Left Column: Heading & CTAs */}
+            <div className="lg:col-span-7 space-y-8 text-center lg:text-left">
+              <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-blue-100/80 border border-blue-200/60 text-[#2563EB] text-xs font-semibold">
+                <ShieldCheck className="w-4 h-4 text-[#2563EB]" />
+                <span>Premier Home Service Management Platform</span>
+              </div>
+
+              <h1 className="font-['Poppins',sans-serif] text-4xl sm:text-5xl lg:text-6xl font-extrabold text-[#111827] tracking-tight leading-[1.12]">
+                Professional Home Services <br className="hidden sm:block" />
+                <span className="text-[#2563EB]">You Can Trust.</span>
+              </h1>
+
+              <p className="text-lg text-gray-600 max-w-2xl mx-auto lg:mx-0 font-normal leading-relaxed">
+                Book verified professionals for cleaning, plumbing, electrical, painting, appliance repair and more. Fast response. Transparent pricing. Guaranteed quality.
+              </p>
+
+              {/* Action Buttons */}
+              <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4 pt-2">
+                <a
+                  href="#book"
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-[#F97316] hover:bg-orange-600 text-white font-bold text-base px-8 py-4 rounded-xl shadow-lg shadow-orange-500/25 hover:shadow-xl hover:shadow-orange-500/35 transition-all duration-200 transform hover:-translate-y-0.5"
+                >
+                  <span>Book Service Now</span>
+                  <ArrowRight className="w-5 h-5" />
+                </a>
+                <a
+                  href="#services"
+                  className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-white hover:bg-gray-50 text-[#111827] font-semibold text-base px-8 py-4 rounded-xl border border-[#E5E7EB] shadow-sm transition-all duration-200"
+                >
+                  <span>Explore Services</span>
+                </a>
+              </div>
+
+              {/* Trust Indicators Bar */}
+              <div className="pt-6 border-t border-gray-100 grid grid-cols-2 sm:grid-cols-3 gap-y-4 gap-x-6 text-left max-w-xl mx-auto lg:mx-0">
+                <div className="flex items-center gap-2.5">
+                  <div className="flex text-amber-400 shrink-0">
+                    {[...Array(5)].map((_, i) => (
+                      <Star key={i} className="w-4 h-4 fill-current" />
+                    ))}
+                  </div>
+                  <span className="text-xs font-bold text-gray-800">4.9 Rating</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-[#10B981] shrink-0" />
+                  <span className="text-xs font-medium text-gray-700">10,000+ Customers</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-[#10B981] shrink-0" />
+                  <span className="text-xs font-medium text-gray-700">GST Registered</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-[#10B981] shrink-0" />
+                  <span className="text-xs font-medium text-gray-700">Verified Pros</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-[#10B981] shrink-0" />
+                  <span className="text-xs font-medium text-gray-700">Invoice Provided</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <CheckCircle2 className="w-4 h-4 text-[#10B981] shrink-0" />
+                  <span className="text-xs font-medium text-gray-700">No Hidden Charges</span>
+                </div>
+              </div>
+            </div>
+
+            {/* Right Column: Hero Visual & Floating Cards */}
+            <div className="lg:col-span-5 relative">
+              <div className="relative mx-auto max-w-md lg:max-w-none">
+                {/* Main Hero Card Container */}
+                <div className="relative rounded-2xl overflow-hidden shadow-2xl border border-gray-200/80 bg-white">
+                  <img
+                    src="https://images.unsplash.com/photo-1581578731548-c64695cc6952?auto=format&fit=crop&q=80&w=800"
+                    alt="Home Service Professional"
+                    className="w-full h-[460px] object-cover object-center"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/70 via-black/10 to-transparent" />
+                  
+                  <div className="absolute bottom-6 left-6 right-6 text-white space-y-1">
+                    <span className="text-xs font-semibold bg-[#10B981] text-white px-2.5 py-0.5 rounded-full inline-block mb-1">
+                      Active Dispatch
+                    </span>
+                    <h3 className="font-['Poppins',sans-serif] text-xl font-bold">Uniformed Service Crew</h3>
+                    <p className="text-xs text-gray-200 font-light">Equipped with specialized mechanized tools & safety gear.</p>
+                  </div>
+                </div>
+
+                {/* Floating Info Card 1: Booking Confirmed */}
+                <motion.div
+                  initial={{ opacity: 0, x: -20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.3 }}
+                  className="absolute -top-6 -left-6 bg-white/95 backdrop-blur-md p-4 rounded-xl border border-gray-200 shadow-xl hidden sm:flex items-center gap-3 z-20"
+                >
+                  <div className="w-10 h-10 rounded-full bg-emerald-100 flex items-center justify-center text-[#10B981] shrink-0">
+                    <CheckCircle2 className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-bold text-gray-900">Booking Confirmed</p>
+                    <p className="text-[11px] text-gray-500">Ticket #HC-8821 Assigned</p>
+                  </div>
+                </motion.div>
+
+                {/* Floating Info Card 2: Verified Professional */}
+                <motion.div
+                  initial={{ opacity: 0, x: 20 }}
+                  animate={{ opacity: 1, x: 0 }}
+                  transition={{ delay: 0.5 }}
+                  className="absolute top-1/3 -right-6 bg-white/95 backdrop-blur-md p-3.5 rounded-xl border border-gray-200 shadow-xl hidden sm:flex items-center gap-3 z-20"
+                >
+                  <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-[#2563EB] shrink-0">
+                    <UserCheck className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-bold text-gray-900">Verified Expert</p>
+                    <p className="text-[11px] text-gray-500">Aadhaar & Police Cleared</p>
+                  </div>
+                </motion.div>
+
+                {/* Floating Info Card 3: Live Tracking */}
+                <motion.div
+                  initial={{ opacity: 0, y: 20 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  transition={{ delay: 0.7 }}
+                  className="absolute -bottom-6 right-6 bg-white/95 backdrop-blur-md p-4 rounded-xl border border-gray-200 shadow-xl hidden sm:flex items-center gap-3 z-20"
+                >
+                  <div className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center text-[#F97316] shrink-0">
+                    <Clock className="w-6 h-6" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-bold text-gray-900">Estimated Arrival</p>
+                    <p className="text-[11px] font-semibold text-[#F97316]">15 Mins · Live Dispatch</p>
+                  </div>
+                </motion.div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ==========================================
+          3. TRUST BAR
+      ========================================== */}
+      <section className="bg-[#F8FAFC] border-y border-[#E5E7EB] py-6">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6 items-center">
+            {TRUST_BAR_ITEMS.map((item, idx) => (
+              <div key={idx} className="flex items-center justify-center lg:justify-start gap-2.5">
+                <item.icon className="w-5 h-5 text-[#2563EB] shrink-0" />
+                <span className="text-xs font-semibold text-gray-800 whitespace-nowrap">{item.label}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ==========================================
+          4. SERVICE CATEGORIES GRID
+      ========================================== */}
+      <section id="services" className="py-24 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center max-w-3xl mx-auto space-y-4 mb-16">
+            <span className="text-xs font-bold uppercase tracking-widest text-[#2563EB] bg-blue-50 px-3.5 py-1.5 rounded-full border border-blue-100">
+              Our Service Offerings
+            </span>
+            <h2 className="font-['Poppins',sans-serif] text-3xl sm:text-4xl font-bold text-[#111827]">
+              Explore Premium Home Services
+            </h2>
+            <p className="text-base text-gray-600">
+              Select a category to request an instant callback and transparent quotation.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
+            {SERVICE_CATEGORIES.map((service) => (
+              <motion.div
+                key={service.id}
+                whileHover={{ y: -6 }}
+                className="group bg-white rounded-2xl border border-[#E5E7EB] p-4 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between"
+              >
+                <div>
+                  <div className="relative h-36 w-full rounded-xl overflow-hidden mb-4 bg-gray-100">
+                    <img
+                      src={service.image}
+                      alt={service.name}
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                    />
+                    <div className="absolute top-2.5 right-2.5 bg-white/90 backdrop-blur-md p-2 rounded-lg text-[#2563EB] shadow-sm">
+                      <service.icon className="w-4 h-4" />
+                    </div>
+                  </div>
+
+                  <div className="flex items-center justify-between gap-2 mb-1">
+                    <h3 className="font-['Poppins',sans-serif] font-bold text-base text-[#111827] group-hover:text-[#2563EB] transition-colors">
+                      {service.name}
+                    </h3>
+                  </div>
+
+                  <p className="text-xs text-gray-500 font-medium mb-2">Starts at <span className="text-gray-900 font-bold">{service.price}</span></p>
+
+                  <p className="text-xs text-gray-600 line-clamp-2 leading-relaxed mb-4">
+                    {service.description}
+                  </p>
+                </div>
+
+                <a
+                  href="#book"
+                  className="w-full py-2.5 px-4 rounded-xl bg-gray-50 hover:bg-[#F97316] text-[#111827] hover:text-white font-semibold text-xs transition-colors duration-200 flex items-center justify-center gap-1.5 group-hover:shadow-md"
+                >
+                  <span>Book Now</span>
+                  <ChevronRight className="w-3.5 h-3.5" />
+                </a>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ==========================================
+          5. WHY CHOOSE US
+      ========================================== */}
+      <section className="py-24 bg-[#F8FAFC] border-y border-[#E5E7EB]">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center max-w-3xl mx-auto space-y-4 mb-16">
+            <span className="text-xs font-bold uppercase tracking-widest text-[#2563EB] bg-blue-50 px-3.5 py-1.5 rounded-full border border-blue-100">
+              The HomeCare Difference
+            </span>
+            <h2 className="font-['Poppins',sans-serif] text-3xl sm:text-4xl font-bold text-[#111827]">
+              Why Homeowners Choose Us
+            </h2>
+            <p className="text-base text-gray-600">
+              We operate like a multi-city enterprise, ensuring safety, quality, and complete transparency.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
+            {WHY_CHOOSE_US.map((item, idx) => (
+              <motion.div
+                key={idx}
+                whileHover={{ y: -4 }}
+                className="bg-white p-8 rounded-2xl border border-[#E5E7EB] shadow-sm hover:shadow-md transition-all"
+              >
+                <div className="w-14 h-14 rounded-2xl bg-blue-50 border border-blue-100 flex items-center justify-center text-[#2563EB] mb-6">
+                  <item.icon className="w-7 h-7" />
+                </div>
+                <h3 className="font-['Poppins',sans-serif] font-bold text-lg text-[#111827] mb-2">
+                  {item.title}
+                </h3>
+                <p className="text-xs text-gray-600 leading-relaxed font-normal">
+                  {item.description}
+                </p>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ==========================================
+          6. HOW IT WORKS (TIMELINE)
+      ========================================== */}
+      <section className="py-24 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center max-w-3xl mx-auto space-y-4 mb-16">
+            <span className="text-xs font-bold uppercase tracking-widest text-[#2563EB] bg-blue-50 px-3.5 py-1.5 rounded-full border border-blue-100">
+              Simple 5-Step Journey
+            </span>
+            <h2 className="font-['Poppins',sans-serif] text-3xl sm:text-4xl font-bold text-[#111827]">
+              How Your Booking Works
+            </h2>
+            <p className="text-base text-gray-600">
+              From enquiry to digital invoice, enjoy a completely managed service lifecycle.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-6 relative">
+            {PROCESS_STEPS.map((step, idx) => (
+              <div key={idx} className="flex flex-col items-center text-center relative z-10">
+                <div className="w-14 h-14 rounded-2xl bg-[#2563EB] text-white font-['Poppins',sans-serif] font-extrabold text-lg flex items-center justify-center shadow-md shadow-blue-500/20 mb-4">
+                  {step.step}
+                </div>
+                <h3 className="font-['Poppins',sans-serif] font-bold text-base text-[#111827] mb-1">
+                  {step.title}
+                </h3>
+                <p className="text-xs text-gray-500 leading-relaxed max-w-[200px]">
+                  {step.desc}
+                </p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ==========================================
+          7. ANIMATED STATISTICS
+      ========================================== */}
+      <section className="py-16 bg-[#2563EB] text-white relative overflow-hidden">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
+          <div className="grid grid-cols-2 md:grid-cols-5 gap-8 text-center">
+            {STATS.map((stat, idx) => (
+              <div key={idx} className="space-y-1">
+                <div className="font-['Poppins',sans-serif] font-extrabold text-3xl sm:text-4xl lg:text-5xl text-white">
+                  {stat.value.toLocaleString()}{stat.suffix}
+                </div>
+                <p className="text-xs sm:text-sm font-medium text-blue-100">{stat.label}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ==========================================
+          8. BEFORE & AFTER GALLERY
+      ========================================== */}
+      <section className="py-24 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center max-w-3xl mx-auto space-y-4 mb-16">
+            <span className="text-xs font-bold uppercase tracking-widest text-[#2563EB] bg-blue-50 px-3.5 py-1.5 rounded-full border border-blue-100">
+              Proven Results
+            </span>
+            <h2 className="font-['Poppins',sans-serif] text-3xl sm:text-4xl font-bold text-[#111827]">
+              Real Transformation Results
+            </h2>
+            <p className="text-base text-gray-600">
+              Drag the comparison slider on our modern deep cleaning results.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+            {BEFORE_AFTER_DATA.map((item, idx) => (
+              <div key={idx} className="bg-white rounded-2xl border border-[#E5E7EB] overflow-hidden shadow-sm hover:shadow-lg transition-shadow">
+                <div className="relative h-64 w-full select-none overflow-hidden">
+                  {/* Before Image (Base) */}
+                  <img src={item.before} alt="Before" className="absolute inset-0 w-full h-full object-cover filter brightness-75 contrast-125" />
+                  <span className="absolute top-3 left-3 bg-black/60 backdrop-blur-md text-white text-[10px] font-bold px-2 py-1 rounded">BEFORE</span>
+
+                  {/* After Image (Clipped) */}
+                  <div
+                    className="absolute inset-0 overflow-hidden"
+                    style={{ clipPath: `polygon(0 0, ${sliderPos[idx] || 50}% 0, ${sliderPos[idx] || 50}% 100%, 0 100%)` }}
+                  >
+                    <img src={item.after} alt="After" className="absolute inset-0 w-full h-full object-cover" />
+                    <span className="absolute top-3 left-3 bg-[#10B981] text-white text-[10px] font-bold px-2 py-1 rounded">AFTER</span>
+                  </div>
+
+                  {/* Interactive Slider Bar */}
+                  <input
+                    type="range"
+                    min="0"
+                    max="100"
+                    value={sliderPos[idx] || 50}
+                    onChange={(e) => setSliderPos({ ...sliderPos, [idx]: Number(e.target.value) })}
+                    className="absolute inset-0 w-full h-full opacity-0 cursor-ew-resize z-30"
+                  />
+                  <div
+                    className="absolute top-0 bottom-0 w-1 bg-white shadow-xl z-20 pointer-events-none"
+                    style={{ left: `${sliderPos[idx] || 50}%` }}
+                  >
+                    <div className="absolute top-1/2 -translate-y-1/2 -translate-x-1/2 w-8 h-8 rounded-full bg-white shadow-lg flex items-center justify-center text-gray-700">
+                      <SlidersHorizontal className="w-4 h-4" />
+                    </div>
+                  </div>
+                </div>
+
+                <div className="p-5">
+                  <h3 className="font-['Poppins',sans-serif] font-bold text-base text-[#111827]">{item.title}</h3>
+                  <p className="text-xs text-gray-500 mt-1 leading-relaxed">{item.subtitle}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ==========================================
+          9. TESTIMONIALS & REVIEWS
+      ========================================== */}
+      <section className="py-24 bg-[#F8FAFC] border-y border-[#E5E7EB]">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center max-w-3xl mx-auto space-y-4 mb-16">
+            <span className="text-xs font-bold uppercase tracking-widest text-[#2563EB] bg-blue-50 px-3.5 py-1.5 rounded-full border border-blue-100">
+              Customer Feedback
+            </span>
+            <h2 className="font-['Poppins',sans-serif] text-3xl sm:text-4xl font-bold text-[#111827]">
+              Loved by Homeowners in Your City
+            </h2>
+            <div className="inline-flex items-center gap-2 bg-white px-4 py-2 rounded-xl border border-gray-200 shadow-sm">
+              <span className="font-bold text-sm text-gray-900">Google Review Verified</span>
+              <div className="flex text-amber-400">
+                {[...Array(5)].map((_, i) => (
+                  <Star key={i} className="w-4 h-4 fill-current" />
+                ))}
+              </div>
+              <span className="text-xs font-bold text-gray-600">4.9 / 5</span>
+            </div>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {TESTIMONIALS.map((review, idx) => (
+              <div key={idx} className="bg-white p-6 rounded-2xl border border-[#E5E7EB] shadow-sm flex flex-col justify-between">
+                <div className="space-y-3">
+                  <div className="flex text-amber-400">
+                    {[...Array(review.rating)].map((_, i) => (
+                      <Star key={i} className="w-4 h-4 fill-current" />
+                    ))}
+                  </div>
+                  <p className="text-xs text-gray-600 leading-relaxed font-normal">
+                    "{review.review}"
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-3 pt-4 mt-4 border-t border-gray-100">
+                  <img src={review.image} alt={review.name} className="w-10 h-10 rounded-full object-cover" />
+                  <div>
+                    <h4 className="font-['Poppins',sans-serif] font-bold text-xs text-[#111827]">{review.name}</h4>
+                    <p className="text-[11px] text-gray-400">{review.city}</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ==========================================
+          10. COMPANY PROCESS INFOGRAPHIC
+      ========================================== */}
+      <section className="py-24 bg-white relative overflow-hidden">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center max-w-3xl mx-auto space-y-4 mb-24">
+            <span className="text-xs font-bold uppercase tracking-widest text-[#2563EB] bg-blue-50 px-3.5 py-1.5 rounded-full border border-blue-100">
+              END-TO-END SERVICE PROCESS
+            </span>
+            <h2 className="font-['Poppins',sans-serif] text-3xl sm:text-4xl font-bold text-[#111827]">
+              How Your Service Request Becomes a Completed Job
+            </h2>
+            <p className="text-base text-gray-600">
+              From your first enquiry to the final invoice, every step is professionally managed to ensure a seamless and transparent experience.
+            </p>
+          </div>
+
+          {/* Timeline Container */}
+          <div className="relative mb-24">
+            {/* Background Line (Desktop) */}
+            <div className="hidden lg:block absolute top-8 left-8 right-8 h-[2px] bg-gray-100 z-0" />
+            {/* Animated Line (Desktop) */}
+            <motion.div 
+              className="hidden lg:block absolute top-8 left-8 h-[2px] bg-gradient-to-r from-blue-300 via-[#2563EB] to-orange-400 origin-left z-0"
+              initial={{ scaleX: 0 }}
+              whileInView={{ scaleX: 1 }}
+              viewport={{ once: true, margin: "-100px" }}
+              transition={{ duration: 1.5, ease: "easeInOut" }}
+              style={{ width: 'calc(100% - 4rem)' }}
+            />
+            
+            {/* Background Line (Mobile/Tablet) */}
+            <div className="block lg:hidden absolute top-8 left-7 bottom-8 w-[2px] bg-gray-100 z-0" />
+            {/* Animated Line (Mobile/Tablet) */}
+            <motion.div 
+              className="block lg:hidden absolute top-8 left-7 w-[2px] bg-gradient-to-b from-blue-300 via-[#2563EB] to-orange-400 origin-top z-0"
+              initial={{ scaleY: 0 }}
+              whileInView={{ scaleY: 1 }}
+              viewport={{ once: true, margin: "-100px" }}
+              transition={{ duration: 1.5, ease: "easeInOut" }}
+              style={{ height: 'calc(100% - 4rem)' }}
+            />
+
+            <div className="grid grid-cols-1 lg:grid-cols-7 gap-12 lg:gap-4 relative z-10">
+              {[
+                { step: '1', title: 'Customer Enquiry', desc: 'Customer submits a request through Website, Call, WhatsApp, Facebook or Instagram.', icon: MessageCircle },
+                { step: '2', title: 'Requirement Discussion', desc: 'Customer Support contacts the customer, understands the requirement and prepares an estimate.', icon: Phone },
+                { step: '3', title: 'Estimate Approval', desc: 'Official quotation is shared. Customer confirms booking.', icon: FileCheck },
+                { step: '4', title: 'Professional Assigned', desc: 'Nearest verified technician is assigned automatically.', icon: UserCheck },
+                { step: '5', title: 'Live Service Execution', desc: 'Professional reaches the location and completes the service with real-time status updates.', icon: MapPin },
+                { step: '6', title: 'Digital Invoice & Payment', desc: 'Invoice is generated instantly. Customer pays via Cash, UPI or Online.', icon: Receipt },
+                { step: '7', title: 'Post Service Support', desc: 'Customer can raise complaints, request warranty service or leave a review.', icon: ShieldCheck }
+              ].map((step, idx) => (
+                <div key={idx} className="flex flex-row lg:flex-col items-start lg:items-center relative group">
+                  {/* Timeline Node */}
+                  <motion.div
+                    initial={{ scale: 0 }}
+                    whileInView={{ scale: 1 }}
+                    viewport={{ once: true, margin: "-50px" }}
+                    transition={{ delay: idx * 0.15, type: "spring", stiffness: 200, damping: 15 }}
+                    whileHover={{ scale: 1.1 }}
+                    className="w-14 h-14 lg:w-16 lg:h-16 shrink-0 lg:mx-auto rounded-full bg-white border-4 border-gray-50 flex items-center justify-center shadow-md shadow-gray-200/50 group-hover:border-blue-50 group-hover:shadow-[0_0_25px_rgba(37,99,235,0.25)] transition-all duration-300 relative z-10"
+                  >
+                    <step.icon className="w-5 h-5 lg:w-6 lg:h-6 text-[#2563EB] group-hover:text-[#F97316] transition-colors duration-300" />
+                  </motion.div>
+
+                  {/* Content */}
+                  <motion.div
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true, margin: "-50px" }}
+                    transition={{ delay: 0.3 + (idx * 0.1), duration: 0.5 }}
+                    className="ml-6 lg:ml-0 lg:mt-6 lg:text-center pt-1 lg:pt-0"
+                  >
+                    <div className="text-[10px] font-bold text-gray-400 tracking-widest mb-1 lg:mb-1.5 uppercase">Step {step.step}</div>
+                    <h3 className="font-['Poppins',sans-serif] font-bold text-sm text-[#111827] mb-1.5 lg:mb-2 leading-snug group-hover:text-[#2563EB] transition-colors">{step.title}</h3>
+                    <p className="text-xs text-gray-500 leading-relaxed lg:max-w-[140px] mx-auto">
+                      {step.desc}
+                    </p>
+                  </motion.div>
+                </div>
+              ))}
+            </div>
+          </div>
+
+          {/* Bottom Trust Bar */}
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto pt-8 border-t border-gray-100">
+            {[
+              { title: 'Verified Professionals', desc: 'Background verified experts for every service.' },
+              { title: 'Transparent Pricing', desc: 'No hidden charges.' },
+              { title: 'GST Invoice', desc: 'Professional digital invoices.' },
+              { title: 'Secure Payments', desc: 'UPI, Cards and Cash accepted.' },
+              { title: 'Live Booking Updates', desc: 'Track every stage of your booking.' },
+              { title: 'Dedicated Customer Support', desc: 'Quick assistance before and after service.' },
+            ].map((trust, idx) => (
+              <motion.div 
+                key={idx}
+                initial={{ opacity: 0, y: 20 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: idx * 0.1, duration: 0.5 }}
+                className="bg-[#F8FAFC] border border-[#E5E7EB] rounded-2xl p-5 flex items-start gap-4 hover:shadow-lg transition-shadow duration-300 group"
+              >
+                <div className="w-8 h-8 rounded-full bg-blue-100 text-[#2563EB] flex items-center justify-center shrink-0 mt-0.5 group-hover:bg-[#2563EB] group-hover:text-white transition-colors duration-300">
+                  <Check className="w-4 h-4" />
+                </div>
+                <div>
+                  <h4 className="font-['Poppins',sans-serif] font-bold text-sm text-[#111827] mb-1">{trust.title}</h4>
+                  <p className="text-xs text-gray-600 leading-relaxed">{trust.desc}</p>
+                </div>
+              </motion.div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      
+      {/* ==========================================
+          12. TRUST & SAFETY (LARGE SECTION)
+      ========================================== */}
+      <section className="py-24 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center max-w-3xl mx-auto space-y-4 mb-16">
+            <span className="text-xs font-bold uppercase tracking-widest text-[#2563EB] bg-blue-50 px-3.5 py-1.5 rounded-full border border-blue-100">
+              Safety First Policy
+            </span>
+            <h2 className="font-['Poppins',sans-serif] text-3xl sm:text-4xl font-bold text-[#111827]">
+              Complete Protection For Your Home
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+            {[
+              { title: 'Police Verified Staff', icon: ShieldCheck, desc: 'Official background checks on all technicians.' },
+              { title: 'Background Verification', icon: UserCheck, desc: 'Aadhaar & permanent address logged.' },
+              { title: 'GST Registered', icon: FileText, desc: 'Compliant tax invoices for all orders.' },
+              { title: 'Invoice Provided', icon: Download, desc: 'Automated WhatsApp & Email PDF bills.' },
+              { title: 'Secure Online Payments', icon: Lock, desc: '256-bit encrypted Razorpay checkout.' },
+              
+              { title: 'Uniformed Professionals', icon: UserCheck, desc: 'Standardized ID badges & carrying toolkits.' },
+              { title: '24/7 Support Desk', icon: Headphones, desc: 'Dedicated helpline for booking queries.' },
+            ].map((item, idx) => (
+              <div key={idx} className="p-6 bg-[#F8FAFC] rounded-2xl border border-[#E5E7EB] text-center space-y-2">
+                <item.icon className="w-8 h-8 text-[#2563EB] mx-auto mb-3" />
+                <h3 className="font-['Poppins',sans-serif] font-bold text-sm text-[#111827]">{item.title}</h3>
+                <p className="text-xs text-gray-500 leading-relaxed">{item.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ==========================================
+          13. COMPANY STORY
+      ========================================== */}
+      <section id="about" className="py-24 bg-[#F8FAFC] border-y border-[#E5E7EB]">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
+            <div className="lg:col-span-6 space-y-6">
+              <span className="text-xs font-bold uppercase tracking-widest text-[#2563EB] bg-blue-50 px-3.5 py-1.5 rounded-full border border-blue-100">
+                Who We Are
+              </span>
+              <h2 className="font-['Poppins',sans-serif] text-3xl sm:text-4xl font-bold text-[#111827]">
+                Building the Future of Home Services in Regional India
+              </h2>
+              <p className="text-sm text-gray-600 leading-relaxed">
+                Founded with a mission to organize the fragmented home care sector in Tier-2 & Tier-3 cities, HomeCare bridges the gap between skilled local technicians and homeowners seeking quality, safety, and fixed pricing.
+              </p>
+
+              <div className="grid grid-cols-2 gap-4 pt-2">
+                <div className="bg-white p-4 rounded-xl border border-gray-200">
+                  <h4 className="font-bold text-sm text-[#2563EB] mb-1">Our Mission</h4>
+                  <p className="text-xs text-gray-500">Provide safe, transparent, and instant home services through digital office management.</p>
+                </div>
+                <div className="bg-white p-4 rounded-xl border border-gray-200">
+                  <h4 className="font-bold text-sm text-[#2563EB] mb-1">Our Vision</h4>
+                  <p className="text-xs text-gray-500">Become the most trusted household brand for home maintenance across 50+ regional hubs.</p>
+                </div>
+              </div>
+            </div>
+
+            <div className="lg:col-span-6">
+              <div className="relative rounded-2xl overflow-hidden shadow-xl border border-gray-200">
+                <img
+                  src="https://images.unsplash.com/photo-1521737711867-e3b97375f902?auto=format&fit=crop&q=80&w=800"
+                  alt="Professional Team"
+                  className="w-full h-[400px] object-cover"
+                />
+              </div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ==========================================
+          14. FAQ (ACCORDION)
+      ========================================== */}
+      <section id="faq" className="py-24 bg-white">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center space-y-4 mb-16">
+            <span className="text-xs font-bold uppercase tracking-widest text-[#2563EB] bg-blue-50 px-3.5 py-1.5 rounded-full border border-blue-100">
+              Got Questions?
+            </span>
+            <h2 className="font-['Poppins',sans-serif] text-3xl sm:text-4xl font-bold text-[#111827]">
+              Frequently Asked Questions
+            </h2>
+          </div>
+
+          <div className="space-y-4">
+            {FAQS.map((faq, idx) => (
+              <div key={idx} className="bg-white rounded-2xl border border-[#E5E7EB] overflow-hidden">
+                <button
+                  onClick={() => setActiveFaq(activeFaq === idx ? null : idx)}
+                  className="w-full p-6 text-left font-['Poppins',sans-serif] font-bold text-base text-[#111827] flex items-center justify-between gap-4"
+                >
+                  <span>{faq.q}</span>
+                  <ChevronDown className={`w-5 h-5 text-gray-400 transition-transform ${activeFaq === idx ? 'rotate-180 text-[#2563EB]' : ''}`} />
+                </button>
+                <AnimatePresence>
+                  {activeFaq === idx && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: 'auto', opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      className="px-6 pb-6 text-xs text-gray-600 leading-relaxed border-t border-gray-100 pt-4"
+                    >
+                      {faq.a}
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ==========================================
+          15. FINAL CTA BANNER
+      ========================================== */}
+      <section id="book" className="py-16 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="relative rounded-3xl p-10 lg:p-16 overflow-hidden bg-gradient-to-r from-blue-600 via-blue-700 to-indigo-800 text-white shadow-2xl text-center lg:text-left flex flex-col lg:flex-row items-center justify-between gap-8">
+          <div className="space-y-3 relative z-10 max-w-2xl">
+            <span className="text-xs font-bold uppercase tracking-widest bg-white/20 text-white px-3.5 py-1 rounded-full border border-white/20">
+              Fast Dispatch
+            </span>
+            <h2 className="font-['Poppins',sans-serif] text-3xl sm:text-4xl font-extrabold text-white">
+              Need Professional Home Service Today?
+            </h2>
+            <p className="text-base text-blue-100">
+              Book in less than 60 seconds. Our office team will call you back to confirm your estimate.
+            </p>
+          </div>
+
+          <div className="flex flex-col sm:flex-row items-center gap-4 relative z-10 w-full lg:w-auto">
+            <a
+              href="#book"
+              className="w-full sm:w-auto bg-[#F97316] hover:bg-orange-600 text-white font-bold text-base px-8 py-4 rounded-xl shadow-lg transition-all text-center"
+            >
+              Book Service Now
+            </a>
+            <a
+              href="tel:+919876543210"
+              className="w-full sm:w-auto bg-white/10 hover:bg-white/20 border border-white/30 text-white font-bold text-base px-8 py-4 rounded-xl transition-all flex items-center justify-center gap-2"
+            >
+              <Phone className="w-5 h-5" />
+              <span>Call Us Directly</span>
+            </a>
+          </div>
+        </div>
+      </section>
+
+      {/* ==========================================
+          16. FOOTER
+      ========================================== */}
+      <footer id="contact" className="bg-[#111827] text-white pt-16 pb-12 border-t border-gray-800">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-10 pb-12 border-b border-gray-800">
+            {/* Col 1: Brand Info */}
+            <div className="lg:col-span-2 space-y-4">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-xl bg-[#2563EB] flex items-center justify-center text-white font-bold text-lg">
+                  HC
+                </div>
+                <span className="font-['Poppins',sans-serif] font-bold text-xl text-white">
+                  HomeCare<span className="text-[#2563EB]">.</span>
+                </span>
+              </div>
+              <p className="text-xs text-gray-400 max-w-sm leading-relaxed">
+                Centralized Home Care Management Platform enabling seamless service booking, verified technicians, and digital invoicing across regional India.
+              </p>
+              <div className="pt-2">
+                <p className="text-xs font-bold text-gray-300">GST Registration No:</p>
+                <p className="text-xs font-mono text-gray-400">22AAAAA0000A1Z5</p>
+              </div>
+            </div>
+
+            {/* Col 2: Company */}
+            <div className="space-y-3">
+              <h4 className="font-['Poppins',sans-serif] font-bold text-sm text-white uppercase tracking-wider">Company</h4>
+              <ul className="space-y-2 text-xs text-gray-400 font-medium">
+                <li><a href="#" className="hover:text-white transition-colors">About Us</a></li>
+                <li><a href="#" className="hover:text-white transition-colors">How It Works</a></li>
+                <li><a href="#" className="hover:text-white transition-colors">Partner With Us</a></li>
+                <li><a href="#" className="hover:text-white transition-colors">Careers</a></li>
+              </ul>
+            </div>
+
+            {/* Col 3: Services */}
+            <div className="space-y-3">
+              <h4 className="font-['Poppins',sans-serif] font-bold text-sm text-white uppercase tracking-wider">Services</h4>
+              <ul className="space-y-2 text-xs text-gray-400 font-medium">
+                <li><a href="#" className="hover:text-white transition-colors">Home Deep Cleaning</a></li>
+                <li><a href="#" className="hover:text-white transition-colors">AC Repair & Jet Clean</a></li>
+                <li><a href="#" className="hover:text-white transition-colors">Electrical Services</a></li>
+                <li><a href="#" className="hover:text-white transition-colors">Plumbing Solutions</a></li>
+                <li><a href="#" className="hover:text-white transition-colors">House Painting</a></li>
+              </ul>
+            </div>
+
+            {/* Col 4: Contact */}
+            <div className="space-y-3">
+              <h4 className="font-['Poppins',sans-serif] font-bold text-sm text-white uppercase tracking-wider">Contact Us</h4>
+              <div className="space-y-2 text-xs text-gray-400">
+                <p className="flex items-center gap-2"><MapPin className="w-4 h-4 text-[#2563EB]" /> Civic Centre, Bhilai, CG - 490006</p>
+                <p className="flex items-center gap-2"><Phone className="w-4 h-4 text-[#2563EB]" /> +91 98765 43210</p>
+                <p className="flex items-center gap-2"><Headphones className="w-4 h-4 text-[#2563EB]" /> support@homecare.in</p>
+              </div>
+            </div>
+          </div>
+
+          <div className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-gray-500">
+            <p>© 2026 Home Care Management Platform. All rights reserved.</p>
+            <div className="flex gap-6">
+              <a href="#" className="hover:text-gray-300">Privacy Policy</a>
+              <a href="#" className="hover:text-gray-300">Terms of Service</a>
+              <a href="#" className="hover:text-gray-300">Refund Policy</a>
+            </div>
+          </div>
+        </div>
+      </footer>
+    </div>
+  );
+}
