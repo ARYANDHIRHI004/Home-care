@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
+import { MapPin, Loader2 } from 'lucide-react';
 import GoogleButton from '@/components/auth/GoogleButton';
 
 export default function RegisterPage() {
@@ -20,8 +21,10 @@ export default function RegisterPage() {
     lat: null,
     lng: null,
   });
-  const [locating, setLocating] = useState(false);
-  const [locationCaptured, setLocationCaptured] = useState(false);
+
+  // locationStatus drives what the little status line next to the button shows:
+  // 'idle' | 'locating' | 'resolving' | 'done' | 'coords-only' | 'error'
+  const [locationStatus, setLocationStatus] = useState('idle');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
@@ -29,24 +32,83 @@ export default function RegisterPage() {
     setForm((f) => ({ ...f, [field]: value }));
   }
 
+  // Turns lat/lng into a street address using Nominatim (OpenStreetMap) — free, no API key.
+  // Has a hard timeout so a slow/blocked request can't leave the UI stuck on "resolving".
+  async function reverseGeocode(lat, lng) {
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 8000);
+
+    try {
+      const res = await fetch(
+        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`,
+        { headers: { 'Accept-Language': 'en' }, signal: controller.signal }
+      );
+      if (!res.ok) throw new Error(`Nominatim returned ${res.status}`);
+      const data = await res.json();
+      const a = data.address || {};
+
+      const addressLine =
+        [a.house_number, a.road || a.neighbourhood || a.suburb].filter(Boolean).join(', ') ||
+        data.display_name?.split(',')[0] ||
+        '';
+
+      const rawCity = a.city || a.town || a.village || a.county || '';
+      const city = /bhilai/i.test(rawCity) ? 'Bhilai' : /durg/i.test(rawCity) ? 'Durg' : null;
+      const pincode = a.postcode || '';
+
+      return { addressLine, city, pincode };
+    } finally {
+      clearTimeout(timeout);
+    }
+  }
+
   function handleUseLocation() {
     if (!navigator.geolocation) {
       setError('Location is not supported on this device — enter your address manually.');
       return;
     }
-    setLocating(true);
+
     setError('');
+    setLocationStatus('locating');
+
     navigator.geolocation.getCurrentPosition(
       (pos) => {
-        // TODO: reverse-geocode lat/lng into addressLine/city/pincode via Google Geocoding API
-        setForm((f) => ({ ...f, lat: pos.coords.latitude, lng: pos.coords.longitude }));
-        setLocationCaptured(true);
-        setLocating(false);
+        const { latitude, longitude } = pos.coords;
+
+        // Update immediately — this is the "real-time" part. The user sees coordinates
+        // captured and the status change to "resolving" the instant GPS returns,
+        // instead of staring at nothing while the network request runs in the background.
+        setForm((f) => ({ ...f, lat: latitude, lng: longitude }));
+        setLocationStatus('resolving');
+
+        reverseGeocode(latitude, longitude)
+          .then(({ addressLine, city, pincode }) => {
+            setForm((f) => ({
+              ...f,
+              addressLine: addressLine || f.addressLine,
+              city: city || f.city,
+              pincode: pincode || f.pincode,
+            }));
+            setLocationStatus(addressLine ? 'done' : 'coords-only');
+          })
+          .catch((err) => {
+            console.error('Reverse geocoding failed:', err);
+            // Coordinates are still saved even though the address text lookup failed —
+            // the user can fill the fields manually, and lat/lng still go to the backend.
+            setLocationStatus('coords-only');
+            setError('Got your location, but couldn\u2019t look up the address automatically — please fill it in below.');
+          });
       },
-      () => {
-        setError('Could not get your location — enter your address manually.');
-        setLocating(false);
-      }
+      (err) => {
+        console.error('Geolocation failed:', err);
+        setLocationStatus('error');
+        setError(
+          err.code === err.PERMISSION_DENIED
+            ? 'Location permission was denied — enable it in your browser settings, or enter your address manually.'
+            : 'Could not get your location — enter your address manually.'
+        );
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
     );
   }
 
@@ -92,6 +154,15 @@ export default function RegisterPage() {
       setLoading(false);
     }
   }
+
+  const statusText = {
+    idle: null,
+    locating: 'Getting your location…',
+    resolving: 'Found your location — looking up the address…',
+    done: '✓ Address filled from your location',
+    'coords-only': '✓ Location saved — please check the address fields below',
+    error: null,
+  }[locationStatus];
 
   return (
     <div>
@@ -168,12 +239,38 @@ export default function RegisterPage() {
             <button
               type="button"
               onClick={handleUseLocation}
-              disabled={locating}
-              className="text-xs font-medium text-[#2554F0] hover:underline disabled:opacity-60"
+              disabled={locationStatus === 'locating' || locationStatus === 'resolving'}
+              className="flex items-center gap-1.5 text-xs font-medium text-[#2554F0] hover:underline disabled:opacity-60"
             >
-              {locating ? 'Locating…' : locationCaptured ? '✓ Location captured' : 'Use current location'}
+              {(locationStatus === 'locating' || locationStatus === 'resolving') && (
+                <Loader2 className="w-3.5 h-3.5 animate-spin" />
+              )}
+              {locationStatus === 'idle' || locationStatus === 'error' ? (
+                <>
+                  <MapPin className="w-3.5 h-3.5" />
+                  Use current location
+                </>
+              ) : locationStatus === 'locating' ? (
+                'Getting location…'
+              ) : locationStatus === 'resolving' ? (
+                'Looking up address…'
+              ) : (
+                'Update location'
+              )}
             </button>
           </div>
+
+          {statusText && (
+            <p
+              className={`mb-3 text-xs font-medium ${
+                locationStatus === 'done' || locationStatus === 'coords-only'
+                  ? 'text-emerald-600'
+                  : 'text-[#0F172A]/50'
+              }`}
+            >
+              {statusText}
+            </p>
+          )}
 
           <div className="space-y-4">
             <div>
@@ -185,7 +282,7 @@ export default function RegisterPage() {
                 value={form.addressLine}
                 onChange={(e) => update('addressLine', e.target.value)}
                 placeholder="B-204, Shanti Apartments, Nehru Nagar"
-                className="w-full px-3 py-3 text-sm border border-[#0F172A]/15 rounded-lg outline-none focus:ring-2 focus:ring-[#2554F0]/30 transition-shadow"
+                className="w-full px-3 py-3 text-sm border border-[#0F172A]/15 rounded-lg outline-none focus:ring-2 focus:ring-[#2554F0]/30 transition-shadow text-[#0F172A]/70"
                 required
               />
             </div>
@@ -209,7 +306,7 @@ export default function RegisterPage() {
                 <select
                   value={form.city}
                   onChange={(e) => update('city', e.target.value)}
-                  className="w-full px-3 py-3 text-sm border border-[#0F172A]/15 rounded-lg outline-none focus:ring-2 focus:ring-[#2554F0]/30 transition-shadow bg-white"
+                  className="w-full px-3 py-3 text-sm border border-[#0F172A]/15 rounded-lg outline-none focus:ring-2 focus:ring-[#2554F0]/30 transition-shadow text-[#0F172A]"
                 >
                   <option value="Bhilai">Bhilai</option>
                   <option value="Durg">Durg</option>
@@ -224,7 +321,7 @@ export default function RegisterPage() {
                   value={form.pincode}
                   onChange={(e) => update('pincode', e.target.value.replace(/\D/g, ''))}
                   placeholder="490001"
-                  className="w-full px-3 py-3 text-sm border border-[#0F172A]/15 rounded-lg outline-none focus:ring-2 focus:ring-[#2554F0]/30 transition-shadow"
+                  className="w-full px-3 py-3 text-sm border border-[#0F172A]/15 rounded-lg outline-none focus:ring-2 focus:ring-[#2554F0]/30 transition-shadow  text-[#0F172A]/70"
                   required
                 />
               </div>

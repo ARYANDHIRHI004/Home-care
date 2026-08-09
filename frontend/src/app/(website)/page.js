@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { BsShieldCheck } from 'react-icons/bs';
+import { FiClock, FiLock, FiHeadphones, FiFileText } from 'react-icons/fi';
 import {
   Zap,
   Wrench,
@@ -32,7 +33,10 @@ import {
   QrCode,
   MessageCircle,
   FileCheck,
-  Receipt
+  Receipt,
+  Sparkles,
+  Star,
+  CheckCircle2
 } from 'lucide-react';
 
 // ==========================================
@@ -42,10 +46,10 @@ import {
 const TRUST_BAR_ITEMS = [
   { icon: BsShieldCheck, label: 'Verified Experts' },
   { icon: DollarSign, label: 'Transparent Pricing' },
-  { icon: Clock, label: 'Same-Day Service' },
-  { icon: Lock, label: 'Secure Payments' },
-  { icon: Headphones, label: '24/7 Support' },
-  { icon: FileText, label: 'GST Billing' },
+  { icon: FiClock, label: 'Same-Day Service' },
+  { icon: FiLock, label: 'Secure Payments' },
+  { icon: FiHeadphones, label: '24/7 Support' },
+  { icon: FiFileText, label: 'GST Billing' },
 ];
 
 const SERVICE_CATEGORIES = [
@@ -146,7 +150,7 @@ const WHY_CHOOSE_US = [
   {
     title: 'Fast Response Guarantee',
     description: 'Get an executive callback in under 15 minutes with same-day slot allocation.',
-    icon: Clock,
+    icon: FiClock,
   },
   {
     title: '100% Satisfaction or Re-Service',
@@ -427,7 +431,7 @@ export default function HomeServiceLandingPage() {
                   className="absolute -bottom-6 right-6 bg-white/95 backdrop-blur-md p-4 rounded-xl border border-gray-200 shadow-xl hidden sm:flex items-center gap-3 z-20"
                 >
                   <div className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center text-[#F97316] shrink-0">
-                    <Clock className="w-6 h-6" />
+                    <FiClock className="w-6 h-6" />
                   </div>
                   <div>
                     <p className="text-xs font-bold text-gray-900">Estimated Arrival</p>
@@ -858,12 +862,12 @@ export default function HomeServiceLandingPage() {
             {[
               { title: 'Police Verified Staff', icon: BsShieldCheck, desc: 'Official background checks on all technicians.' },
               { title: 'Background Verification', icon: UserCheck, desc: 'Aadhaar & permanent address logged.' },
-              { title: 'GST Registered', icon: FileText, desc: 'Compliant tax invoices for all orders.' },
+              { title: 'GST Registered', icon: FiFileText, desc: 'Compliant tax invoices for all orders.' },
               { title: 'Invoice Provided', icon: Download, desc: 'Automated WhatsApp & Email PDF bills.' },
-              { title: 'Secure Online Payments', icon: Lock, desc: '256-bit encrypted Razorpay checkout.' },
+              { title: 'Secure Online Payments', icon: FiLock, desc: '256-bit encrypted Razorpay checkout.' },
               
               { title: 'Uniformed Professionals', icon: UserCheck, desc: 'Standardized ID badges & carrying toolkits.' },
-              { title: '24/7 Support Desk', icon: Headphones, desc: 'Dedicated helpline for booking queries.' },
+              { title: '24/7 Support Desk', icon: FiHeadphones, desc: 'Dedicated helpline for booking queries.' },
             ].map((item, idx) => (
               <div key={idx} className="p-6 bg-[#F8FAFC] rounded-2xl border border-[#E5E7EB] text-center space-y-2">
                 <item.icon className="w-8 h-8 text-[#2563EB] mx-auto mb-3" />

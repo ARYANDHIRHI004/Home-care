@@ -130,49 +130,7 @@ export default function AboutUsPage() {
       {/* ==========================================
           HEADER / NAVIGATION
       ========================================== */}
-      <header className="sticky top-0 z-50 bg-white/90 backdrop-blur-md border-b border-[#E5E7EB]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex justify-between items-center">
-          <Link href="/" className="flex items-center gap-2.5 group">
-            <div className="w-10 h-10 rounded-xl bg-[#2563EB] flex items-center justify-center text-white font-extrabold text-xl shadow-md shadow-blue-500/20 group-hover:scale-105 transition-transform">
-              HC
-            </div>
-            <div className="flex flex-col">
-              <span className="font-['Poppins',sans-serif] font-bold text-xl leading-none text-[#111827] tracking-tight">
-                HomeCare<span className="text-[#2563EB]">.</span>
-              </span>
-              <span className="text-[10px] font-semibold text-[#F97316] uppercase tracking-widest mt-0.5">
-                About Our Enterprise
-              </span>
-            </div>
-          </Link>
-
-          <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-[#111827]/80">
-            <Link href="/" className="hover:text-[#2563EB] transition-colors">Home</Link>
-            <Link href="/#services" className="hover:text-[#2563EB] transition-colors">Services</Link>
-            <Link href="/#pricing" className="hover:text-[#2563EB] transition-colors">Pricing</Link>
-            <Link href="/about" className="text-[#2563EB] font-bold">About Us</Link>
-            <Link href="/#faq" className="hover:text-[#2563EB] transition-colors">FAQ</Link>
-          </nav>
-
-          <div className="flex items-center gap-3">
-            <a
-              href="tel:+919876543210"
-              className="hidden sm:flex items-center gap-2 text-xs font-bold text-[#111827] hover:text-[#2563EB] px-3 py-2 transition-colors"
-            >
-              <PhoneCall className="w-4 h-4 text-[#2563EB]" />
-              <span>+91 98765 43210</span>
-            </a>
-            <Link
-              href="/#book"
-              className="inline-flex items-center gap-2 bg-[#2563EB] hover:bg-blue-700 text-white font-semibold text-sm px-5 py-2.5 rounded-xl shadow-md shadow-blue-500/20 transition-all duration-200 transform hover:-translate-y-0.5"
-            >
-              <span>Book Service</span>
-              <ArrowRight className="w-4 h-4" />
-            </Link>
-          </div>
-        </div>
-      </header>
-
+      
       <main className="w-full pb-20">
         {/* ==========================================
             1. HERO SECTION
