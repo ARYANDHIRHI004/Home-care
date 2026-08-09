@@ -1,6 +1,7 @@
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import StoreProvider from "../store/StoreProvider";
+import LenisProvider from "../components/LenisProvider";
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -31,10 +32,9 @@ export default function RootLayout({ children }) {
       <body className="min-h-full flex flex-col">
 
        <StoreProvider>
-
-        {children}
-       
-       
+         <LenisProvider>
+           {children}
+         </LenisProvider>
         </StoreProvider>
       </body>
 

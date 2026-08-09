@@ -192,18 +192,19 @@ export default function Footer() {
             <ul className="space-y-4">
               <li className="flex items-start gap-3">
                 <MapPin className="w-5 h-5 text-blue-500 shrink-0 mt-0.5" />
-                <span className="text-sm leading-relaxed text-slate-400">
-                  123 HomeCare Tower, Business Bay,<br />
-                  New Delhi, 110001, India
+                <span className="text-sm leading-relaxed text-slate-400 capitalize">
+                  Design consultant, krishna talkies Road Risali Bhilai,<br />
+                  Chhattisgarh, Durg, 490006, India
                 </span>
               </li>
               <li className="flex items-center gap-3">
                 <Phone className="w-5 h-5 text-blue-500 shrink-0" />
-                <a href="tel:+919876543210" className="text-sm text-slate-400 hover:text-blue-400 transition-colors">+91 98765 43210</a>
+                <a href="tel:+919111466642" className="text-sm text-slate-400 hover:text-blue-400 transition-colors">+91 91114 66642</a>
+                <a href="tel:+919111466640" className="text-sm text-slate-400 hover:text-blue-400 transition-colors">+91 91114 66640</a>
               </li>
               <li className="flex items-center gap-3">
                 <Mail className="w-5 h-5 text-blue-500 shrink-0" />
-                <a href="mailto:support@homecare.com" className="text-sm text-slate-400 hover:text-blue-400 transition-colors">support@homecare.com</a>
+                <a href="mailto:homecarre2405@gmail.com" className="text-sm text-slate-400 hover:text-blue-400 transition-colors">homecarre2405@gmail.com</a>
               </li>
               <li className="flex items-center gap-3">
                 <Clock className="w-5 h-5 text-blue-500 shrink-0" />
@@ -211,7 +212,7 @@ export default function Footer() {
               </li>
             </ul>
 
-            <a href="#" className="mt-6 inline-flex items-center gap-2 text-sm font-semibold text-blue-400 bg-blue-900/30 px-4 py-2 rounded-lg hover:bg-blue-900/50 hover:text-white transition-colors group">
+            <a target='blank' href="https://maps.google.com/maps?ll=21.158865,81.334907&z=12&t=m&hl=en&gl=IN&mapclient=embed&cid=15699827577564359829" className="mt-6 inline-flex items-center gap-2 text-sm font-semibold text-blue-400 bg-blue-900/30 px-4 py-2 rounded-lg hover:bg-blue-900/50 hover:text-white transition-colors group">
               <Map className="w-4 h-4" />
               View on Google Maps
             </a>
