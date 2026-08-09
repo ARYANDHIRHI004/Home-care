@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import Navbar from '../app/(website)/components/nav';
 import {
   Star,
   CheckCircle2,
@@ -298,55 +299,7 @@ export default function HomeServiceLandingPage() {
       {/* ==========================================
           1. STICKY NAVIGATION BAR
       ========================================== */}
-      <header
-        className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
-          isScrolled
-            ? 'bg-white/95 backdrop-blur-md shadow-sm border-b border-[#E5E7EB] py-3.5'
-            : 'bg-transparent py-5'
-        }`}
-      >
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 flex items-center justify-between">
-          {/* Logo */}
-          <a href="#" className="flex items-center gap-2.5 group">
-            <div className="w-10 h-10 rounded-xl bg-[#2563EB] flex items-center justify-center text-white font-extrabold text-xl shadow-md shadow-blue-500/20 group-hover:scale-105 transition-transform">
-              HC
-            </div>
-            <div className="flex flex-col">
-              <span className="font-['Poppins',sans-serif] font-bold text-xl leading-none text-[#111827] tracking-tight">
-                HomeCare<span className="text-[#2563EB]">.</span>
-              </span>
-              <span className="text-[10px] font-semibold text-[#F97316] uppercase tracking-widest mt-0.5">
-                Verified Services
-              </span>
-            </div>
-          </a>
-
-          {/* Navigation Items */}
-          <nav className="hidden md:flex items-center gap-8 text-sm font-medium text-[#111827]/80">
-            <a href="#" className="hover:text-[#2563EB] transition-colors">Home</a>
-            <a href="#services" className="hover:text-[#2563EB] transition-colors">Services</a>
-            <a href="#pricing" className="hover:text-[#2563EB] transition-colors">Pricing</a>
-            <a href="#about" className="hover:text-[#2563EB] transition-colors">About</a>
-            <a href="#faq" className="hover:text-[#2563EB] transition-colors">FAQ</a>
-            <a href="#contact" className="hover:text-[#2563EB] transition-colors">Contact</a>
-          </nav>
-
-          {/* Action CTAs */}
-          <div className="flex items-center gap-3">
-            <button className="hidden sm:inline-flex px-4 py-2 text-sm font-semibold text-[#111827] hover:text-[#2563EB] transition-colors">
-              Login
-            </button>
-            <a
-              href="#book"
-              className="inline-flex items-center gap-2 bg-[#2563EB] hover:bg-blue-700 text-white font-semibold text-sm px-5 py-2.5 rounded-xl shadow-md shadow-blue-500/20 hover:shadow-lg hover:shadow-blue-500/30 transition-all duration-200 transform hover:-translate-y-0.5"
-            >
-              <span>Book Service</span>
-              <ArrowRight className="w-4 h-4" />
-            </a>
-          </div>
-        </div>
-      </header>
-
+      <Navbar isScrolled={isScrolled} />
       {/* ==========================================
           2. HERO SECTION
       ========================================== */}
