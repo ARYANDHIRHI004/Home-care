@@ -4,8 +4,8 @@ import React from 'react';
 import Image from 'next/image';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
+import { BsShieldCheck } from 'react-icons/bs';
 import {
-  ShieldCheck,
   Target,
   Compass,
   HeartHandshake,
@@ -35,7 +35,7 @@ const CORE_VALUES = [
   {
     title: 'Uncompromised Safety',
     desc: 'Every technician undergoes mandatory Aadhaar verification and police background clearance before stepping into a home.',
-    icon: ShieldCheck,
+    icon: BsShieldCheck,
   },
   {
     title: 'Absolute Transparency',

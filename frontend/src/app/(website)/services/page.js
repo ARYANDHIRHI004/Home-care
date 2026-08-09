@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useMemo } from 'react';
+import { BsShieldCheck } from 'react-icons/bs';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
@@ -13,7 +14,6 @@ import {
   ChevronLeft,
   ChevronRight,
   ChevronDown,
-  ShieldCheck,
   CheckCircle2,
   PhoneCall,
   Sparkles,
@@ -30,7 +30,6 @@ import {
   Bug,
   Hammer
 } from 'lucide-react';
-import Navbar from '../components/nav';
 
 // ==========================================
 // MOCK DATA & CONFIGURATION
@@ -227,10 +226,6 @@ export default function ServicesPage() {
   return (
     <div className="min-h-screen bg-[#F8FAFC] text-[#0F172A] font-sans antialiased selection:bg-[#2563EB] selection:text-white">
       
-      {/* ==========================================
-          1. NAVIGATION HEADER
-      ========================================== */}
-    <Navbar isScrolled={false} />
       {/* ==========================================
           2. HERO SEARCH SECTION
       ========================================== */}
@@ -567,7 +562,7 @@ export default function ServicesPage() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
             <div className="flex flex-col items-center text-center space-y-2 p-4">
               <div className="w-14 h-14 rounded-2xl bg-blue-50 text-[#2563EB] flex items-center justify-center mb-2">
-                <ShieldCheck className="w-7 h-7" />
+                <BsShieldCheck className="w-7 h-7" />
               </div>
               <h3 className="font-bold text-base text-[#0F172A]">100% Background Verified</h3>
               <p className="text-xs text-slate-500 font-light leading-relaxed">

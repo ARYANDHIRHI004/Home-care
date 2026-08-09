@@ -43,17 +43,7 @@ export default function LoginPage() {
   return (
     <div>
       {/* Customer / Office toggle */}
-      <div className="flex mb-6 rounded-lg bg-[#F0F4FF] p-1">
-        <span className="flex-1 text-center py-2 rounded-md bg-white text-sm font-medium text-[#0F172A] shadow-sm">
-          Customer
-        </span>
-        <a
-          href="/login/office"
-          className="flex-1 text-center py-2 rounded-md text-sm font-medium text-[#0F172A]/60 hover:text-[#2554F0] transition-colors"
-        >
-          Office login
-        </a>
-      </div>
+      
 
       <h1
         className="text-2xl font-bold text-[#0F172A] mb-1"
