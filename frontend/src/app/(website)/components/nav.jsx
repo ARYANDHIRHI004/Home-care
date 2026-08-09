@@ -25,11 +25,10 @@ import {
 ───────────────────────────────────────────── */
 const NAV_LINKS = [
   { name: 'Home', href: '/' },
-  { name: 'Services', href: '#services' },
-  { name: 'About Us', href: '#about' },
-  { name: 'Pricing', href: '#pricing' },
-  { name: 'Contact', href: '#contact' },
-  { name: 'FAQ', href: '#faq' },
+  { name: 'Services', href: '/services' },
+  { name: 'About Us', href: '/about' },
+  { name: 'Contact', href: '/contact' },
+  { name: 'FAQ', href: '/faq' },
 ];
 
 /* ─────────────────────────────────────────────

@@ -2,16 +2,9 @@
 
 import React, { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import Navbar from '../app/(website)/components/nav';
+import { BsShieldCheck } from 'react-icons/bs';
+import { FiClock, FiLock, FiHeadphones, FiFileText } from 'react-icons/fi';
 import {
-  Star,
-  CheckCircle2,
-  ShieldCheck,
-  Clock,
-  CreditCard,
-  Headphones,
-  FileText,
-  Sparkles,
   Zap,
   Wrench,
   Paintbrush,
@@ -40,7 +33,10 @@ import {
   QrCode,
   MessageCircle,
   FileCheck,
-  Receipt
+  Receipt,
+  Sparkles,
+  Star,
+  CheckCircle2
 } from 'lucide-react';
 
 // ==========================================
@@ -48,12 +44,12 @@ import {
 // ==========================================
 
 const TRUST_BAR_ITEMS = [
-  { icon: ShieldCheck, label: 'Verified Experts' },
+  { icon: BsShieldCheck, label: 'Verified Experts' },
   { icon: DollarSign, label: 'Transparent Pricing' },
-  { icon: Clock, label: 'Same-Day Service' },
-  { icon: Lock, label: 'Secure Payments' },
-  { icon: Headphones, label: '24/7 Support' },
-  { icon: FileText, label: 'GST Billing' },
+  { icon: FiClock, label: 'Same-Day Service' },
+  { icon: FiLock, label: 'Secure Payments' },
+  { icon: FiHeadphones, label: '24/7 Support' },
+  { icon: FiFileText, label: 'GST Billing' },
 ];
 
 const SERVICE_CATEGORIES = [
@@ -154,7 +150,7 @@ const WHY_CHOOSE_US = [
   {
     title: 'Fast Response Guarantee',
     description: 'Get an executive callback in under 15 minutes with same-day slot allocation.',
-    icon: Clock,
+    icon: FiClock,
   },
   {
     title: '100% Satisfaction or Re-Service',
@@ -297,9 +293,8 @@ export default function HomeServiceLandingPage() {
   return (
     <div className="min-h-screen bg-white text-[#111827] font-['Inter',sans-serif] selection:bg-[#2563EB] selection:text-white">
       {/* ==========================================
-          1. STICKY NAVIGATION BAR
+          1. CONTENT
       ========================================== */}
-      <Navbar isScrolled={isScrolled} />
       {/* ==========================================
           2. HERO SECTION
       ========================================== */}
@@ -312,7 +307,7 @@ export default function HomeServiceLandingPage() {
             {/* Left Column: Heading & CTAs */}
             <div className="lg:col-span-7 space-y-8 text-center lg:text-left">
               <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-blue-100/80 border border-blue-200/60 text-[#2563EB] text-xs font-semibold">
-                <ShieldCheck className="w-4 h-4 text-[#2563EB]" />
+                <BsShieldCheck className="w-4 h-4 text-[#2563EB]" />
                 <span>Premier Home Service Management Platform</span>
               </div>
 
@@ -436,7 +431,7 @@ export default function HomeServiceLandingPage() {
                   className="absolute -bottom-6 right-6 bg-white/95 backdrop-blur-md p-4 rounded-xl border border-gray-200 shadow-xl hidden sm:flex items-center gap-3 z-20"
                 >
                   <div className="w-10 h-10 rounded-full bg-orange-100 flex items-center justify-center text-[#F97316] shrink-0">
-                    <Clock className="w-6 h-6" />
+                    <FiClock className="w-6 h-6" />
                   </div>
                   <div>
                     <p className="text-xs font-bold text-gray-900">Estimated Arrival</p>
@@ -783,7 +778,7 @@ export default function HomeServiceLandingPage() {
                 { step: '4', title: 'Professional Assigned', desc: 'Nearest verified technician is assigned automatically.', icon: UserCheck },
                 { step: '5', title: 'Live Service Execution', desc: 'Professional reaches the location and completes the service with real-time status updates.', icon: MapPin },
                 { step: '6', title: 'Digital Invoice & Payment', desc: 'Invoice is generated instantly. Customer pays via Cash, UPI or Online.', icon: Receipt },
-                { step: '7', title: 'Post Service Support', desc: 'Customer can raise complaints, request warranty service or leave a review.', icon: ShieldCheck }
+                { step: '7', title: 'Post Service Support', desc: 'Customer can raise complaints, request warranty service or leave a review.', icon: BsShieldCheck }
               ].map((step, idx) => (
                 <div key={idx} className="flex flex-row lg:flex-col items-start lg:items-center relative group">
                   {/* Timeline Node */}
@@ -865,14 +860,14 @@ export default function HomeServiceLandingPage() {
 
           <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
             {[
-              { title: 'Police Verified Staff', icon: ShieldCheck, desc: 'Official background checks on all technicians.' },
+              { title: 'Police Verified Staff', icon: BsShieldCheck, desc: 'Official background checks on all technicians.' },
               { title: 'Background Verification', icon: UserCheck, desc: 'Aadhaar & permanent address logged.' },
-              { title: 'GST Registered', icon: FileText, desc: 'Compliant tax invoices for all orders.' },
+              { title: 'GST Registered', icon: FiFileText, desc: 'Compliant tax invoices for all orders.' },
               { title: 'Invoice Provided', icon: Download, desc: 'Automated WhatsApp & Email PDF bills.' },
-              { title: 'Secure Online Payments', icon: Lock, desc: '256-bit encrypted Razorpay checkout.' },
+              { title: 'Secure Online Payments', icon: FiLock, desc: '256-bit encrypted Razorpay checkout.' },
               
               { title: 'Uniformed Professionals', icon: UserCheck, desc: 'Standardized ID badges & carrying toolkits.' },
-              { title: '24/7 Support Desk', icon: Headphones, desc: 'Dedicated helpline for booking queries.' },
+              { title: '24/7 Support Desk', icon: FiHeadphones, desc: 'Dedicated helpline for booking queries.' },
             ].map((item, idx) => (
               <div key={idx} className="p-6 bg-[#F8FAFC] rounded-2xl border border-[#E5E7EB] text-center space-y-2">
                 <item.icon className="w-8 h-8 text-[#2563EB] mx-auto mb-3" />
@@ -1003,75 +998,6 @@ export default function HomeServiceLandingPage() {
         </div>
       </section>
 
-      {/* ==========================================
-          16. FOOTER
-      ========================================== */}
-      <footer id="contact" className="bg-[#111827] text-white pt-16 pb-12 border-t border-gray-800">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-10 pb-12 border-b border-gray-800">
-            {/* Col 1: Brand Info */}
-            <div className="lg:col-span-2 space-y-4">
-              <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-[#2563EB] flex items-center justify-center text-white font-bold text-lg">
-                  HC
-                </div>
-                <span className="font-['Poppins',sans-serif] font-bold text-xl text-white">
-                  HomeCare<span className="text-[#2563EB]">.</span>
-                </span>
-              </div>
-              <p className="text-xs text-gray-400 max-w-sm leading-relaxed">
-                Centralized Home Care Management Platform enabling seamless service booking, verified technicians, and digital invoicing across regional India.
-              </p>
-              <div className="pt-2">
-                <p className="text-xs font-bold text-gray-300">GST Registration No:</p>
-                <p className="text-xs font-mono text-gray-400">22AAAAA0000A1Z5</p>
-              </div>
-            </div>
-
-            {/* Col 2: Company */}
-            <div className="space-y-3">
-              <h4 className="font-['Poppins',sans-serif] font-bold text-sm text-white uppercase tracking-wider">Company</h4>
-              <ul className="space-y-2 text-xs text-gray-400 font-medium">
-                <li><a href="#" className="hover:text-white transition-colors">About Us</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">How It Works</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Partner With Us</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Careers</a></li>
-              </ul>
-            </div>
-
-            {/* Col 3: Services */}
-            <div className="space-y-3">
-              <h4 className="font-['Poppins',sans-serif] font-bold text-sm text-white uppercase tracking-wider">Services</h4>
-              <ul className="space-y-2 text-xs text-gray-400 font-medium">
-                <li><a href="#" className="hover:text-white transition-colors">Home Deep Cleaning</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">AC Repair & Jet Clean</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Electrical Services</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">Plumbing Solutions</a></li>
-                <li><a href="#" className="hover:text-white transition-colors">House Painting</a></li>
-              </ul>
-            </div>
-
-            {/* Col 4: Contact */}
-            <div className="space-y-3">
-              <h4 className="font-['Poppins',sans-serif] font-bold text-sm text-white uppercase tracking-wider">Contact Us</h4>
-              <div className="space-y-2 text-xs text-gray-400">
-                <p className="flex items-center gap-2"><MapPin className="w-4 h-4 text-[#2563EB]" /> Civic Centre, Bhilai, CG - 490006</p>
-                <p className="flex items-center gap-2"><Phone className="w-4 h-4 text-[#2563EB]" /> +91 98765 43210</p>
-                <p className="flex items-center gap-2"><Headphones className="w-4 h-4 text-[#2563EB]" /> support@homecare.in</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-gray-500">
-            <p>© 2026 Home Care Management Platform. All rights reserved.</p>
-            <div className="flex gap-6">
-              <a href="#" className="hover:text-gray-300">Privacy Policy</a>
-              <a href="#" className="hover:text-gray-300">Terms of Service</a>
-              <a href="#" className="hover:text-gray-300">Refund Policy</a>
-            </div>
-          </div>
-        </div>
-      </footer>
     </div>
   );
 }
