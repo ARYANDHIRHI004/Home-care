@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import GoogleButton from '@/components/auth/GoogleButton';
+import { loginWithGoogle } from '@/lib/sign-in';
 
 export default function LoginPage() {
   const router = useRouter();
@@ -35,9 +36,8 @@ export default function LoginPage() {
     }
   }
 
-  function handleGoogleLogin() {
-    // TODO: wire up to your OAuth provider, e.g. signIn('google', { callbackUrl: '/login/register' })
-    window.location.href = '/api/auth/google';
+  async function  handleGoogleLogin() {
+    loginWithGoogle();
   }
 
   return (
