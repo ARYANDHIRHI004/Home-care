@@ -4,7 +4,7 @@ import { mongodbAdapter } from "better-auth/adapters/mongodb";
 import { env } from "./env.js";
 
 const client = new MongoClient(env.MONGO_URI);
-const db = client.db();         // The DB instance
+export const db = client.db();
 
 export const auth = betterAuth({
     baseURL: env.BETTER_AUTH_URL,
@@ -13,10 +13,22 @@ export const auth = betterAuth({
     database: mongodbAdapter(db, {
         client,
     }),
+    emailAndPassword: {
+        enabled: true,
+    },
     socialProviders: {
         google: {
             clientId: env.GOOGLE_CLIENT_ID,
             clientSecret: env.GOOGLE_CLIENT_SECRET,
-        }
+        },
+    },
+    user: {
+        additionalFields: {
+            role: {
+                type: "string",
+                defaultValue: "customer",
+                required: false,
+            },
+        },
     },
 });

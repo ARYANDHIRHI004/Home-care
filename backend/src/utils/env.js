@@ -5,7 +5,7 @@ dotenv.config({
 });
 
 export const env = {
-    PORT: process.env.PORT ?? 3000,
+    PORT: process.env.PORT ?? 5000,
     MONGO_URI: process.env.MONGO_URI,
     BETTER_AUTH_SECRET: process.env.BETTER_AUTH_SECRET,
     BETTER_AUTH_URL: process.env.BETTER_AUTH_URL,
