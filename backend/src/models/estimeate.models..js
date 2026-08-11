@@ -1,4 +1,4 @@
-const mongoose = require("mongoose");
+import mongoose from "mongoose";
 
 const lineItemSchema = new mongoose.Schema(
   {
@@ -109,4 +109,4 @@ const estimateSchema = new mongoose.Schema(
   }
 );
 
-module.exports = mongoose.model("Estimate", estimateSchema);
+export const Estimate = mongoose.model("Estimate", estimateSchema);

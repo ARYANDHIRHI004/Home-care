@@ -1,4 +1,4 @@
-const mongoose = require("mongoose");
+import mongoose from "mongoose";
 
 const addressSchema = new mongoose.Schema(
   {
@@ -115,4 +115,4 @@ customerSchema.index({
   "addresses.location": "2dsphere",
 });
 
-module.exports = mongoose.model("Customer", customerSchema);
+export const Customer = mongoose.model("Customer", customerSchema);
