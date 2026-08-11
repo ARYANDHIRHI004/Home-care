@@ -6,7 +6,8 @@ import {
   Clock, Phone, MessageCircle, FileText, 
   UserCheck, CheckCircle2, AlertCircle, Calendar, XCircle, RefreshCcw, 
   Zap, Check, PhoneCall, Mail, HelpCircle, Wallet, ThumbsUp, CreditCard, 
-  User, HeartHandshake, ArrowDown
+  User, HeartHandshake, ArrowDown,
+  ArrowRight
 } from 'lucide-react';
 import { FaWhatsapp } from 'react-icons/fa6';
 import { BsShieldCheck, BsHeadset } from 'react-icons/bs';

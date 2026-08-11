@@ -75,15 +75,17 @@ export default function Navbar() {
 
           {/* LOGO */}
           <Link href="/" className="flex items-center gap-3 shrink-0 group">
-            <div className="w-9 h-9 rounded-xl bg-blue-600 flex items-center justify-center shadow-md shadow-blue-500/25 group-hover:scale-105 transition-transform duration-200">
-              <Sparkles className="w-4 h-4 text-white" />
-            </div>
+            <img
+              src="/logo.png"
+              alt="HomeCare Logo"
+              className="w-14 h-14 rounded-lg shadow shadow-blue-500/20 group-hover:scale-105 transition-transform duration-200"
+            />
             <div className="flex flex-col leading-none">
               <span className="text-lg font-extrabold tracking-tight text-slate-900">
                 HomeCare<span className="text-blue-600">.</span>
               </span>
               <span className="text-[9px] font-semibold tracking-widest text-amber-500 uppercase mt-0.5">
-                Verified Services
+                Complete Home Solution
               </span>
             </div>
           </Link>
