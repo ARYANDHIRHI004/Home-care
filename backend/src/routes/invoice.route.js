@@ -1,0 +1,16 @@
+import { Router } from "express";
+import * as controller from "../controllers/invoice.controller.js";
+import { requireAuth } from "../middleware/auth.middleware.js";
+import { requirePermission } from "../middleware/permission.middleware.js";
+import { PERMISSIONS as P } from "../constants/permissions.js";
+
+const router = Router();
+router.use(requireAuth);
+router.post("/", requirePermission(P.INVOICE_CREATE), controller.createInvoice);
+router.get("/", requirePermission(P.INVOICE_READ), controller.getInvoices);
+router.get("/:id", requirePermission(P.INVOICE_READ), controller.getInvoiceById);
+router.patch("/:id", requirePermission(P.INVOICE_UPDATE), controller.updateInvoice);
+router.patch("/:id/payment-status", requirePermission(P.INVOICE_UPDATE), controller.updatePaymentStatus);
+router.patch("/:id/whatsapp-sent", requirePermission(P.INVOICE_UPDATE), controller.markWhatsAppSent);
+router.delete("/:id", requirePermission(P.INVOICE_DELETE), controller.deleteInvoice);
+export default router;

@@ -76,7 +76,7 @@ conversationSchema.index(
 conversationSchema.index({ status: 1 });
 conversationSchema.index({ customerId: 1 });
 
-module.exports = mongoose.model(
+export const Conversation = mongoose.model(
   "Conversation",
   conversationSchema
 );

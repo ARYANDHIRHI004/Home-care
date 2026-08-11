@@ -1,4 +1,4 @@
-const mongoose = require("mongoose");
+import mongoose from "mongoose";
 
 const timelineSchema = new mongoose.Schema(
   {
@@ -109,4 +109,4 @@ const ticketSchema = new mongoose.Schema(
   }
 );
 
-module.exports = mongoose.model("Ticket", ticketSchema);
+export const Ticket = mongoose.model("Ticket", ticketSchema);

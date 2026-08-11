@@ -1,4 +1,4 @@
-const mongoose = require("mongoose");
+import mongoose from "mongoose";
 
 const internalNoteSchema = new mongoose.Schema(
   {
@@ -87,4 +87,4 @@ enquirySchema.index({ status: 1, source: 1 });
 enquirySchema.index({ customerId: 1 });
 enquirySchema.index({ createdAt: -1 });
 
-module.exports = mongoose.model("Enquiry", enquirySchema);
+export const Enquiry = mongoose.model("Enquiry", enquirySchema);
