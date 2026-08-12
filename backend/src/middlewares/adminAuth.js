@@ -1,5 +1,5 @@
 import { auth } from "../utils/auth.js";
-import ApiError from "../utils/apiError.js";
+import { ApiError } from "../utils/api-error.js";
 
 
 const adminAuth = async (req, res, next) => {

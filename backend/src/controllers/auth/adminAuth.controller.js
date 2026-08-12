@@ -1,10 +1,13 @@
 import { auth } from "../../utils/auth.js";
-import asyncHandler from "../../utils/asyncHandler.js";
-import ApiError from "../../utils/apiError.js";
-import ApiResponse from "../../utils/apiResponse.js";
+import { asyncHandler } from "../../utils/async-handler.js";
+import { ApiError } from "../../utils/api-error.js";
+import { sendSuccess } from "../../utils/response.js";
 
 export const adminLogin = asyncHandler(async (req, res) => {
     const { email, password } = req.body;
+
+    console.log(req.body);
+    
 
     if (!email || !password) {
         throw new ApiError(400, "Email and password are required.");
@@ -31,19 +34,17 @@ export const adminLogin = asyncHandler(async (req, res) => {
         res.setHeader("Set-Cookie", setCookie);
     }
 
-    return res.status(200).json(
-        new ApiResponse(200, "Admin logged in successfully.", {
-            user: {
-                id: data.user.id,
-                name: data.user.name,
-                email: data.user.email,
-                role: data.user.role,
-                image: data.user.image ?? null,
-                createdAt: data.user.createdAt,
-            },
-            token: data.token ?? null,
-        })
-    );
+    return sendSuccess(res, {
+        user: {
+            id: data.user.id,
+            name: data.user.name,
+            email: data.user.email,
+            role: data.user.role,
+            image: data.user.image ?? null,
+            createdAt: data.user.createdAt,
+        },
+        token: data.token ?? null,
+    }, 200);
 });
 
 export const adminLogout = asyncHandler(async (req, res) => {
@@ -56,20 +57,16 @@ export const adminLogout = asyncHandler(async (req, res) => {
     if (setCookie) {
         res.setHeader("Set-Cookie", setCookie);
     }
-    return res.status(200).json(
-        new ApiResponse(200, "Admin logged out successfully.", null)
-    );
+    return sendSuccess(res, null, 200);
 });
 
 export const getAdminProfile = asyncHandler(async (req, res) => {
-    return res.status(200).json(
-        new ApiResponse(200, "Admin profile fetched.", {
-            id: req.admin.id,
-            name: req.admin.name,
-            email: req.admin.email,
-            role: req.admin.role,
-            image: req.admin.image ?? null,
-            createdAt: req.admin.createdAt,
-        })
-    );
+    return sendSuccess(res, {
+        id: req.admin.id,
+        name: req.admin.name,
+        email: req.admin.email,
+        role: req.admin.role,
+        image: req.admin.image ?? null,
+        createdAt: req.admin.createdAt,
+    }, 200);
 });

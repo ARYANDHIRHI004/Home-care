@@ -13,6 +13,7 @@
   "type": "module",
   "dependencies": {
     "@better-auth/mongo-adapter": "^1.6.26",
+    "bcrypt": "^6.0.0",
     "better-auth": "^1.6.26",
     "cors": "^2.8.6",
     "dotenv": "^17.4.2",
