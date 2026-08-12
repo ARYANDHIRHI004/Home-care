@@ -1,4 +1,4 @@
-import { ROLES } from "../enums/role.enum.js";
+import { ROLES } from "../enum/role.enum.js";
 
 const normalizeRoles = (role) => {
   if (!role) return [];
