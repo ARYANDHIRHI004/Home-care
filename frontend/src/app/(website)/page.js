@@ -376,7 +376,7 @@ export default function HomeServiceLandingPage() {
                 {/* Main Hero Card Container */}
                 <div className="relative rounded-2xl overflow-hidden shadow-2xl border border-gray-200/80 bg-white">
                   <img
-                    src="https://images.unsplash.com/photo-1581578731548-c64695cc6952?auto=format&fit=crop&q=80&w=800"
+                    src="https://ik.imagekit.io/bs0ovnamh/heroImage"
                     alt="Home Service Professional"
                     className="w-full h-[460px] object-cover object-center"
                   />
@@ -564,53 +564,147 @@ export default function HomeServiceLandingPage() {
       {/* ==========================================
           6. HOW IT WORKS (TIMELINE)
       ========================================== */}
-      <section className="py-24 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-3xl mx-auto space-y-4 mb-16">
-            <span className="text-xs font-bold uppercase tracking-widest text-[#2563EB] bg-blue-50 px-3.5 py-1.5 rounded-full border border-blue-100">
-              Simple 5-Step Journey
-            </span>
-            <h2 className="font-['Poppins',sans-serif] text-3xl sm:text-4xl font-bold text-[#111827]">
-              How Your Booking Works
-            </h2>
-            <p className="text-base text-gray-600">
-              From enquiry to digital invoice, enjoy a completely managed service lifecycle.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-5 gap-6 relative">
-            {PROCESS_STEPS.map((step, idx) => (
-              <div key={idx} className="flex flex-col items-center text-center relative z-10">
-                <div className="w-14 h-14 rounded-2xl bg-[#2563EB] text-white font-['Poppins',sans-serif] font-extrabold text-lg flex items-center justify-center shadow-md shadow-blue-500/20 mb-4">
-                  {step.step}
-                </div>
-                <h3 className="font-['Poppins',sans-serif] font-bold text-base text-[#111827] mb-1">
-                  {step.title}
-                </h3>
-                <p className="text-xs text-gray-500 leading-relaxed max-w-[200px]">
-                  {step.desc}
-                </p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
+    
       {/* ==========================================
-          7. ANIMATED STATISTICS
+          7. HOMECARE SERVICE STANDARDS
       ========================================== */}
-      <section className="py-16 bg-[#2563EB] text-white relative overflow-hidden">
+      <section className="py-24 bg-[#2563EB] text-white relative overflow-hidden">
+        {/* Subtle Background Gradients & Glows */}
+        <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-blue-400/30 rounded-full mix-blend-overlay filter blur-[100px] animate-pulse" style={{ animationDuration: '4s' }} />
+        <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-indigo-500/30 rounded-full mix-blend-overlay filter blur-[120px] animate-pulse" style={{ animationDuration: '6s' }} />
+
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          <div className="grid grid-cols-2 md:grid-cols-5 gap-8 text-center">
-            {STATS.map((stat, idx) => (
-              <div key={idx} className="space-y-1">
-                <div className="font-['Poppins',sans-serif] font-extrabold text-3xl sm:text-4xl lg:text-5xl text-white">
-                  {stat.value.toLocaleString()}{stat.suffix}
+          
+          {/* Section Header */}
+          <div className="text-center max-w-3xl mx-auto space-y-5 mb-16">
+            <motion.div 
+              initial={{ opacity: 0, y: 20 }} 
+              whileInView={{ opacity: 1, y: 0 }} 
+              viewport={{ once: true }}
+              className="inline-flex items-center justify-center"
+            >
+              <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-blue-100 bg-white/10 backdrop-blur-md px-4 py-2 rounded-full border border-white/20 shadow-[0_0_15px_rgba(255,255,255,0.1)]">
+                Our Service Standards
+              </span>
+            </motion.div>
+            <motion.h2 
+              initial={{ opacity: 0, y: 20 }} 
+              whileInView={{ opacity: 1, y: 0 }} 
+              viewport={{ once: true }}
+              transition={{ delay: 0.1 }}
+              className="font-['Poppins',sans-serif] text-3xl sm:text-4xl md:text-5xl font-bold text-white tracking-tight leading-[1.15]"
+            >
+              Every Service Follows<br className="hidden sm:block" /> The Same Professional Standard
+            </motion.h2>
+            <motion.p 
+              initial={{ opacity: 0, y: 20 }} 
+              whileInView={{ opacity: 1, y: 0 }} 
+              viewport={{ once: true }}
+              transition={{ delay: 0.2 }}
+              className="text-base sm:text-lg text-blue-100/90 font-light max-w-2xl mx-auto leading-relaxed"
+            >
+              Every HomeCare booking follows a standardized operating process to ensure transparency, professionalism and complete customer satisfaction.
+            </motion.p>
+          </div>
+
+          {/* Premium Cards Grid */}
+          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6 mb-24">
+            {[
+              { title: 'Verified Professionals', desc: 'Background & Identity Verified', icon: BsShieldCheck },
+              { title: 'Official Estimate', desc: 'Transparent pricing before work begins', icon: FiFileText },
+              { title: 'Live Service Updates', desc: 'Real-time WhatsApp booking notifications', icon: Smartphone },
+              { title: 'Digital GST Invoice', desc: 'Professional digital billing after completion', icon: Receipt },
+              { title: 'Dedicated Customer Support', desc: 'Support before, during and after service', icon: FiHeadphones }
+            ].map((card, idx) => (
+              <motion.div
+                key={idx}
+                initial={{ opacity: 0, y: 30 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true }}
+                transition={{ delay: idx * 0.1 + 0.3, duration: 0.5, ease: "easeOut" }}
+                whileHover={{ y: -8, scale: 1.02 }}
+                className="group relative bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-6 text-left hover:bg-white/15 transition-all duration-300 shadow-[0_8px_32px_rgba(0,0,0,0.1)] overflow-hidden"
+              >
+                {/* Glass reflection effect on hover */}
+                <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-2xl pointer-events-none" />
+                
+                <div className="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center mb-5 border border-white/30 group-hover:scale-110 transition-transform duration-300">
+                  <card.icon className="w-6 h-6 text-white" />
                 </div>
-                <p className="text-xs sm:text-sm font-medium text-blue-100">{stat.label}</p>
-              </div>
+                <h3 className="font-['Poppins',sans-serif] font-bold text-lg text-white mb-2 leading-snug">
+                  {card.title}
+                </h3>
+                <p className="text-sm text-blue-100/80 font-normal leading-relaxed">
+                  {card.desc}
+                </p>
+              </motion.div>
             ))}
           </div>
+
+          {/* Horizontal/Vertical Timeline */}
+          <div className="max-w-6xl mx-auto">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              whileInView={{ opacity: 1 }}
+              viewport={{ once: true }}
+              className="text-center mb-12"
+            >
+              <h3 className="text-sm font-bold uppercase tracking-widest text-white/90">HomeCare Service Process</h3>
+            </motion.div>
+
+            <div className="relative">
+              {/* Connecting Line Desktop */}
+              <div className="hidden lg:block absolute top-5 left-0 w-full h-0.5 bg-white/10 rounded-full overflow-hidden">
+                 <motion.div 
+                   initial={{ scaleX: 0 }}
+                   whileInView={{ scaleX: 1 }}
+                   viewport={{ once: true }}
+                   transition={{ duration: 1.5, ease: "easeInOut" }}
+                   className="w-full h-full bg-gradient-to-r from-blue-300 via-white to-blue-300 origin-left"
+                 />
+              </div>
+
+              {/* Connecting Line Mobile/Tablet */}
+              <div className="block lg:hidden absolute left-[19px] top-4 bottom-4 w-0.5 bg-white/10 rounded-full overflow-hidden">
+                <motion.div 
+                   initial={{ scaleY: 0 }}
+                   whileInView={{ scaleY: 1 }}
+                   viewport={{ once: true }}
+                   transition={{ duration: 1.5, ease: "easeInOut" }}
+                   className="w-full h-full bg-gradient-to-b from-blue-300 via-white to-blue-300 origin-top"
+                 />
+              </div>
+
+              <div className="flex flex-col lg:flex-row justify-between relative z-10 gap-8 lg:gap-2">
+                {[
+                  'Service Request',
+                  'Requirement Review',
+                  'Official Estimate',
+                  'Professional Assignment',
+                  'Service Completion',
+                  'Digital Invoice',
+                  'Post-Service Support'
+                ].map((step, idx) => (
+                  <motion.div
+                    key={idx}
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    viewport={{ once: true }}
+                    transition={{ delay: 0.5 + (idx * 0.1) }}
+                    className="flex lg:flex-col items-center gap-4 lg:gap-4 group"
+                  >
+                    <div className="w-10 h-10 rounded-full bg-[#2563EB] border-4 border-white/20 flex items-center justify-center shrink-0 group-hover:border-white/50 group-hover:bg-white transition-all duration-300">
+                      <div className="w-2.5 h-2.5 rounded-full bg-white group-hover:bg-[#2563EB] transition-colors shadow-[0_0_10px_rgba(255,255,255,0.8)]" />
+                    </div>
+                    <span className="text-sm font-semibold text-blue-100 group-hover:text-white transition-colors lg:text-center lg:max-w-[120px] leading-tight">
+                      {step}
+                    </span>
+                  </motion.div>
+                ))}
+              </div>
+            </div>
+          </div>
+
         </div>
       </section>
 
@@ -730,119 +824,7 @@ export default function HomeServiceLandingPage() {
       {/* ==========================================
           10. COMPANY PROCESS INFOGRAPHIC
       ========================================== */}
-      <section className="py-24 bg-white relative overflow-hidden">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-3xl mx-auto space-y-4 mb-24">
-            <span className="text-xs font-bold uppercase tracking-widest text-[#2563EB] bg-blue-50 px-3.5 py-1.5 rounded-full border border-blue-100">
-              END-TO-END SERVICE PROCESS
-            </span>
-            <h2 className="font-['Poppins',sans-serif] text-3xl sm:text-4xl font-bold text-[#111827]">
-              How Your Service Request Becomes a Completed Job
-            </h2>
-            <p className="text-base text-gray-600">
-              From your first enquiry to the final invoice, every step is professionally managed to ensure a seamless and transparent experience.
-            </p>
-          </div>
-
-          {/* Timeline Container */}
-          <div className="relative mb-24">
-            {/* Background Line (Desktop) */}
-            <div className="hidden lg:block absolute top-8 left-8 right-8 h-[2px] bg-gray-100 z-0" />
-            {/* Animated Line (Desktop) */}
-            <motion.div 
-              className="hidden lg:block absolute top-8 left-8 h-[2px] bg-gradient-to-r from-blue-300 via-[#2563EB] to-orange-400 origin-left z-0"
-              initial={{ scaleX: 0 }}
-              whileInView={{ scaleX: 1 }}
-              viewport={{ once: true, margin: "-100px" }}
-              transition={{ duration: 1.5, ease: "easeInOut" }}
-              style={{ width: 'calc(100% - 4rem)' }}
-            />
-            
-            {/* Background Line (Mobile/Tablet) */}
-            <div className="block lg:hidden absolute top-8 left-7 bottom-8 w-[2px] bg-gray-100 z-0" />
-            {/* Animated Line (Mobile/Tablet) */}
-            <motion.div 
-              className="block lg:hidden absolute top-8 left-7 w-[2px] bg-gradient-to-b from-blue-300 via-[#2563EB] to-orange-400 origin-top z-0"
-              initial={{ scaleY: 0 }}
-              whileInView={{ scaleY: 1 }}
-              viewport={{ once: true, margin: "-100px" }}
-              transition={{ duration: 1.5, ease: "easeInOut" }}
-              style={{ height: 'calc(100% - 4rem)' }}
-            />
-
-            <div className="grid grid-cols-1 lg:grid-cols-7 gap-12 lg:gap-4 relative z-10">
-              {[
-                { step: '1', title: 'Customer Enquiry', desc: 'Customer submits a request through Website, Call, WhatsApp, Facebook or Instagram.', icon: MessageCircle },
-                { step: '2', title: 'Requirement Discussion', desc: 'Customer Support contacts the customer, understands the requirement and prepares an estimate.', icon: Phone },
-                { step: '3', title: 'Estimate Approval', desc: 'Official quotation is shared. Customer confirms booking.', icon: FileCheck },
-                { step: '4', title: 'Professional Assigned', desc: 'Nearest verified technician is assigned automatically.', icon: UserCheck },
-                { step: '5', title: 'Live Service Execution', desc: 'Professional reaches the location and completes the service with real-time status updates.', icon: MapPin },
-                { step: '6', title: 'Digital Invoice & Payment', desc: 'Invoice is generated instantly. Customer pays via Cash, UPI or Online.', icon: Receipt },
-                { step: '7', title: 'Post Service Support', desc: 'Customer can raise complaints, request warranty service or leave a review.', icon: BsShieldCheck }
-              ].map((step, idx) => (
-                <div key={idx} className="flex flex-row lg:flex-col items-start lg:items-center relative group">
-                  {/* Timeline Node */}
-                  <motion.div
-                    initial={{ scale: 0 }}
-                    whileInView={{ scale: 1 }}
-                    viewport={{ once: true, margin: "-50px" }}
-                    transition={{ delay: idx * 0.15, type: "spring", stiffness: 200, damping: 15 }}
-                    whileHover={{ scale: 1.1 }}
-                    className="w-14 h-14 lg:w-16 lg:h-16 shrink-0 lg:mx-auto rounded-full bg-white border-4 border-gray-50 flex items-center justify-center shadow-md shadow-gray-200/50 group-hover:border-blue-50 group-hover:shadow-[0_0_25px_rgba(37,99,235,0.25)] transition-all duration-300 relative z-10"
-                  >
-                    <step.icon className="w-5 h-5 lg:w-6 lg:h-6 text-[#2563EB] group-hover:text-[#F97316] transition-colors duration-300" />
-                  </motion.div>
-
-                  {/* Content */}
-                  <motion.div
-                    initial={{ opacity: 0, y: 20 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true, margin: "-50px" }}
-                    transition={{ delay: 0.3 + (idx * 0.1), duration: 0.5 }}
-                    className="ml-6 lg:ml-0 lg:mt-6 lg:text-center pt-1 lg:pt-0"
-                  >
-                    <div className="text-[10px] font-bold text-gray-400 tracking-widest mb-1 lg:mb-1.5 uppercase">Step {step.step}</div>
-                    <h3 className="font-['Poppins',sans-serif] font-bold text-sm text-[#111827] mb-1.5 lg:mb-2 leading-snug group-hover:text-[#2563EB] transition-colors">{step.title}</h3>
-                    <p className="text-xs text-gray-500 leading-relaxed lg:max-w-[140px] mx-auto">
-                      {step.desc}
-                    </p>
-                  </motion.div>
-                </div>
-              ))}
-            </div>
-          </div>
-
-          {/* Bottom Trust Bar */}
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 max-w-6xl mx-auto pt-8 border-t border-gray-100">
-            {[
-              { title: 'Verified Professionals', desc: 'Background verified experts for every service.' },
-              { title: 'Transparent Pricing', desc: 'No hidden charges.' },
-              { title: 'GST Invoice', desc: 'Professional digital invoices.' },
-              { title: 'Secure Payments', desc: 'UPI, Cards and Cash accepted.' },
-              { title: 'Live Booking Updates', desc: 'Track every stage of your booking.' },
-              { title: 'Dedicated Customer Support', desc: 'Quick assistance before and after service.' },
-            ].map((trust, idx) => (
-              <motion.div 
-                key={idx}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: idx * 0.1, duration: 0.5 }}
-                className="bg-[#F8FAFC] border border-[#E5E7EB] rounded-2xl p-5 flex items-start gap-4 hover:shadow-lg transition-shadow duration-300 group"
-              >
-                <div className="w-8 h-8 rounded-full bg-blue-100 text-[#2563EB] flex items-center justify-center shrink-0 mt-0.5 group-hover:bg-[#2563EB] group-hover:text-white transition-colors duration-300">
-                  <Check className="w-4 h-4" />
-                </div>
-                <div>
-                  <h4 className="font-['Poppins',sans-serif] font-bold text-sm text-[#111827] mb-1">{trust.title}</h4>
-                  <p className="text-xs text-gray-600 leading-relaxed">{trust.desc}</p>
-                </div>
-              </motion.div>
-            ))}
-          </div>
-        </div>
-      </section>
-
+   
       
       {/* ==========================================
           12. TRUST & SAFETY (LARGE SECTION)
