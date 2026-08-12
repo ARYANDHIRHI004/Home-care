@@ -1,5 +1,5 @@
-import Ticket from "../models/ticket.model.js";
-import Enquiry from "../models/enquiry.model.js";
+import {Ticket} from "../models/ticket.models.js";
+import {Enquiry} from "../models/enquiry.models.js";
 
 const generateTicketNumber = () => {
   const year = new Date().getFullYear();

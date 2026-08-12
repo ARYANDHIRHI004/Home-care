@@ -1,4 +1,4 @@
-import Estimate from "../models/estimate.model.js";
+import {Estimate} from "../models/estimate.models.js";
 
 const calculateTotal = (lineItems = [], visitCharges = 0, discount = 0) => {
   const subtotal = lineItems.reduce(

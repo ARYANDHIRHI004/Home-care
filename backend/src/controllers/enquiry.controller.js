@@ -1,5 +1,5 @@
-import Enquiry from "../models/enquiry.model.js";
-import Customer from "../models/customer.model.js";
+import {Enquiry} from "../models/enquiry.models.js";
+import {Customer} from "../models/customer.models.js";
 
 export const createEnquiry = async (req, res) => {
   try {
