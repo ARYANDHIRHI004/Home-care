@@ -1,10 +1,10 @@
-import { X, Phone, MessageCircle, UserCog, Ticket, CheckCircle2, XCircle, Calendar, User, Package, Wrench, Image, StickyNote, History, ChevronRight, Send } from 'lucide-react';
+import { X, Phone, MessageCircle, UserCog, CheckCircle2, XCircle, Calendar, User, Package, Wrench, Image, StickyNote, History, ChevronRight, Send } from 'lucide-react';
 import { useState } from 'react';
 
 const timeline = [
     { label: 'Complaint Submitted', date: 'Nov 04, 10:12 AM', done: true, color: 'bg-blue-500' },
     { label: 'Complaint Reviewed', date: 'Nov 04, 11:30 AM', done: true, color: 'bg-indigo-500' },
-    { label: 'Ticket Created', date: 'Nov 04, 12:00 PM', done: true, color: 'bg-violet-500' },
+    { label: 'Re-service Work Order Created', date: 'Nov 04, 12:00 PM', done: true, color: 'bg-violet-500' },
     { label: 'Assigned to Manager', date: 'Nov 04, 01:15 PM', done: false, color: 'bg-amber-400' },
     { label: 'Work Started', date: '—', done: false, color: 'bg-slate-300' },
     { label: 'Resolved', date: '—', done: false, color: 'bg-emerald-400' },
@@ -75,8 +75,14 @@ export default function ComplaintDrawer({ complaint, isOpen, onClose }) {
                     <button className="flex items-center gap-1.5 px-3 py-1.5 bg-blue-600 text-white rounded-lg text-xs font-medium hover:bg-blue-700 transition-colors whitespace-nowrap flex-shrink-0">
                         <UserCog className="w-3.5 h-3.5" /> Assign
                     </button>
+                    {/* "Create Ticket" replaced — a generic support ticket doesn't map to
+                        anything else in this system. What actually resolves a service
+                        complaint operationally is a new Work Order (e.g. the 7-day
+                        re-service warranty), which is the real, trackable unit this ERP
+                        already uses everywhere else. isReservice/parentComplaintId on
+                        that new work order is what links it back to this complaint. */}
                     <button className="flex items-center gap-1.5 px-3 py-1.5 bg-violet-600 text-white rounded-lg text-xs font-medium hover:bg-violet-700 transition-colors whitespace-nowrap flex-shrink-0">
-                        <Ticket className="w-3.5 h-3.5" /> Create Ticket
+                        <Wrench className="w-3.5 h-3.5" /> Create Re-service Work Order
                     </button>
                     <button className="flex items-center gap-1.5 px-3 py-1.5 border border-slate-200 bg-white text-slate-700 rounded-lg text-xs font-medium hover:bg-slate-50 transition-colors whitespace-nowrap flex-shrink-0">
                         <Phone className="w-3.5 h-3.5 text-emerald-500" /> Call

@@ -1,85 +1,49 @@
-import { Briefcase, CalendarClock, Loader2, CheckCircle2, FileText, AlertTriangle } from 'lucide-react';
+'use client';
+import { ArrowUpRight, ArrowDownRight, Briefcase, UserCheck, Timer, CheckCircle2, AlertTriangle, UserMinus } from 'lucide-react';
 
-const stats = [
-    {
-        title: 'Active Work Orders',
-        value: '428',
-        trend: '+12% this week',
-        trendUp: true,
-        description: 'Total active jobs',
-        icon: Briefcase,
-        color: 'text-blue-600 bg-blue-50',
-    },
-    {
-        title: "Today's Scheduled",
-        value: '84',
-        trend: '12 unassigned',
-        trendUp: false,
-        description: 'Scheduled for today',
-        icon: CalendarClock,
-        color: 'text-indigo-600 bg-indigo-50',
-    },
-    {
-        title: 'In Progress',
-        value: '35',
-        trend: 'On track',
-        trendUp: true,
-        description: 'Partners on site',
-        icon: Loader2,
-        color: 'text-violet-600 bg-violet-50',
-    },
-    {
-        title: 'Completed Today',
-        value: '42',
-        trend: '+8 vs yesterday',
-        trendUp: true,
-        description: 'Jobs finished today',
-        icon: CheckCircle2,
-        color: 'text-emerald-600 bg-emerald-50',
-    },
-    {
-        title: 'Pending Invoice',
-        value: '18',
-        trend: 'Needs generation',
-        trendUp: false,
-        description: 'Jobs awaiting invoice',
-        icon: FileText,
-        color: 'text-amber-600 bg-amber-50',
-    },
-    {
-        title: 'Overdue Jobs',
-        value: '6',
-        trend: 'Critical action',
-        trendUp: false,
-        description: 'Past scheduled date',
-        icon: AlertTriangle,
-        color: 'text-rose-600 bg-rose-50',
-    },
-];
+function StatCard({ title, value, icon: Icon, trend, trendValue, subtitle, accentColor }) {
+    const accentColors = {
+        default: 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400',
+        amber: 'bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400',
+        rose: 'bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400',
+        emerald: 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400',
+        indigo: 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400',
+        slate: 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400',
+    };
+
+    const accent = accentColors[accentColor] || accentColors.default;
+
+    return (
+        <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm flex flex-col justify-between hover:-translate-y-1 hover:shadow-md transition-all duration-300">
+            <div className="flex justify-between items-start mb-4">
+                <div className={`p-2.5 rounded-xl ${accent}`}>
+                    <Icon className="w-5 h-5" />
+                </div>
+                {trend && (
+                    <div className={`flex items-center gap-1 text-sm font-medium ${trend === 'up' ? 'text-emerald-600 dark:text-emerald-400' : 'text-rose-600 dark:text-rose-400'}`}>
+                        {trend === 'up' ? <ArrowUpRight className="w-4 h-4" /> : <ArrowDownRight className="w-4 h-4" />}
+                        {trendValue}
+                    </div>
+                )}
+            </div>
+            <div>
+                <h3 className="text-3xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">{value}</h3>
+                <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mt-1">{title}</p>
+                {subtitle && <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">{subtitle}</p>}
+            </div>
+        </div>
+    );
+}
 
 export default function WorkOrderStatsCards() {
     return (
-        <div className="grid grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mb-6">
-            {stats.map((stat, i) => {
-                const Icon = stat.icon;
-                return (
-                    <div key={i} className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm hover:shadow-md hover:border-blue-200 transition-all group cursor-pointer">
-                        <div className="flex items-center justify-between mb-3">
-                            <div className={`p-2 rounded-xl ${stat.color} group-hover:scale-110 transition-transform`}>
-                                <Icon className="w-4 h-4" />
-                            </div>
-                            <span className={`text-[10px] font-semibold px-2 py-0.5 rounded-full ${stat.trendUp ? (stat.title === 'Overdue Jobs' ? 'bg-rose-100 text-rose-700' : 'bg-emerald-100 text-emerald-700') : (stat.title === 'Overdue Jobs' ? 'bg-rose-100 text-rose-700' : 'bg-slate-100 text-slate-600')}`}>
-                                {stat.trend}
-                            </span>
-                        </div>
-                        <p className="text-xs text-slate-500 font-medium mb-1">{stat.title}</p>
-                        <p className="text-2xl font-bold text-slate-900 tracking-tight mb-0.5">{stat.value}</p>
-                        <div className="pt-2 border-t border-slate-100 mt-2">
-                            <p className="text-[10px] text-slate-400 leading-tight">{stat.description}</p>
-                        </div>
-                    </div>
-                );
-            })}
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 sm:gap-6 mb-8">
+            <StatCard title="Active Work Orders" value="34" icon={Briefcase} trend="up" trendValue="12%" subtitle="Currently open jobs" accentColor="default" />
+            <StatCard title="Assigned" value="18" icon={UserCheck} subtitle="Waiting for start" accentColor="indigo" />
+            <StatCard title="In Progress" value="8" icon={Timer} subtitle="Being executed" accentColor="amber" />
+            <StatCard title="Completed Today" value="12" icon={CheckCircle2} trend="up" trendValue="5%" subtitle="Successfully finished" accentColor="emerald" />
+            <StatCard title="Overdue Jobs" value="3" icon={AlertTriangle} subtitle="Needs attention" accentColor="rose" />
+            <StatCard title="Unassigned Jobs" value="5" icon={UserMinus} trend="down" trendValue="2%" subtitle="Requires assignment" accentColor="slate" />
         </div>
     );
 }

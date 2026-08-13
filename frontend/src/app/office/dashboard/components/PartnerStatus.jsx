@@ -1,0 +1,51 @@
+import { Star } from 'lucide-react';
+
+export default function PartnerStatus() {
+    return (
+        <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm shadow-slate-100/50 dark:shadow-slate-900/50 p-6 transition-colors duration-200">
+            <div className="flex justify-between items-center mb-6">
+                <h3 className="text-lg font-semibold text-slate-900 dark:text-slate-100">Partner Status Overview</h3>
+                <button className="text-sm text-blue-600 dark:text-blue-400 font-medium hover:underline">Manage</button>
+            </div>
+            <div className="space-y-4">
+                <div className="flex items-center justify-between p-3 rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50 transition-colors">
+                    <div className="flex items-center gap-3">
+                        <div className="w-2.5 h-2.5 rounded-full bg-emerald-500"></div>
+                        <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Online & Active</span>
+                    </div>
+                    <span className="text-sm font-bold text-slate-900 dark:text-slate-100">145</span>
+                </div>
+                <div className="flex items-center justify-between p-3 rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50 transition-colors">
+                    <div className="flex items-center gap-3">
+                        <div className="w-2.5 h-2.5 rounded-full bg-amber-500"></div>
+                        <span className="text-sm font-medium text-slate-700 dark:text-slate-300">On Job (Busy)</span>
+                    </div>
+                    <span className="text-sm font-bold text-slate-900 dark:text-slate-100">42</span>
+                </div>
+                <div className="flex items-center justify-between p-3 rounded-xl border border-slate-100 dark:border-slate-800 bg-slate-50/50 dark:bg-slate-800/50 transition-colors">
+                    <div className="flex items-center gap-3">
+                        <div className="w-2.5 h-2.5 rounded-full bg-slate-300 dark:bg-slate-600"></div>
+                        <span className="text-sm font-medium text-slate-700 dark:text-slate-300">Offline</span>
+                    </div>
+                    <span className="text-sm font-bold text-slate-900 dark:text-slate-100">38</span>
+                </div>
+            </div>
+            
+            <div className="mt-6 pt-6 border-t border-slate-100 dark:border-slate-800 transition-colors">
+                <h4 className="text-sm font-semibold text-slate-900 dark:text-slate-200 mb-4">Top Performers (This Week)</h4>
+                <div className="flex gap-4">
+                    {[1, 2, 3].map((i) => (
+                        <div key={i} className="flex-1 text-center">
+                            <div className="w-12 h-12 rounded-full bg-slate-100 dark:bg-slate-800 mx-auto mb-2 flex items-center justify-center text-lg transition-colors">👨🏽‍🔧</div>
+                            <p className="text-xs font-semibold text-slate-900 dark:text-slate-200">Partner {i}</p>
+                            <div className="flex items-center justify-center gap-1 mt-1 text-amber-500">
+                                <Star className="w-3 h-3 fill-current" />
+                                <span className="text-[10px] font-medium text-slate-600 dark:text-slate-400">4.9</span>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </div>
+        </div>
+    );
+}

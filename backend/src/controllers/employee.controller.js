@@ -1,10 +1,10 @@
-<<<<<<< HEAD
-import bcrypt from "bcrypt";
-import Employee from "../models/employee.model.js";
-=======
+
+// import bcrypt from "bcrypt";
+// import Employee from "../models/employee.model.js";
+
 import bcrypt from "bcryptjs";
-import {Employee} from "../models/employee.models.js";
->>>>>>> 5ac41fc5309cd9b147f688222bba01fcd61f1c9a
+import {Employee} from "../models/employee.model.js";
+
 
 export const createEmployee = async (req, res) => {
   try {

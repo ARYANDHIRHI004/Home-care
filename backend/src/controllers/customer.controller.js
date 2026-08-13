@@ -1,4 +1,4 @@
-import {Customer} from "../models/customer.models.js";
+import Customer from "../models/customer.model.js";
 
 export const findOrCreateByPhone = async (req, res) => {
   try {

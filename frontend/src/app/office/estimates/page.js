@@ -10,6 +10,8 @@ import {
     ArrowRightLeft, Share2, History, Timer, UserPlus, FileCheck,
     CheckSquare, AlertCircle, PieChart, FileDown
 } from 'lucide-react';
+import CreateEstimateModal from '@/components/office/estimates/CreateEstimateModal';
+import SendEstimateModal from '@/components/office/estimates/SendEstimateModal';
 
 const StatCard = ({ title, value, icon: Icon, trend, trendValue, subtitle, accentColor }) => {
     const accentColors = {
@@ -70,21 +72,34 @@ export default function EstimatesPage() {
     const [selectedRow, setSelectedRow] = useState(null);
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
     const [activeTab, setActiveTab] = useState('details'); // details, pdf, versions
-    
-    // Mock Data
-    const estimates = [
+    const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
+    const [isSendModalOpen, setIsSendModalOpen] = useState(false);
+
+    // Mock Data — lifted into state (was a plain const before) because the
+    // estimate builder and send flow below need to actually be able to add a
+    // new row / flip a status, not just read a frozen array.
+    const [estimates, setEstimates] = useState([
         { id: 'EST-4091', customer: 'Anand Mahindra', phone: '+91 98765 43210', service: 'Full Home Renovation', amount: '₹1,25,000', discount: '₹5,000', finalAmount: '₹1,20,000', validity: '3 Days Left', createdBy: 'Amit Kumar', status: 'Approved', date: 'Oct 25, 2023', initial: 'A' },
         { id: 'EST-4092', customer: 'Priya Reddy', phone: '+91 87654 32109', service: 'Office Deep Cleaning', amount: '₹15,000', discount: '₹0', finalAmount: '₹15,000', validity: '5 Days Left', createdBy: 'Neha Singh', status: 'Sent', date: 'Oct 25, 2023', initial: 'P' },
         { id: 'EST-4093', customer: 'Ratan Tata', phone: '+91 76543 21098', service: 'Annual Maintenance', amount: '₹85,000', discount: '₹10,000', finalAmount: '₹75,000', validity: 'Valid', createdBy: 'System', status: 'Converted', date: 'Oct 24, 2023', initial: 'R' },
         { id: 'EST-4094', customer: 'Sunita Sharma', phone: '+91 65432 10987', service: 'Kitchen Remodeling', amount: '₹45,000', discount: '₹2,000', finalAmount: '₹43,000', validity: 'Expired', createdBy: 'Rahul Admin', status: 'Expired', date: 'Oct 15, 2023', initial: 'S' },
         { id: 'EST-4095', customer: 'Vikram Singh', phone: '+91 54321 09876', service: 'Plumbing Contract', amount: '₹25,000', discount: '₹1,500', finalAmount: '₹23,500', validity: 'Requires Approval', createdBy: 'Priya Support', status: 'Pending Approval', date: 'Oct 26, 2023', initial: 'V' },
         { id: 'EST-4096', customer: 'Deepak Chopra', phone: '+91 43210 98765', service: 'AC Servicing (5 Units)', amount: '₹6,000', discount: '₹500', finalAmount: '₹5,500', validity: '1 Day Left', createdBy: 'Amit Kumar', status: 'Viewed', date: 'Oct 22, 2023', initial: 'D' },
-    ];
+    ]);
 
     const openDrawer = (est) => {
         setSelectedRow(est);
         setIsDrawerOpen(true);
         setActiveTab('details');
+    };
+
+    const handleEstimateSaved = (newEstimate) => {
+        setEstimates((prev) => [newEstimate, ...prev]);
+    };
+
+    const handleSendConfirmed = (channel) => {
+        setEstimates((prev) => prev.map((e) => (e.id === selectedRow?.id ? { ...e, status: 'Sent' } : e)));
+        setSelectedRow((prev) => (prev ? { ...prev, status: 'Sent' } : prev));
     };
 
     return (
@@ -103,7 +118,10 @@ export default function EstimatesPage() {
                             <Download className="w-4 h-4" />
                             Export
                         </button>
-                        <button className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl text-sm font-medium hover:bg-blue-700 transition-colors shadow-sm">
+                        <button
+                            onClick={() => setIsCreateModalOpen(true)}
+                            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-xl text-sm font-medium hover:bg-blue-700 transition-colors shadow-sm"
+                        >
                             <Plus className="w-4 h-4" />
                             Create Estimate
                         </button>
@@ -540,6 +558,14 @@ export default function EstimatesPage() {
                         </div>
 
                         {/* Drawer Footer Actions */}
+                        {/* Previously this third button always said "Approve" no matter what
+                            the estimate's actual status was — meaning an already-Converted,
+                            Rejected, or Expired estimate still showed a clickable Approve
+                            button that made no sense in context. "Convert to Booking" (the
+                            action that actually matters most) didn't exist anywhere in this
+                            drawer at all. Both are fixed by keying the third slot off status,
+                            matching the blueprint's guardrail: Convert to Booking can only
+                            ever appear once an estimate is genuinely Approved. */}
                         <div className="px-6 py-4 border-t border-slate-100 bg-white z-10 grid grid-cols-3 gap-3">
                             <button className="flex items-center justify-center gap-2 px-4 py-2.5 bg-white border border-slate-200 text-slate-700 rounded-xl text-sm font-medium hover:bg-slate-50 transition-colors shadow-sm">
                                 <Share2 className="w-4 h-4" /> Share
@@ -547,13 +573,52 @@ export default function EstimatesPage() {
                             <button className="flex items-center justify-center gap-2 px-4 py-2.5 bg-[#25D366]/10 border border-[#25D366]/20 text-[#128C7E] rounded-xl text-sm font-medium hover:bg-[#25D366]/20 transition-colors shadow-sm">
                                 <Send className="w-4 h-4" /> WhatsApp
                             </button>
-                            <button className="flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-medium hover:bg-blue-700 transition-colors shadow-sm">
-                                <CheckSquare className="w-4 h-4" /> Approve
-                            </button>
+
+                            {selectedRow?.status === 'Approved' && (
+                                <button className="flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-medium hover:bg-blue-700 transition-colors shadow-sm">
+                                    <ArrowRightLeft className="w-4 h-4" /> Convert to Booking
+                                </button>
+                            )}
+                            {(selectedRow?.status === 'Sent' || selectedRow?.status === 'Viewed' || selectedRow?.status === 'Negotiation' || selectedRow?.status === 'Pending Approval') && (
+                                <button className="flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-600 text-white rounded-xl text-sm font-medium hover:bg-emerald-700 transition-colors shadow-sm">
+                                    <CheckSquare className="w-4 h-4" /> Mark Approved
+                                </button>
+                            )}
+                            {selectedRow?.status === 'Draft' && (
+                                <button
+                                    onClick={() => setIsSendModalOpen(true)}
+                                    className="flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-medium hover:bg-blue-700 transition-colors shadow-sm"
+                                >
+                                    <Send className="w-4 h-4" /> Send to Customer
+                                </button>
+                            )}
+                            {(selectedRow?.status === 'Rejected' || selectedRow?.status === 'Expired') && (
+                                <button className="flex items-center justify-center gap-2 px-4 py-2.5 bg-white border border-slate-200 text-slate-700 rounded-xl text-sm font-medium hover:bg-slate-50 transition-colors shadow-sm">
+                                    <FileDigit className="w-4 h-4" /> Revise &amp; Resend
+                                </button>
+                            )}
+                            {(selectedRow?.status === 'Converted' || selectedRow?.status === 'Cancelled') && (
+                                <div className="flex items-center justify-center px-4 py-2.5 text-slate-400 text-xs font-medium">
+                                    No further action
+                                </div>
+                            )}
                         </div>
                     </div>
                 </div>
             )}
+
+            <CreateEstimateModal
+                isOpen={isCreateModalOpen}
+                onClose={() => setIsCreateModalOpen(false)}
+                enquiry={null}
+                onSave={handleEstimateSaved}
+            />
+            <SendEstimateModal
+                isOpen={isSendModalOpen}
+                onClose={() => setIsSendModalOpen(false)}
+                estimate={selectedRow}
+                onConfirm={handleSendConfirmed}
+            />
         </div>
     );
 }

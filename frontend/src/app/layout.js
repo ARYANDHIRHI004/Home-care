@@ -28,9 +28,18 @@ export default function RootLayout({ children }) {
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} antialiased`}
     >
+      {/* Blocking script: apply saved theme before first paint to avoid FOUC */}
+      <script dangerouslySetInnerHTML={{ __html: `
+        (function() {
+          try {
+            var t = localStorage.getItem('hc-theme') || 'light';
+            var isDark = t === 'dark' || (t === 'system' && window.matchMedia('(prefers-color-scheme: dark)').matches);
+            if (isDark) document.documentElement.classList.add('dark');
+          } catch(e) {}
+        })();
+      ` }} />
       
       <body>
-
        <StoreProvider>
          <LenisProvider>
            {children}
