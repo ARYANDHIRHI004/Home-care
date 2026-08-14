@@ -1,9 +1,21 @@
 'use client';
 import Dialog from '@/components/office/ui/Dialog';
 import { AlertTriangle } from 'lucide-react';
+import { useDeleteEnquiryMutation } from '@/store/api/enquiryApi';
 
 export default function DeleteEnquiryDialog({ isOpen, onClose, enquiry }) {
+    const [deleteEnquiry, { isLoading }] = useDeleteEnquiryMutation();
+
     if (!enquiry) return null;
+
+    const handleDelete = async () => {
+        try {
+            await deleteEnquiry(enquiry.id).unwrap();
+            onClose();
+        } catch (err) {
+            console.error('Failed to delete enquiry:', err);
+        }
+    };
 
     return (
         <Dialog isOpen={isOpen} onClose={onClose} maxWidth="max-w-sm">
@@ -19,8 +31,8 @@ export default function DeleteEnquiryDialog({ isOpen, onClose, enquiry }) {
                     <button onClick={onClose} className="flex-1 px-4 py-2 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 rounded-lg text-sm font-medium hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
                         Cancel
                     </button>
-                    <button onClick={onClose} className="flex-1 px-4 py-2 bg-rose-600 text-white rounded-lg text-sm font-medium hover:bg-rose-700 transition-colors shadow-sm">
-                        Delete
+                    <button onClick={handleDelete} disabled={isLoading} className="flex-1 px-4 py-2 bg-rose-600 text-white rounded-lg text-sm font-medium hover:bg-rose-700 disabled:opacity-60 disabled:cursor-not-allowed transition-colors shadow-sm">
+                        {isLoading ? 'Deleting...' : 'Delete'}
                     </button>
                 </div>
             </div>

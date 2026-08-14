@@ -10,6 +10,7 @@ import CreateWorkOrderModal from './components/CreateWorkOrderModal';
 import EditWorkOrderModal from './components/EditWorkOrderModal';
 import DeleteWorkOrderDialog from './components/DeleteWorkOrderDialog';
 import KanbanBoard from './components/KanbanBoard';
+import { useGetWorkOrdersQuery } from '@/store/api/workOrderApi';
 
 export default function WorkOrdersPage() {
     const [selectedOrder, setSelectedOrder] = useState(null);
@@ -24,22 +25,22 @@ export default function WorkOrdersPage() {
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(10);
 
-    // Status values must exactly match KanbanBoard.jsx's column statusList entries —
-    // 'Work Started' below used to silently vanish from the Kanban view entirely,
-    // since no column's statusList contained that string (it only recognizes
-    // 'In Progress'). Fixed here, and two more real states added — 'Declined'
-    // (partner turned the job down, needs reassignment — previously had nowhere to
-    // go) and 'Invoiced'/'Paid' (so a completed job's billing status is visible
-    // instead of the flow silently stopping at "Completed").
-    const mockOrders = [
-        { id: 'WO-10592', bookingId: 'BKG-8492', customer: 'Priya Patel', service: 'Deep Home Cleaning', assignedTo: 'Amit Kumar', date: 'Oct 25, 2023, 10:00 AM', status: 'In Progress', priority: 'High', createdDate: 'Oct 24, 2023' },
-        { id: 'WO-10591', bookingId: 'BKG-8491', customer: 'Rahul Sharma', service: 'AC Repair & Service', assignedTo: 'Unassigned', date: 'Oct 25, 2023, 2:00 PM', status: 'Pending Assignment', priority: 'Normal', createdDate: 'Oct 24, 2023' },
-        { id: 'WO-10590', bookingId: 'BKG-8490', customer: 'Sneha Gupta', service: 'Plumbing Service', assignedTo: 'Vikram Singh', date: 'Oct 25, 2023, 9:00 AM', status: 'Paid', priority: 'Normal', createdDate: 'Oct 23, 2023' },
-        { id: 'WO-10589', bookingId: 'BKG-8489', customer: 'Arjun Mehta', service: 'Electrical Repair', assignedTo: 'Sunil Das', date: 'Oct 26, 2023, 11:00 AM', status: 'Assigned', priority: 'Emergency', createdDate: 'Oct 24, 2023' },
-        { id: 'WO-10588', bookingId: 'BKG-8488', customer: 'Kavya Nair', service: 'Pest Control', assignedTo: 'Manoj T.', date: 'Oct 25, 2023, 1:00 PM', status: 'On Route', priority: 'Normal', createdDate: 'Oct 23, 2023' },
-        { id: 'WO-10587', bookingId: 'BKG-8487', customer: 'Deepak Chopra', service: 'AC Servicing', assignedTo: 'Unassigned', date: 'Oct 26, 2023, 3:00 PM', status: 'Declined', priority: 'Normal', createdDate: 'Oct 24, 2023' },
-        { id: 'WO-10586', bookingId: 'BKG-8486', customer: 'Sunita Sharma', service: 'Kitchen Remodeling', assignedTo: 'Amit Kumar', date: 'Oct 24, 2023, 9:00 AM', status: 'Invoiced', priority: 'Normal', createdDate: 'Oct 22, 2023' },
-    ];
+    const { data: rawOrders = [], isLoading } = useGetWorkOrdersQuery();
+
+    // Map backend fields to the shape the UI components expect
+    const workOrders = rawOrders.map(wo => ({
+        id: wo._id,
+        displayId: `WO-${wo._id.slice(-4).toUpperCase()}`,
+        bookingId: wo.enquiryId?._id || wo.enquiryId || '',
+        customer: wo.customerId?.name || wo.customerName || 'Unknown',
+        service: wo.serviceCategory || 'N/A',
+        assignedTo: wo.assignedPartnerId?.name || 'Unassigned',
+        date: wo.scheduledAt ? new Date(wo.scheduledAt).toLocaleString() : 'N/A',
+        status: wo.status || 'open',
+        priority: wo.priority || 'normal',
+        createdDate: new Date(wo.createdAt).toLocaleDateString(),
+        _raw: wo,
+    }));
 
     const handleRowClick = (order) => {
         setSelectedOrder(order);
@@ -108,7 +109,7 @@ export default function WorkOrdersPage() {
 
             {viewMode === 'table' ? (
                 <WorkOrderTable 
-                    workOrders={mockOrders}
+                    workOrders={workOrders}
                     searchQuery={searchQuery} 
                     onRowClick={handleRowClick}
                     onEdit={handleEditClick}
@@ -119,7 +120,7 @@ export default function WorkOrdersPage() {
                     onItemsPerPageChange={setItemsPerPage}
                 />
             ) : (
-                <KanbanBoard workOrders={mockOrders} onCardClick={handleRowClick} />
+                <KanbanBoard workOrders={workOrders} onCardClick={handleRowClick} />
             )}
 
             <WorkOrderDrawer

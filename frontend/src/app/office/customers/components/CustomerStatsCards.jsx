@@ -1,10 +1,30 @@
 import { Users, UserPlus, UserCheck, Repeat, TrendingUp, Star } from 'lucide-react';
+import { useGetCustomersQuery } from '@/store/api/customerApi';
 
 export default function CustomerStatsCards() {
+    const { data: rawCustomers = [] } = useGetCustomersQuery();
+
+    const totalCustomers = rawCustomers.length;
+    
+    const now = new Date();
+    const thirtyDaysAgo = new Date(now.getTime() - (30 * 24 * 60 * 60 * 1000));
+    const ninetyDaysAgo = new Date(now.getTime() - (90 * 24 * 60 * 60 * 1000));
+
+    const newThisMonth = rawCustomers.filter(c => new Date(c.createdAt) >= thirtyDaysAgo).length;
+    const activeCustomers = rawCustomers.filter(c => c.lastBookingDate && new Date(c.lastBookingDate) >= ninetyDaysAgo).length;
+    const repeatCustomers = rawCustomers.filter(c => (c.totalBookings || 0) > 1).length;
+    
+    const totalSpend = rawCustomers.reduce((acc, c) => acc + (c.lifetimeSpend || 0), 0);
+    const avgLtv = totalCustomers ? (totalSpend / totalCustomers).toFixed(0) : 0;
+
+    const customersWithRating = rawCustomers.filter(c => c.rating);
+    const totalRating = customersWithRating.reduce((acc, c) => acc + c.rating, 0);
+    const avgRating = customersWithRating.length ? (totalRating / customersWithRating.length).toFixed(1) : 'N/A';
+
     const stats = [
         {
             title: 'Total Customers',
-            value: '4,892',
+            value: totalCustomers.toLocaleString(),
             growth: '+12%',
             trend: 'up',
             icon: Users,
@@ -13,7 +33,7 @@ export default function CustomerStatsCards() {
         },
         {
             title: 'New This Month',
-            value: '342',
+            value: newThisMonth.toString(),
             growth: '+8%',
             trend: 'up',
             icon: UserPlus,
@@ -22,7 +42,7 @@ export default function CustomerStatsCards() {
         },
         {
             title: 'Active Customers',
-            value: '2,145',
+            value: activeCustomers.toString(),
             growth: '+4%',
             trend: 'up',
             icon: UserCheck,
@@ -31,16 +51,16 @@ export default function CustomerStatsCards() {
         },
         {
             title: 'Repeat Customers',
-            value: '1,820',
+            value: repeatCustomers.toString(),
             growth: '+15%',
             trend: 'up',
             icon: Repeat,
-            description: 'More than 2 bookings',
+            description: 'More than 1 booking',
             color: 'bg-violet-50 text-violet-600',
         },
         {
             title: 'Customer LTV',
-            value: '₹14,250',
+            value: `₹${Number(avgLtv).toLocaleString()}`,
             growth: '+5%',
             trend: 'up',
             icon: TrendingUp,
@@ -49,14 +69,15 @@ export default function CustomerStatsCards() {
         },
         {
             title: 'Average Rating',
-            value: '4.8',
+            value: avgRating.toString(),
             growth: '+0.2',
             trend: 'up',
             icon: Star,
-            description: 'From 3,240 reviews',
+            description: `From ${customersWithRating.length} reviews`,
             color: 'bg-yellow-50 text-yellow-600',
         }
     ];
+
 
     return (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mb-6">

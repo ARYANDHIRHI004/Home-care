@@ -1,18 +1,29 @@
 import { MoreHorizontal, ChevronUp, ChevronDown, Receipt, CheckCircle2, Clock, AlertTriangle, AlertCircle, Phone } from 'lucide-react';
 import { useState } from 'react';
-
-const mockPayments = [
-    { id: 'PAY-1001', customer: 'Rahul Sharma', phone: '9876543210', booking: 'BKG-2401', invoice: 'INV-001', amount: 2500, paid: 2500, due: 0, method: 'UPI', status: 'Paid', date: '24 Oct 2023, 10:30 AM', collector: 'Online' },
-    { id: 'PAY-1002', customer: 'Sneha Patel', phone: '9876543211', booking: 'BKG-2402', invoice: 'INV-002', amount: 4800, paid: 2000, due: 2800, method: 'Cash', status: 'Partial', date: '24 Oct 2023, 11:15 AM', collector: 'Partner' },
-    { id: 'PAY-1003', customer: 'Vikram Singh', phone: '9876543212', booking: 'BKG-2403', invoice: 'INV-003', amount: 1500, paid: 0, due: 1500, method: '-', status: 'Pending', date: '-', collector: '-' },
-    { id: 'PAY-1004', customer: 'Pooja Desai', phone: '9876543213', booking: 'BKG-2404', invoice: 'INV-004', amount: 12000, paid: 0, due: 12000, method: 'Credit Card', status: 'Failed', date: '23 Oct 2023, 04:45 PM', collector: 'Online' },
-    { id: 'PAY-1005', customer: 'Amit Verma', phone: '9876543214', booking: 'BKG-2405', invoice: 'INV-005', amount: 3200, paid: 3200, due: 0, method: 'Bank Transfer', status: 'Paid', date: '22 Oct 2023, 09:00 AM', collector: 'Admin' },
-];
+import { useGetPaymentsQuery } from '@/store/api/paymentApi';
 
 export default function PaymentTable({ searchQuery, onRowClick, onReceivePayment }) {
     const [sortCol, setSortCol] = useState('date');
     const [sortDir, setSortDir] = useState('desc');
     const [openMenuId, setOpenMenuId] = useState(null);
+    const { data: rawPayments = [], isLoading, isError } = useGetPaymentsQuery();
+
+    const payments = rawPayments.map(p => ({
+        id: p._id,
+        displayId: `PAY-${p._id.slice(-4).toUpperCase()}`,
+        customer: p.invoiceId?.customerId?.name || p.customerId?.name || 'Unknown',
+        phone: p.invoiceId?.customerId?.phone || p.customerId?.phone || '—',
+        booking: p.workOrderId ? `WO-${String(p.workOrderId).slice(-4).toUpperCase()}` : '—',
+        invoice: p.invoiceId ? `INV-${String(p.invoiceId._id || p.invoiceId).slice(-4).toUpperCase()}` : '—',
+        amount: p.amount || 0,
+        paid: p.amountPaid || p.amount || 0,
+        due: (p.amount || 0) - (p.amountPaid || p.amount || 0),
+        method: p.method || '—',
+        status: p.status || 'Pending',
+        date: p.paidAt ? new Date(p.paidAt).toLocaleString() : '—',
+        collector: p.collectedBy || 'Online',
+        _raw: p,
+    }));
 
     const toggleSort = (col) => {
         if (sortCol === col) setSortDir(d => d === 'asc' ? 'desc' : 'asc');
@@ -23,7 +34,7 @@ export default function PaymentTable({ searchQuery, onRowClick, onReceivePayment
         ? (sortDir === 'asc' ? <ChevronUp className="w-3.5 h-3.5 text-blue-500" /> : <ChevronDown className="w-3.5 h-3.5 text-blue-500" />)
         : <ChevronDown className="w-3.5 h-3.5 text-slate-300" />;
 
-    const filtered = mockPayments.filter(p =>
+    const filtered = payments.filter(p =>
         !searchQuery ||
         p.customer.toLowerCase().includes(searchQuery.toLowerCase()) ||
         p.booking.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -72,6 +83,12 @@ export default function PaymentTable({ searchQuery, onRowClick, onReceivePayment
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
+                        {isLoading && (
+                            <tr><td colSpan={9} className="px-4 py-12 text-center text-sm text-slate-400">Loading payments…</td></tr>
+                        )}
+                        {isError && (
+                            <tr><td colSpan={9} className="px-4 py-12 text-center text-sm text-rose-500">Failed to load payments.</td></tr>
+                        )}
                         {filtered.map((p) => (
                             <tr key={p.id} onClick={() => onRowClick(p)} className="hover:bg-blue-50/30 cursor-pointer transition-colors group">
                                 <td className="pl-5 py-3.5" onClick={ev => ev.stopPropagation()}>

@@ -3,7 +3,7 @@ export const API_PREFIX = "/api";
 export const API_PATHS = Object.freeze({
   CUSTOMERS: "/customers",
   ENQUIRIES: "/enquiries",
-  TICKETS: "/tickets",
+  WORK_ORDERS: "/work-orders",
   ESTIMATES: "/estimates",
   INVOICES: "/invoices",
   PAYMENTS: "/payments",

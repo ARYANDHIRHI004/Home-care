@@ -1,5 +1,6 @@
 'use client';
 import { ArrowUpRight, ArrowDownRight, Briefcase, UserCheck, Timer, CheckCircle2, AlertTriangle, UserMinus } from 'lucide-react';
+import { useGetWorkOrdersQuery } from '@/store/api/workOrderApi';
 
 function StatCard({ title, value, icon: Icon, trend, trendValue, subtitle, accentColor }) {
     const accentColors = {
@@ -36,14 +37,27 @@ function StatCard({ title, value, icon: Icon, trend, trendValue, subtitle, accen
 }
 
 export default function WorkOrderStatsCards() {
+    const { data: rawWorkOrders = [] } = useGetWorkOrdersQuery();
+
+    const activeWorkOrders = rawWorkOrders.filter(wo => wo.status !== 'Completed' && wo.status !== 'Cancelled');
+    const assignedWorkOrders = rawWorkOrders.filter(wo => wo.status === 'Assigned' || wo.status === 'Scheduled');
+    const inProgressWorkOrders = rawWorkOrders.filter(wo => wo.status === 'In Progress');
+    
+    const now = new Date();
+    const todayStr = now.toDateString();
+    const completedToday = rawWorkOrders.filter(wo => wo.status === 'Completed' && wo.updatedAt && new Date(wo.updatedAt).toDateString() === todayStr);
+    
+    const overdueJobs = rawWorkOrders.filter(wo => wo.status !== 'Completed' && wo.status !== 'Cancelled' && wo.scheduledDate && new Date(wo.scheduledDate) < now);
+    const unassignedJobs = rawWorkOrders.filter(wo => wo.status === 'New' || wo.status === 'Open' || !wo.assignedTo);
+
     return (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 sm:gap-6 mb-8">
-            <StatCard title="Active Work Orders" value="34" icon={Briefcase} trend="up" trendValue="12%" subtitle="Currently open jobs" accentColor="default" />
-            <StatCard title="Assigned" value="18" icon={UserCheck} subtitle="Waiting for start" accentColor="indigo" />
-            <StatCard title="In Progress" value="8" icon={Timer} subtitle="Being executed" accentColor="amber" />
-            <StatCard title="Completed Today" value="12" icon={CheckCircle2} trend="up" trendValue="5%" subtitle="Successfully finished" accentColor="emerald" />
-            <StatCard title="Overdue Jobs" value="3" icon={AlertTriangle} subtitle="Needs attention" accentColor="rose" />
-            <StatCard title="Unassigned Jobs" value="5" icon={UserMinus} trend="down" trendValue="2%" subtitle="Requires assignment" accentColor="slate" />
+            <StatCard title="Active Work Orders" value={activeWorkOrders.length} icon={Briefcase} trend="up" trendValue="" subtitle="Currently open jobs" accentColor="default" />
+            <StatCard title="Assigned" value={assignedWorkOrders.length} icon={UserCheck} subtitle="Waiting for start" accentColor="indigo" />
+            <StatCard title="In Progress" value={inProgressWorkOrders.length} icon={Timer} subtitle="Being executed" accentColor="amber" />
+            <StatCard title="Completed Today" value={completedToday.length} icon={CheckCircle2} trend="up" trendValue="" subtitle="Successfully finished" accentColor="emerald" />
+            <StatCard title="Overdue Jobs" value={overdueJobs.length} icon={AlertTriangle} subtitle="Needs attention" accentColor="rose" />
+            <StatCard title="Unassigned Jobs" value={unassignedJobs.length} icon={UserMinus} trend="" trendValue="" subtitle="Requires assignment" accentColor="slate" />
         </div>
     );
 }

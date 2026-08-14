@@ -1,7 +1,8 @@
 'use client';
-import { ArrowUpRight, ArrowDownRight } from 'lucide-react';
+import { ArrowUpRight, ArrowDownRight, Users, MessageSquare, PhoneCall, CalendarCheck } from 'lucide-react';
+import { useGetEnquiriesQuery } from '@/store/api/enquiryApi';
 
-export default function EnquiryStats({ title, value, icon: Icon, trend, trendValue, subtitle, accentColor }) {
+function StatCard({ title, value, icon: Icon, trend, trendValue, subtitle, accentColor }) {
     const accentColors = {
         default: 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400',
         yellow: 'bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400',
@@ -30,6 +31,27 @@ export default function EnquiryStats({ title, value, icon: Icon, trend, trendVal
                 <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mt-1">{title}</p>
                 {subtitle && <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">{subtitle}</p>}
             </div>
+        </div>
+    );
+}
+
+export default function EnquiryStats() {
+    const { data: rawEnquiries = [] } = useGetEnquiriesQuery();
+
+    const totalEnquiries = rawEnquiries.length;
+    const newEnquiries = rawEnquiries.filter(e => e.status === 'New').length;
+    const convertedEnquiries = rawEnquiries.filter(e => e.status === 'Converted').length;
+    
+    const now = new Date();
+    const todayStr = now.toDateString();
+    const followedUpToday = rawEnquiries.filter(e => e.status === 'Follow Up' && e.updatedAt && new Date(e.updatedAt).toDateString() === todayStr).length;
+
+    return (
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            <StatCard title="Total Enquiries" value={totalEnquiries} icon={Users} trend="up" trendValue="" subtitle="All time requests" accentColor="default" />
+            <StatCard title="New Leads" value={newEnquiries} icon={MessageSquare} subtitle="Awaiting response" accentColor="yellow" />
+            <StatCard title="Followed Up Today" value={followedUpToday} icon={PhoneCall} subtitle="Contacted recently" accentColor="gray" />
+            <StatCard title="Converted" value={convertedEnquiries} icon={CalendarCheck} trend="up" trendValue="" subtitle="Successfully closed" accentColor="green" />
         </div>
     );
 }

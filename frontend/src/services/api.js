@@ -68,16 +68,16 @@ export const enquiryApi = {
 };
 
 /* ──────────────────────────────────────────────────────────────
-   Tickets  (/api/tickets)
+   Work Orders  (/api/work-orders)
 ────────────────────────────────────────────────────────────── */
-export const ticketApi = {
-    create:        (data)     => post("/api/tickets", data),
-    getAll:        (query="") => get(`/api/tickets${query ? `?${query}` : ""}`),
-    getById:       (id)       => get(`/api/tickets/${id}`),
-    updateStatus:  (id, data) => patch(`/api/tickets/${id}/status`, data),
-    assignPartner: (id, data) => patch(`/api/tickets/${id}/assign`, data),
-    addNote:       (id, data) => post(`/api/tickets/${id}/notes`, data),
-    delete:        (id)       => del(`/api/tickets/${id}`),
+export const workOrderApi = {
+    create:        (data)     => post("/api/work-orders", data),
+    getAll:        (query="") => get(`/api/work-orders${query ? `?${query}` : ""}`),
+    getById:       (id)       => get(`/api/work-orders/${id}`),
+    updateStatus:  (id, data) => patch(`/api/work-orders/${id}/status`, data),
+    assignPartner: (id, data) => patch(`/api/work-orders/${id}/assign`, data),
+    addNote:       (id, data) => post(`/api/work-orders/${id}/notes`, data),
+    delete:        (id)       => del(`/api/work-orders/${id}`),
 };
 
 /* ──────────────────────────────────────────────────────────────

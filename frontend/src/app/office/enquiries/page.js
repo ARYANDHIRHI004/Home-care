@@ -11,7 +11,7 @@ import EditEnquiryModal from './components/EditEnquiryModal';
 import DeleteEnquiryDialog from './components/DeleteEnquiryDialog';
 import Pagination from '@/components/office/ui/Pagination';
 import CreateEstimateModal from '@/components/office/estimates/CreateEstimateModal';
-
+import { useGetEnquiriesQuery } from '@/store/api/enquiryApi';
 export default function EnquiriesPage() {
     const [selectedRow, setSelectedRow] = useState(null);
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -25,19 +25,26 @@ export default function EnquiriesPage() {
     const [itemsPerPage, setItemsPerPage] = useState(10);
     const [isCreateEstimateModalOpen, setIsCreateEstimateModalOpen] = useState(false);
     
-    // Mock Data
-    // Status enum is intentionally limited to the Enquiry stage's own lifecycle:
-    // New -> Contacted -> Qualified -> Disqualified. Anything past "Qualified" (an
-    // estimate existing, being negotiated, sent, etc.) is Estimate-stage state and
-    // lives on the Estimates page instead — mixing the two here is what let an
-    // enquiry look "further along" than it actually was without an estimate existing.
-    const enquiries = [
-        { id: 'ENQ-8021', customer: 'Rahul Sharma', email: 'rahul.s@example.com', phone: '+91 98765 43210', service: 'AC Deep Cleaning', source: 'Website', priority: 'High', assignedTo: 'Amit Kumar', nextFollowUp: 'Today, 2:00 PM', status: 'Qualified', date: 'Oct 24, 2023', initial: 'R' },
-        { id: 'ENQ-8022', customer: 'Priya Patel', email: 'priya.p@example.com', phone: '+91 87654 32109', service: 'Full Home Cleaning', source: 'WhatsApp', priority: 'Urgent', assignedTo: 'Neha Singh', nextFollowUp: 'Tomorrow, 10:00 AM', status: 'New', date: 'Oct 24, 2023', initial: 'P' },
-        { id: 'ENQ-8023', customer: 'Vikram Singh', email: 'vikram.s@example.com', phone: '+91 76543 21098', service: 'Plumbing Repair', source: 'Phone', priority: 'Medium', assignedTo: 'Rajesh Verma', nextFollowUp: 'Oct 26, 4:00 PM', status: 'Contacted', date: 'Oct 23, 2023', initial: 'V' },
-        { id: 'ENQ-8024', customer: 'Anita Desai', email: 'anita.d@example.com', phone: '+91 65432 10987', service: 'Electrical Work', source: 'Instagram', priority: 'Low', assignedTo: 'Unassigned', nextFollowUp: 'None', status: 'Disqualified', date: 'Oct 22, 2023', initial: 'A' },
-        { id: 'ENQ-8025', customer: 'Suresh Kumar', email: 'suresh.k@example.com', phone: '+91 54321 09876', service: 'Pest Control', source: 'Google Business', priority: 'High', assignedTo: 'Amit Kumar', nextFollowUp: 'Today, 5:00 PM', status: 'Qualified', date: 'Oct 22, 2023', initial: 'S' },
-    ];
+    const { data: fetchedEnquiries = [], isLoading, isError } = useGetEnquiriesQuery();
+
+    const enquiries = fetchedEnquiries.map(enq => ({
+        id: enq._id,
+        // _id is a hex string, the UI might expect a shorter ID like ENQ-8021, but for now we use _id.
+        // Or we can slice it: enq._id.slice(-6).toUpperCase()
+        displayId: `ENQ-${enq._id.slice(-4).toUpperCase()}`,
+        customer: enq.customerId?.name || 'Unknown',
+        email: enq.customerId?.email || 'N/A',
+        phone: enq.customerId?.phone || 'N/A',
+        service: enq.serviceCategory || 'N/A',
+        source: enq.source || 'Website',
+        priority: enq.priority || 'Medium',
+        assignedTo: enq.assignedTo?.name || 'Unassigned',
+        nextFollowUp: enq.nextFollowUp ? new Date(enq.nextFollowUp).toLocaleString() : 'None',
+        status: enq.status || 'New',
+        date: new Date(enq.createdAt).toLocaleDateString(),
+        initial: (enq.customerId?.name || 'U').charAt(0).toUpperCase(),
+        _raw: enq, // keep raw data for edit/delete modals
+    }));
 
     const handleRowClick = (enq) => {
         setSelectedRow(enq);
@@ -83,13 +90,7 @@ export default function EnquiriesPage() {
             />
 
             {/* KPI Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 sm:gap-6 mb-8">
-                <EnquiryStats title="Today's Enquiries" value="124" icon={Inbox} trend="up" trendValue="14%" subtitle="from all channels" accentColor="default" />
-                <EnquiryStats title="Pending Follow-ups" value="38" icon={Clock} subtitle="Action required today" accentColor="yellow" />
-                <EnquiryStats title="Hot Leads" value="15" icon={Flame} subtitle="High intent to book" accentColor="red" />
-                <EnquiryStats title="Converted Today" value="42" icon={CheckCircle2} trend="up" trendValue="5%" subtitle="Booking created" accentColor="green" />
-                <EnquiryStats title="Lost Enquiries" value="7" icon={XCircle} trend="down" trendValue="2%" subtitle="Could not convert" accentColor="gray" />
-            </div>
+            <EnquiryStats />
 
             {/* Search and Filters */}
             <EnquiryFilters searchQuery={searchQuery} onSearchChange={setSearchQuery} />

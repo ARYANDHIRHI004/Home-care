@@ -1,18 +1,27 @@
 import { MoreHorizontal, ChevronUp, ChevronDown, FileText, CheckCircle2, Clock, Send, FileEdit, Download } from 'lucide-react';
 import { useState } from 'react';
+import { useGetInvoicesQuery } from '@/store/api/invoiceApi';
 
-const mockInvoices = [
-    { id: 'INV-2023-001', customer: 'Rahul Sharma', booking: 'BKG-2401', subtotal: 2118, gst: 381, discount: 0, total: 2500, status: 'Paid', date: '24 Oct 2023' },
-    { id: 'INV-2023-002', customer: 'Sneha Patel', booking: 'BKG-2402', subtotal: 4237, gst: 763, discount: 200, total: 4800, status: 'Sent', date: '24 Oct 2023' },
-    { id: 'INV-2023-003', customer: 'Vikram Singh', booking: 'BKG-2403', subtotal: 1271, gst: 229, discount: 0, total: 1500, status: 'Draft', date: '23 Oct 2023' },
-    { id: 'INV-2023-004', customer: 'Pooja Desai', booking: 'BKG-2404', subtotal: 10169, gst: 1831, discount: 0, total: 12000, status: 'Overdue', date: '15 Oct 2023' },
-    { id: 'INV-2023-005', customer: 'Amit Verma', booking: 'BKG-2405', subtotal: 2712, gst: 488, discount: 0, total: 3200, status: 'Paid', date: '22 Oct 2023' },
-];
 
 export default function InvoiceTable({ searchQuery, onRowClick, onEditInvoice }) {
     const [sortCol, setSortCol] = useState('date');
     const [sortDir, setSortDir] = useState('desc');
     const [openMenuId, setOpenMenuId] = useState(null);
+    const { data: rawInvoices = [], isLoading, isError } = useGetInvoicesQuery();
+
+    const invoices = rawInvoices.map(inv => ({
+        id: inv._id,
+        displayId: inv.invoiceNumber || `INV-${inv._id.slice(-6).toUpperCase()}`,
+        customer: inv.customerId?.name || 'Unknown',
+        booking: inv.workOrderId ? `WO-${String(inv.workOrderId).slice(-4).toUpperCase()}` : '—',
+        subtotal: inv.subtotal || 0,
+        gst: inv.gstAmount || 0,
+        discount: inv.discount || 0,
+        total: inv.totalAmount || 0,
+        status: inv.paymentStatus || inv.status || 'Draft',
+        date: inv.createdAt ? new Date(inv.createdAt).toLocaleDateString() : '—',
+        _raw: inv,
+    }));
 
     const toggleSort = (col) => {
         if (sortCol === col) setSortDir(d => d === 'asc' ? 'desc' : 'asc');
@@ -23,10 +32,10 @@ export default function InvoiceTable({ searchQuery, onRowClick, onEditInvoice })
         ? (sortDir === 'asc' ? <ChevronUp className="w-3.5 h-3.5 text-blue-500" /> : <ChevronDown className="w-3.5 h-3.5 text-blue-500" />)
         : <ChevronDown className="w-3.5 h-3.5 text-slate-300" />;
 
-    const filtered = mockInvoices.filter(i =>
+    const filtered = invoices.filter(i =>
         !searchQuery ||
         i.customer.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        i.id.toLowerCase().includes(searchQuery.toLowerCase())
+        i.displayId.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
     const getStatusBadge = (status) => {
@@ -70,6 +79,12 @@ export default function InvoiceTable({ searchQuery, onRowClick, onEditInvoice })
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
+                        {isLoading && (
+                            <tr><td colSpan={7} className="px-4 py-12 text-center text-sm text-slate-400">Loading invoices…</td></tr>
+                        )}
+                        {isError && (
+                            <tr><td colSpan={7} className="px-4 py-12 text-center text-sm text-rose-500">Failed to load invoices.</td></tr>
+                        )}
                         {filtered.map((inv) => (
                             <tr key={inv.id} onClick={() => onRowClick(inv)} className="hover:bg-blue-50/30 cursor-pointer transition-colors group">
                                 <td className="pl-5 py-3.5" onClick={ev => ev.stopPropagation()}>
@@ -77,7 +92,7 @@ export default function InvoiceTable({ searchQuery, onRowClick, onEditInvoice })
                                 </td>
                                 <td className="px-4 py-3.5">
                                     <div className="font-bold text-blue-600 text-sm flex items-center gap-2">
-                                        <FileText className="w-4 h-4 text-slate-400" /> {inv.id}
+                                        <FileText className="w-4 h-4 text-slate-400" /> {inv.displayId || inv.id}
                                     </div>
                                 </td>
                                 <td className="px-4 py-3.5">

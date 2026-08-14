@@ -2,7 +2,7 @@ import mongoose from "mongoose";
 
 const feedbackSchema = new mongoose.Schema(
   {
-    ticketId: {
+    workOrderId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Ticket",
       required: true,

@@ -1,73 +1,6 @@
 import { MoreHorizontal, FileEdit, CalendarDays, Calculator, Phone, MessageSquare, Mail, CreditCard, Trash2, ChevronDown, Check, ChevronsUpDown } from 'lucide-react';
 import { useState } from 'react';
-
-const mockCustomers = [
-    {
-        id: 'CUST-8492',
-        name: 'Rahul Sharma',
-        email: 'rahul.s@example.com',
-        phone: '+91 98765 43210',
-        city: 'Mumbai',
-        lastBooking: '2023-10-24',
-        totalBookings: 12,
-        lifetimeSpend: 28500,
-        rating: 4.9,
-        status: 'VIP',
-        avatar: 'RS',
-    },
-    {
-        id: 'CUST-8493',
-        name: 'Priya Patel',
-        email: 'priya.p@example.com',
-        phone: '+91 98765 43211',
-        city: 'Delhi',
-        lastBooking: '2023-11-02',
-        totalBookings: 2,
-        lifetimeSpend: 4200,
-        rating: 4.5,
-        status: 'Active',
-        avatar: 'PP',
-    },
-    {
-        id: 'CUST-8494',
-        name: 'Amit Kumar',
-        email: 'amit.k@example.com',
-        phone: '+91 98765 43212',
-        city: 'Bangalore',
-        lastBooking: '2023-11-10',
-        totalBookings: 1,
-        lifetimeSpend: 1500,
-        rating: 0,
-        status: 'New',
-        avatar: 'AK',
-    },
-    {
-        id: 'CUST-8495',
-        name: 'Sneha Gupta',
-        email: 'sneha.g@example.com',
-        phone: '+91 98765 43213',
-        city: 'Mumbai',
-        lastBooking: '2023-08-15',
-        totalBookings: 5,
-        lifetimeSpend: 12400,
-        rating: 4.8,
-        status: 'Repeat',
-        avatar: 'SG',
-    },
-    {
-        id: 'CUST-8496',
-        name: 'Vikram Singh',
-        email: 'vikram.s@example.com',
-        phone: '+91 98765 43214',
-        city: 'Chennai',
-        lastBooking: '2022-12-05',
-        totalBookings: 3,
-        lifetimeSpend: 8900,
-        rating: 3.2,
-        status: 'Inactive',
-        avatar: 'VS',
-    },
-];
+import { useGetCustomersQuery } from '@/store/api/customerApi';
 
 const StatusBadge = ({ status }) => {
     const styles = {
@@ -88,6 +21,23 @@ const StatusBadge = ({ status }) => {
 
 export default function CustomerTable({ onCustomerClick }) {
     const [openActionId, setOpenActionId] = useState(null);
+    const { data: rawCustomers = [], isLoading, isError } = useGetCustomersQuery();
+
+    const customers = rawCustomers.map(c => ({
+        id: c._id,
+        displayId: `CUST-${c._id.slice(-4).toUpperCase()}`,
+        name: c.name || 'Unknown',
+        email: c.email || 'N/A',
+        phone: c.phone || 'N/A',
+        city: c.city || '—',
+        lastBooking: c.lastBookingDate ? new Date(c.lastBookingDate).toLocaleDateString() : '—',
+        totalBookings: c.totalBookings ?? 0,
+        lifetimeSpend: c.lifetimeSpend ?? 0,
+        rating: c.rating ?? 0,
+        status: c.status || 'Active',
+        avatar: (c.name || 'U').slice(0, 2).toUpperCase(),
+        _raw: c,
+    }));
 
     const toggleAction = (id) => {
         if (openActionId === id) {
@@ -139,7 +89,16 @@ export default function CustomerTable({ onCustomerClick }) {
                         </tr>
                     </thead>
                     <tbody className="bg-white divide-y divide-slate-200">
-                        {mockCustomers.map((customer) => (
+                        {isLoading && (
+                            <tr><td colSpan={8} className="px-4 py-12 text-center text-sm text-slate-400">Loading customers…</td></tr>
+                        )}
+                        {isError && (
+                            <tr><td colSpan={8} className="px-4 py-12 text-center text-sm text-rose-500">Failed to load customers.</td></tr>
+                        )}
+                        {!isLoading && !isError && customers.length === 0 && (
+                            <tr><td colSpan={8} className="px-4 py-12 text-center text-sm text-slate-400">No customers found.</td></tr>
+                        )}
+                        {customers.map((customer) => (
                             <tr key={customer.id} className="hover:bg-slate-50 transition-colors cursor-pointer" onClick={() => onCustomerClick(customer)}>
                                 <td className="px-4 py-4 whitespace-nowrap" onClick={(e) => e.stopPropagation()}>
                                     <input type="checkbox" className="rounded border-slate-300 text-blue-600 focus:ring-blue-500 mt-1" />

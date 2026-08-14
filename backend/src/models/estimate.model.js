@@ -52,7 +52,7 @@ const acceptedTermsSchema = new mongoose.Schema(
 
 const estimateSchema = new mongoose.Schema(
   {
-    ticketId: {
+    workOrderId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Ticket",
       required: true,

@@ -2,7 +2,7 @@ import { Router } from "express";
 
 import customerRoutes from "./customer.route.js";
 import enquiryRoutes from "./enquiry.route.js";
-import ticketRoutes from "./ticket.route.js";
+import workOrderRoutes from "./work-order.route.js";
 import estimateRoutes from "./estimate.route.js";
 import invoiceRoutes from "./invoice.route.js";
 import paymentRoutes from "./payment.route.js";
@@ -22,7 +22,7 @@ const router = Router();
 
 router.use(API_PATHS.CUSTOMERS, customerRoutes);
 router.use(API_PATHS.ENQUIRIES, enquiryRoutes);
-router.use(API_PATHS.TICKETS, ticketRoutes);
+router.use(API_PATHS.WORK_ORDERS, workOrderRoutes);
 router.use(API_PATHS.ESTIMATES, estimateRoutes);
 router.use(API_PATHS.INVOICES, invoiceRoutes);
 router.use(API_PATHS.PAYMENTS, paymentRoutes);

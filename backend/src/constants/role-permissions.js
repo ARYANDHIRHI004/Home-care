@@ -14,7 +14,7 @@ export const ROLE_PERMISSIONS = Object.freeze({
   [ROLES.OPS_EXECUTIVE]: [
     ...allCrud("customer"),
     ...allCrud("enquiry"),
-    ...allCrud("ticket"),
+    ...allCrud("work_order"),
     P.ESTIMATE_CREATE, P.ESTIMATE_READ, P.ESTIMATE_UPDATE,
     P.INVOICE_READ,
     P.PAYMENT_READ,
@@ -30,7 +30,7 @@ export const ROLE_PERMISSIONS = Object.freeze({
   [ROLES.SUPPORT_BILLING]: [
     P.CUSTOMER_READ, P.CUSTOMER_UPDATE,
     P.ENQUIRY_READ, P.ENQUIRY_UPDATE,
-    P.TICKET_READ, P.TICKET_UPDATE,
+    P.WORK_ORDER_READ, P.WORK_ORDER_UPDATE,
     P.ESTIMATE_READ,
     ...allCrud("invoice"),
     ...allCrud("payment"),
@@ -48,7 +48,7 @@ export const ROLE_PERMISSIONS = Object.freeze({
   [ROLES.INVESTOR]: [
     P.CUSTOMER_READ,
     P.ENQUIRY_READ,
-    P.TICKET_READ,
+    P.WORK_ORDER_READ,
     P.ESTIMATE_READ,
     P.INVOICE_READ,
     P.PAYMENT_READ,
