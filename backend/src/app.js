@@ -3,11 +3,12 @@ import { toNodeHandler } from "better-auth/node";
 import { auth, db } from "./utils/auth.js";
 import cors from "cors";
 import adminAuthRouter from "./routes/adminAuth.routes.js";
+import apiRouter from "./routes/index.js";
 
 const app = express();
 
 app.use(cors({
-    origin: "http://localhost:3000",
+    origin: ["http://localhost:3000", "*"],
     credentials: true,
     methods: ["GET", "POST", "PUT", "PATCH", "DELETE"],
     allowedHeaders: ["Content-Type", "Authorization"]
@@ -21,6 +22,7 @@ app.use(express.json());
 
 
 app.use("/api/admin", adminAuthRouter);
+app.use("/api", apiRouter);
 
 app.get("/", (req, res) => {
     res.send("Hello World!");
@@ -71,7 +73,7 @@ if (process.env.NODE_ENV !== "production") {
 
 
 app.use((err, req, res, _next) => {
-    const status = err.status || 500;
+    const status = err.statusCode || err.status || 500;
     const message = err.message || "Internal Server Error";
     res.status(status).json({ success: false, status, message });
 });

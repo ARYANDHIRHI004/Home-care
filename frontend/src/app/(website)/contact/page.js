@@ -10,6 +10,8 @@ import {
 } from 'lucide-react';
 import { FaWhatsapp } from 'react-icons/fa6';
 import { BsShieldCheck, BsHeadset } from 'react-icons/bs';
+import { useCreateEnquiryMutation } from '@/store/api/enquiryApi';
+import { useGetCategoriesQuery } from '@/store/api/categoryApi';
 
 // --- Animation Variants ---
 const fadeUp = {
@@ -162,17 +164,52 @@ function ContactCards() {
 }
 
 function ContactForm() {
-  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [createEnquiry] = useCreateEnquiryMutation();
+  const { data: categories = [] } = useGetCategoriesQuery();
   const [formState, setFormState] = useState('idle'); // idle, loading, success, error
+  const [errorMsg, setErrorMsg] = useState('');
 
-  const handleSubmit = (e) => {
+  const [name, setName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [email, setEmail] = useState('');
+  const [city, setCity] = useState('');
+  const [serviceCategory, setServiceCategory] = useState('');
+  const [preferredDate, setPreferredDate] = useState('');
+  const [subject, setSubject] = useState('');
+  const [message, setMessage] = useState('');
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setFormState('loading');
-    // Simulate API call
-    setTimeout(() => {
+    setErrorMsg('');
+
+    try {
+      await createEnquiry({
+        name: name.trim(),
+        phone: phone.trim(),
+        email: email.trim(),
+        source: 'website',
+        serviceCategory: serviceCategory || 'General',
+        description: subject ? `${subject} - ${message}` : message,
+        preferredDate: preferredDate || undefined,
+        city: city || undefined,
+      }).unwrap();
+
       setFormState('success');
+      setName('');
+      setPhone('');
+      setEmail('');
+      setCity('');
+      setServiceCategory('');
+      setPreferredDate('');
+      setSubject('');
+      setMessage('');
       setTimeout(() => setFormState('idle'), 5000);
-    }, 2000);
+    } catch (err) {
+      setFormState('error');
+      setErrorMsg(err.data?.message || err.message || 'Failed to submit enquiry. Please try again.');
+      setTimeout(() => setFormState('idle'), 5000);
+    }
   };
 
   return (
@@ -215,6 +252,11 @@ function ContactForm() {
               className="bg-white/70 backdrop-blur-xl border border-slate-200/50 p-8 sm:p-10 rounded-[2rem] shadow-xl shadow-slate-200/50"
             >
               <form onSubmit={handleSubmit} className="space-y-6">
+                {errorMsg && (
+                  <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-xs text-red-600">
+                    {errorMsg}
+                  </div>
+                )}
                 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
                   {/* Name */}
@@ -222,7 +264,14 @@ function ContactForm() {
                     <label className="text-sm font-semibold text-slate-700">Full Name</label>
                     <div className="relative">
                       <User className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-                      <input type="text" required placeholder="John Doe" className="w-full pl-11 pr-4 py-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all" />
+                      <input 
+                        type="text" 
+                        required 
+                        value={name}
+                        onChange={e => setName(e.target.value)}
+                        placeholder="John Doe" 
+                        className="w-full pl-11 pr-4 py-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all" 
+                      />
                     </div>
                   </div>
                   {/* Mobile */}
@@ -230,7 +279,14 @@ function ContactForm() {
                     <label className="text-sm font-semibold text-slate-700">Mobile Number</label>
                     <div className="relative">
                       <Smartphone className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-                      <input type="tel" required placeholder="+91 98765 43210" className="w-full pl-11 pr-4 py-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all" />
+                      <input 
+                        type="tel" 
+                        required 
+                        value={phone}
+                        onChange={e => setPhone(e.target.value)}
+                        placeholder="+91 98765 43210" 
+                        className="w-full pl-11 pr-4 py-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all" 
+                      />
                     </div>
                   </div>
                 </div>
@@ -241,7 +297,14 @@ function ContactForm() {
                     <label className="text-sm font-semibold text-slate-700">Email Address</label>
                     <div className="relative">
                       <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-                      <input type="email" required placeholder="john@example.com" className="w-full pl-11 pr-4 py-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all" />
+                      <input 
+                        type="email" 
+                        required 
+                        value={email}
+                        onChange={e => setEmail(e.target.value)}
+                        placeholder="john@example.com" 
+                        className="w-full pl-11 pr-4 py-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all" 
+                      />
                     </div>
                   </div>
                   {/* City */}
@@ -249,7 +312,12 @@ function ContactForm() {
                     <label className="text-sm font-semibold text-slate-700">City</label>
                     <div className="relative">
                       <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-                      <select required className="w-full pl-11 pr-4 py-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all appearance-none text-slate-700">
+                      <select 
+                        required 
+                        value={city}
+                        onChange={e => setCity(e.target.value)}
+                        className="w-full pl-11 pr-4 py-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all appearance-none text-slate-700"
+                      >
                         <option value="">Select City</option>
                         <option value="delhi">New Delhi</option>
                         <option value="mumbai">Mumbai</option>
@@ -266,11 +334,24 @@ function ContactForm() {
                     <label className="text-sm font-semibold text-slate-700">Service Category</label>
                     <div className="relative">
                       <Tag className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-                      <select required className="w-full pl-11 pr-4 py-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all appearance-none text-slate-700">
+                      <select 
+                        required 
+                        value={serviceCategory}
+                        onChange={e => setServiceCategory(e.target.value)}
+                        className="w-full pl-11 pr-4 py-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all appearance-none text-slate-700"
+                      >
                         <option value="">Select Category</option>
-                        <option value="cleaning">Cleaning</option>
-                        <option value="plumbing">Plumbing</option>
-                        <option value="electrical">Electrical</option>
+                        {categories.map(c => (
+                          <option key={c._id} value={c.name}>{c.name}</option>
+                        ))}
+                        {categories.length === 0 && (
+                          <>
+                            <option value="Deep Cleaning">Deep Cleaning</option>
+                            <option value="Plumbing">Plumbing</option>
+                            <option value="Electrical">Electrical</option>
+                            <option value="AC & Appliances">AC & Appliances</option>
+                          </>
+                        )}
                       </select>
                       <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 pointer-events-none" />
                     </div>
@@ -280,7 +361,12 @@ function ContactForm() {
                     <label className="text-sm font-semibold text-slate-700">Preferred Date</label>
                     <div className="relative">
                       <Calendar className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-                      <input type="date" className="w-full pl-11 pr-4 py-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all text-slate-700" />
+                      <input 
+                        type="date" 
+                        value={preferredDate}
+                        onChange={e => setPreferredDate(e.target.value)}
+                        className="w-full pl-11 pr-4 py-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all text-slate-700" 
+                      />
                     </div>
                   </div>
                 </div>
@@ -290,14 +376,28 @@ function ContactForm() {
                   <label className="text-sm font-semibold text-slate-700">Subject</label>
                   <div className="relative">
                     <FileText className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
-                    <input type="text" required placeholder="How can we help?" className="w-full pl-11 pr-4 py-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all" />
+                    <input 
+                      type="text" 
+                      required 
+                      value={subject}
+                      onChange={e => setSubject(e.target.value)}
+                      placeholder="How can we help?" 
+                      className="w-full pl-11 pr-4 py-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all" 
+                    />
                   </div>
                 </div>
 
                 {/* Message */}
                 <div className="space-y-2">
                   <label className="text-sm font-semibold text-slate-700">Message</label>
-                  <textarea required rows="4" placeholder="Describe your requirement in detail..." className="w-full p-4 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all resize-none"></textarea>
+                  <textarea 
+                    required 
+                    rows={4} 
+                    value={message}
+                    onChange={e => setMessage(e.target.value)}
+                    placeholder="Describe your requirement in detail..." 
+                    className="w-full p-4 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all resize-none"
+                  />
                 </div>
 
                 {/* Consent */}
@@ -316,11 +416,13 @@ function ContactForm() {
                     ${formState === 'idle' ? 'bg-blue-600 hover:bg-blue-700 shadow-lg shadow-blue-600/20' : ''}
                     ${formState === 'loading' ? 'bg-blue-400 cursor-not-allowed' : ''}
                     ${formState === 'success' ? 'bg-green-500' : ''}
+                    ${formState === 'error' ? 'bg-rose-500' : ''}
                   `}
                 >
                   {formState === 'idle' && 'Send Enquiry'}
                   {formState === 'loading' && <><Loader2 className="w-5 h-5 animate-spin" /> Sending...</>}
                   {formState === 'success' && <><CheckCircle2 className="w-5 h-5" /> Message Sent Successfully!</>}
+                  {formState === 'error' && 'Failed to send. Try again.'}
                 </button>
               </form>
             </motion.div>

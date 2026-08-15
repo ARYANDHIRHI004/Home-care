@@ -1,4 +1,4 @@
-import { auth } from "../lib/auth.js";
+import { auth } from "../utils/auth.js";
 
 export const requireAuth = async (req, res, next) => {
   try {

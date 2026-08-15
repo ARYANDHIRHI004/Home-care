@@ -1,5 +1,5 @@
-import {Enquiry} from "../models/enquiry.models.js";
-import {Customer} from "../models/customer.models.js";
+import Enquiry from "../models/enquiry.model.js";
+import Customer from "../models/customer.model.js";
 
 export const createEnquiry = async (req, res) => {
   try {
@@ -13,7 +13,7 @@ export const createEnquiry = async (req, res) => {
         phone,
         email,
         otpVerified: false,
-        registrationChannel: source || "call",
+        registrationChannel: "call",
       });
     }
 

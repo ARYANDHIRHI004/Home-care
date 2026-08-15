@@ -1,4 +1,4 @@
-import {Customer} from "../models/customer.models.js";
+import Customer from "../models/customer.model.js";
 
 export const findOrCreateByPhone = async (req, res) => {
   try {
@@ -14,7 +14,7 @@ export const findOrCreateByPhone = async (req, res) => {
       phone,
       email,
       otpVerified: false,
-      registrationChannel,
+      registrationChannel: "call",
     });
 
     return res.status(201).json({ message: "Customer created", customer });

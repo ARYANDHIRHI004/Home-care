@@ -1,6 +1,10 @@
 import mongoose from "mongoose";
 import { env } from "../utils/env.js";
 
+import dns from "dns"
+
+dns.setServers(['8.8.8.8', '8.8.4.4'])
+
 
 const connectDB = async () => {
     try {
@@ -16,4 +20,9 @@ const connectDB = async () => {
     }
 };
 
-export default connectDB;
+
+   
+
+
+
+export default connectDB

@@ -110,3 +110,5 @@ const estimateSchema = new mongoose.Schema(
 );
 
 export const Estimate = mongoose.model("Estimate", estimateSchema);
+
+export default Estimate;

@@ -1,4 +1,4 @@
-import { ROLES } from "../enums/role.enum.js";
+import { ROLES } from "../enum/role.enum.js";
 import { PERMISSIONS as P } from "./permissions.js";
 
 const allCrud = (resource) => [
@@ -8,13 +8,40 @@ const allCrud = (resource) => [
   `${resource}:delete`,
 ];
 
+const allPermissions = [
+  ...Object.values(P),
+  ...allCrud("customer"),
+  ...allCrud("enquiry"),
+  ...allCrud("work_order"),
+  ...allCrud("estimate"),
+  ...allCrud("invoice"),
+  ...allCrud("payment"),
+  ...allCrud("category"),
+  ...allCrud("service"),
+  ...allCrud("service-partner"),
+  ...allCrud("partner"),
+  ...allCrud("employee"),
+  ...allCrud("conversation"),
+  ...allCrud("feedback"),
+  ...allCrud("notification"),
+  ...allCrud("setting"),
+  ...allCrud("terms-and-condition"),
+  ...allCrud("terms"),
+  ...allCrud("ticket"),
+];
+
 export const ROLE_PERMISSIONS = Object.freeze({
-  [ROLES.SUPER_ADMIN]: Object.values(P),
+  admin: allPermissions,
+  [ROLES.SUPER_ADMIN]: allPermissions,
 
   [ROLES.OPS_EXECUTIVE]: [
     ...allCrud("customer"),
     ...allCrud("enquiry"),
+    ...allCrud("work_order"),
     ...allCrud("ticket"),
+    ...allCrud("category"),
+    ...allCrud("service"),
+    ...allCrud("partner"),
     P.ESTIMATE_CREATE, P.ESTIMATE_READ, P.ESTIMATE_UPDATE,
     P.INVOICE_READ,
     P.PAYMENT_READ,
@@ -30,7 +57,7 @@ export const ROLE_PERMISSIONS = Object.freeze({
   [ROLES.SUPPORT_BILLING]: [
     P.CUSTOMER_READ, P.CUSTOMER_UPDATE,
     P.ENQUIRY_READ, P.ENQUIRY_UPDATE,
-    P.TICKET_READ, P.TICKET_UPDATE,
+    P.WORK_ORDER_READ, P.WORK_ORDER_UPDATE,
     P.ESTIMATE_READ,
     ...allCrud("invoice"),
     ...allCrud("payment"),
@@ -48,7 +75,7 @@ export const ROLE_PERMISSIONS = Object.freeze({
   [ROLES.INVESTOR]: [
     P.CUSTOMER_READ,
     P.ENQUIRY_READ,
-    P.TICKET_READ,
+    P.WORK_ORDER_READ,
     P.ESTIMATE_READ,
     P.INVOICE_READ,
     P.PAYMENT_READ,
