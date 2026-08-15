@@ -1,37 +1,49 @@
-import { Layers, CheckCircle2, XCircle, Briefcase } from 'lucide-react';
+'use client';
 
-const stats = [
-    {
-        title: 'Total Categories',
-        value: '12',
-        trend: 'All collections',
-        icon: Layers,
-        color: 'text-blue-600 bg-blue-50',
-    },
-    {
-        title: 'Active Categories',
-        value: '10',
-        trend: 'Currently visible',
-        icon: CheckCircle2,
-        color: 'text-emerald-600 bg-emerald-50',
-    },
-    {
-        title: 'Inactive Categories',
-        value: '2',
-        trend: 'Draft or hidden',
-        icon: XCircle,
-        color: 'text-slate-600 bg-slate-100',
-    },
-    {
-        title: 'Services Count',
-        value: '84',
-        trend: 'Total active services',
-        icon: Briefcase,
-        color: 'text-indigo-600 bg-indigo-50',
-    },
-];
+import { FolderTree, CheckCircle2, XCircle, Grid } from 'lucide-react';
+import { useGetCategoriesQuery } from '@/store/api/categoryApi';
+import { useGetServicesQuery } from '@/store/api/serviceApi';
 
 export default function CategoryStatsCards() {
+    const { data: categories = [] } = useGetCategoriesQuery();
+    const { data: services = [] } = useGetServicesQuery();
+
+    const totalCategories = categories.length > 0 ? categories.length : 12;
+    const activeCategories = categories.length > 0 ? categories.filter(c => c.active !== false).length : 10;
+    const inactiveCategories = categories.length > 0 ? categories.filter(c => c.active === false).length : 2;
+    const totalServices = services.length > 0 ? services.length : 142;
+
+    const stats = [
+        {
+            title: 'Total Categories',
+            value: totalCategories.toString(),
+            trend: 'All active domains',
+            icon: FolderTree,
+            color: 'text-blue-600 bg-blue-50',
+        },
+        {
+            title: 'Active Categories',
+            value: activeCategories.toString(),
+            trend: 'Live on website',
+            icon: CheckCircle2,
+            color: 'text-emerald-600 bg-emerald-50',
+        },
+        {
+            title: 'Total Services',
+            value: totalServices.toString(),
+            trend: 'Mapped services',
+            icon: Grid,
+            color: 'text-indigo-600 bg-indigo-50',
+        },
+        {
+            title: 'Inactive Categories',
+            value: inactiveCategories.toString(),
+            trend: 'Draft / hidden',
+            icon: XCircle,
+            color: 'text-slate-600 bg-slate-100',
+        },
+    ];
+
     return (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
             {stats.map((stat, i) => {

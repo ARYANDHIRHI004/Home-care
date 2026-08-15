@@ -15,6 +15,7 @@ import feedbackRoutes from "./feedback.route.js";
 import notificationRoutes from "./notification.route.js";
 import settingRoutes from "./setting.route.js";
 import termsRoutes from "./terms-and-condition.route.js";
+import ticketRoutes from "./ticket.route.js";
 
 import { API_PATHS } from "../constants/api-paths.js";
 
@@ -35,5 +36,6 @@ router.use(API_PATHS.FEEDBACK, feedbackRoutes);
 router.use(API_PATHS.NOTIFICATIONS, notificationRoutes);
 router.use(API_PATHS.SETTINGS, settingRoutes);
 router.use(API_PATHS.TERMS, termsRoutes);
+router.use(API_PATHS.TICKETS, ticketRoutes);
 
 export default router;

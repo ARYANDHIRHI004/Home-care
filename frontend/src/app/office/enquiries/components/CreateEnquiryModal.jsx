@@ -9,7 +9,7 @@ export default function CreateEnquiryModal({ isOpen, onClose }) {
         name: '', phone: '', altPhone: '', email: '',
         address: '', city: '', serviceCategory: '', specificService: '',
         priority: 'Medium', preferredDate: '', preferredTime: '',
-        source: 'Phone Call', status: 'New', description: '',
+        source: 'call', status: 'New', description: '',
     });
     const [error, setError] = useState(null);
 
@@ -19,7 +19,7 @@ export default function CreateEnquiryModal({ isOpen, onClose }) {
         name: '', phone: '', altPhone: '', email: '',
         address: '', city: '', serviceCategory: '', specificService: '',
         priority: 'Medium', preferredDate: '', preferredTime: '',
-        source: 'Phone Call', status: 'New', description: '',
+        source: 'call', status: 'New', description: '',
     });
 
     const handleSubmit = async (e) => {
@@ -123,7 +123,7 @@ export default function CreateEnquiryModal({ isOpen, onClose }) {
                             <select name="source" value={form.source} onChange={handleChange} className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors">
                                 <option value="Phone Call">Phone Call</option>
                                 <option value="WhatsApp">WhatsApp</option>
-                                <option value="Website">Website</option>
+                                <option value="website">Website</option>
                                 <option value="Facebook">Facebook</option>
                                 <option value="Google">Google</option>
                                 <option value="Referral">Referral</option>

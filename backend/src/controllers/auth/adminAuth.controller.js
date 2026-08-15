@@ -6,9 +6,6 @@ import { sendSuccess } from "../../utils/response.js";
 export const adminLogin = asyncHandler(async (req, res) => {
     const { email, password } = req.body;
 
-    console.log(req.body);
-    
-
     if (!email || !password) {
         throw new ApiError(400, "Email and password are required.");
     }

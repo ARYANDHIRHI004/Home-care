@@ -38,4 +38,10 @@ export const PERMISSIONS = Object.freeze({
   NOTIFICATION_MANAGE: "notification:manage",
   SETTINGS_MANAGE: "settings:manage",
   TERMS_MANAGE: "terms:manage",
+
+  TICKET_CREATE: "ticket:create",
+  TICKET_READ: "ticket:read",
+  TICKET_UPDATE: "ticket:update",
+  TICKET_DELETE: "ticket:delete",
+  TICKET_MANAGE: "ticket:manage",
 });

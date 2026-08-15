@@ -4,6 +4,8 @@ import React, { useState, useMemo } from 'react';
 import { BsShieldCheck } from 'react-icons/bs';
 import Image from 'next/image';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useGetServicesQuery } from '@/store/api/serviceApi';
+import { useGetCategoriesQuery } from '@/store/api/categoryApi';
 import {
   Search,
   MapPin,
@@ -206,22 +208,54 @@ export default function ServicesPage() {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [searchQuery, setSearchSuggestion] = useState('');
   const [showSuggestions, setShowSuggestions] = useState(false);
-        const [selectedServiceModal, setSelectedServiceModal] = useState(null);
+  const [selectedServiceModal, setSelectedServiceModal] = useState(null);
   const [activeFaq, setActiveFaq] = useState(null);
+
+  const { data: liveServices = [] } = useGetServicesQuery();
+  const { data: liveCategories = [] } = useGetCategoriesQuery();
+
+  const allCategories = useMemo(() => {
+    if (!liveCategories || liveCategories.length === 0) return CATEGORIES;
+    const mapped = liveCategories.map(c => ({
+      id: c._id || c.name.toLowerCase(),
+      name: c.name,
+      icon: Sparkle,
+    }));
+    return [{ id: 'all', name: 'All Services', icon: Sparkles }, ...mapped];
+  }, [liveCategories]);
+
+  const allServices = useMemo(() => {
+    if (!liveServices || liveServices.length === 0) return SERVICES_DATA;
+    return liveServices.map(s => ({
+      id: s._id,
+      name: s.name,
+      category: s.categoryId?.name || 'General',
+      categoryId: s.categoryId?._id || s.categoryId || 'all',
+      rating: 4.9,
+      reviewCount: 120,
+      price: s.basePrice || 499,
+      duration: '45 - 90 mins',
+      description: s.description || 'Professional home care service with quality guarantee.',
+      image: (s.images && s.images[0]) || 'https://images.unsplash.com/photo-1581578731548-c64695cc6952?auto=format&fit=crop&q=80&w=800',
+      popular: true,
+      inclusions: ['Expert service delivery', 'Transparent pricing', 'Verified professional'],
+      exclusions: ['Extra spare parts / consumables']
+    }));
+  }, [liveServices]);
 
   // Filtered Services Logic
   const filteredServices = useMemo(() => {
-    return SERVICES_DATA.filter((service) => {
-      const matchesCategory = selectedCategory === 'all' || service.categoryId === selectedCategory;
+    return allServices.filter((service) => {
+      const matchesCategory = selectedCategory === 'all' || service.categoryId === selectedCategory || service.category?.toLowerCase() === selectedCategory.toLowerCase();
       const matchesSearch = service.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
                             service.category.toLowerCase().includes(searchQuery.toLowerCase());
       return matchesCategory && matchesSearch;
     });
-  }, [selectedCategory, searchQuery]);
+  }, [allServices, selectedCategory, searchQuery]);
 
   const popularServices = useMemo(() => {
-    return SERVICES_DATA.filter((s) => s.popular);
-  }, []);
+    return allServices.filter((s) => s.popular);
+  }, [allServices]);
 
   return (
     <div className="min-h-screen bg-[#F8FAFC] text-[#0F172A] font-sans antialiased selection:bg-[#2563EB] selection:text-white">

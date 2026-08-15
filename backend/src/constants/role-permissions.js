@@ -8,13 +8,40 @@ const allCrud = (resource) => [
   `${resource}:delete`,
 ];
 
+const allPermissions = [
+  ...Object.values(P),
+  ...allCrud("customer"),
+  ...allCrud("enquiry"),
+  ...allCrud("work_order"),
+  ...allCrud("estimate"),
+  ...allCrud("invoice"),
+  ...allCrud("payment"),
+  ...allCrud("category"),
+  ...allCrud("service"),
+  ...allCrud("service-partner"),
+  ...allCrud("partner"),
+  ...allCrud("employee"),
+  ...allCrud("conversation"),
+  ...allCrud("feedback"),
+  ...allCrud("notification"),
+  ...allCrud("setting"),
+  ...allCrud("terms-and-condition"),
+  ...allCrud("terms"),
+  ...allCrud("ticket"),
+];
+
 export const ROLE_PERMISSIONS = Object.freeze({
-  [ROLES.SUPER_ADMIN]: Object.values(P),
+  admin: allPermissions,
+  [ROLES.SUPER_ADMIN]: allPermissions,
 
   [ROLES.OPS_EXECUTIVE]: [
     ...allCrud("customer"),
     ...allCrud("enquiry"),
     ...allCrud("work_order"),
+    ...allCrud("ticket"),
+    ...allCrud("category"),
+    ...allCrud("service"),
+    ...allCrud("partner"),
     P.ESTIMATE_CREATE, P.ESTIMATE_READ, P.ESTIMATE_UPDATE,
     P.INVOICE_READ,
     P.PAYMENT_READ,

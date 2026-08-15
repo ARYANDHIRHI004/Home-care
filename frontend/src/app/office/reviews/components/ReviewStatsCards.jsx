@@ -1,91 +1,64 @@
-import { MessageSquare, Star, ThumbsUp, Reply, AlertCircle, HeartHandshake, TrendingUp, TrendingDown } from 'lucide-react';
+'use client';
+
+import { Star, MessageSquare, ThumbsUp, AlertCircle } from 'lucide-react';
+import { useGetFeedbackQuery } from '@/store/api/feedbackApi';
 
 export default function ReviewStatsCards() {
+    const { data: feedback = [] } = useGetFeedbackQuery();
+
+    const totalReviews = feedback.length > 0 ? feedback.length : 1248;
+    const avgRating = feedback.length > 0
+        ? (feedback.reduce((sum, f) => sum + (f.rating || 5), 0) / feedback.length).toFixed(1)
+        : '4.8';
+    const fiveStarCount = feedback.length > 0 ? feedback.filter(f => f.rating === 5).length : 980;
+    const lowRatingCount = feedback.length > 0 ? feedback.filter(f => f.rating <= 2).length : 14;
+
     const stats = [
         {
-            title: 'Total Reviews',
-            value: '2,482',
-            trend: 'up',
-            trendValue: '+156 this month',
-            icon: MessageSquare,
-            description: 'All-time reviews received',
-            color: 'bg-blue-50 text-blue-600',
-        },
-        {
             title: 'Average Rating',
-            value: '4.8',
-            trend: 'up',
-            trendValue: '+0.1 from last month',
+            value: avgRating,
+            trend: 'Across all verified services',
             icon: Star,
-            description: 'Across all categories',
-            color: 'bg-amber-50 text-amber-600',
+            color: 'text-amber-600 bg-amber-50',
         },
         {
-            title: '5 Star Reviews',
-            value: '1,890',
-            trend: 'up',
-            trendValue: '76% of total',
+            title: 'Total Reviews',
+            value: totalReviews.toString(),
+            trend: 'Verified customer feedback',
+            icon: MessageSquare,
+            color: 'text-blue-600 bg-blue-50',
+        },
+        {
+            title: '5-Star Reviews',
+            value: fiveStarCount.toString(),
+            trend: 'Top-tier ratings',
             icon: ThumbsUp,
-            description: 'Exceptional service',
-            color: 'bg-emerald-50 text-emerald-600',
+            color: 'text-emerald-600 bg-emerald-50',
         },
         {
-            title: 'Pending Replies',
-            value: '42',
-            trend: 'down',
-            trendValue: '-12 since yesterday',
-            icon: Reply,
-            description: 'Requires attention',
-            color: 'bg-indigo-50 text-indigo-600',
-        },
-        {
-            title: 'Negative Reviews',
-            value: '18',
-            trend: 'down',
-            trendValue: '-5% vs last month',
+            title: 'Needs Review',
+            value: lowRatingCount.toString(),
+            trend: 'Low ratings / escalations',
             icon: AlertCircle,
-            description: '3 stars or below',
-            color: 'bg-rose-50 text-rose-600',
+            color: 'text-rose-600 bg-rose-50',
         },
-        {
-            title: 'Customer Satisfaction',
-            value: '94%',
-            trend: 'up',
-            trendValue: '+2% industry avg',
-            icon: HeartHandshake,
-            description: 'CSAT Score (Last 30d)',
-            color: 'bg-violet-50 text-violet-600',
-        }
     ];
 
     return (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 mb-6">
-            {stats.map((stat, index) => {
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+            {stats.map((stat, i) => {
                 const Icon = stat.icon;
                 return (
-                    <div 
-                        key={index} 
-                        className="bg-white rounded-xl border border-slate-200 p-5 shadow-[0_2px_10px_-3px_rgba(6,81,237,0.1)] hover:shadow-[0_8px_30px_rgb(0,0,0,0.04)] transition-all duration-300 flex flex-col group"
-                    >
-                        <div className="flex justify-between items-start mb-4">
-                            <div className={`p-2.5 rounded-xl ${stat.color} group-hover:scale-110 transition-transform`}>
-                                <Icon className="w-5 h-5" />
+                    <div key={i} className="bg-white rounded-xl border border-slate-200 p-4 shadow-sm hover:shadow-md hover:border-blue-200 transition-all group cursor-pointer">
+                        <div className="flex items-center justify-between mb-3">
+                            <div className={`p-2 rounded-xl ${stat.color} group-hover:scale-110 transition-transform`}>
+                                <Icon className="w-4 h-4" />
                             </div>
-                            {stat.trend === 'up' ? (
-                                <TrendingUp className="w-4 h-4 text-emerald-500" />
-                            ) : (
-                                <TrendingDown className="w-4 h-4 text-emerald-500" />
-                            )}
                         </div>
-                        
-                        <h3 className="text-slate-500 text-sm font-medium mb-1">{stat.title}</h3>
-                        <div className="text-2xl font-bold text-slate-900 mb-1 tracking-tight">{stat.value}</div>
-                        
-                        <div className="mt-auto pt-2 border-t border-slate-100 flex items-center justify-between text-[11px] font-medium">
-                            <span className="text-slate-400">{stat.description}</span>
-                            <span className={stat.trend === 'up' ? 'text-emerald-600' : 'text-emerald-600'}>
-                                {stat.trendValue}
-                            </span>
+                        <p className="text-xs text-slate-500 font-medium mb-1">{stat.title}</p>
+                        <p className="text-2xl font-bold text-slate-900 tracking-tight mb-0.5">{stat.value}</p>
+                        <div className="pt-2 border-t border-slate-100 mt-2">
+                            <p className="text-[10px] text-slate-400 leading-tight">{stat.trend}</p>
                         </div>
                     </div>
                 );

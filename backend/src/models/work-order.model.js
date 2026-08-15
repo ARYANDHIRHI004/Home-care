@@ -109,8 +109,6 @@ const workOrderSchema = new mongoose.Schema(
   }
 );
 
-// Keep the Mongoose model name as "Ticket" to avoid breaking existing MongoDB collection documents.
-// All application code now refers to this as "WorkOrder" conceptually.
-export const WorkOrder = mongoose.model("Ticket", workOrderSchema);
+export const WorkOrder = mongoose.models.WorkOrder || mongoose.model("WorkOrder", workOrderSchema);
 
 export default WorkOrder;

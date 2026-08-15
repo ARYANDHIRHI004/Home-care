@@ -16,4 +16,5 @@ export const API_PATHS = Object.freeze({
   NOTIFICATIONS: "/notifications",
   SETTINGS: "/settings",
   TERMS: "/terms-and-conditions",
+  TICKETS: "/tickets",
 });
