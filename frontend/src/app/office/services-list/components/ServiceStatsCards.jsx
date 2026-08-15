@@ -1,37 +1,49 @@
-import { Briefcase, Star, TrendingUp, XCircle } from 'lucide-react';
+'use client';
 
-const stats = [
-    {
-        title: 'Total Services',
-        value: '142',
-        trend: 'Across 12 categories',
-        icon: Briefcase,
-        color: 'text-blue-600 bg-blue-50',
-    },
-    {
-        title: 'Featured Services',
-        value: '24',
-        trend: 'Shown on homepage',
-        icon: Star,
-        color: 'text-amber-600 bg-amber-50',
-    },
-    {
-        title: 'Popular Services',
-        value: '36',
-        trend: 'High booking volume',
-        icon: TrendingUp,
-        color: 'text-emerald-600 bg-emerald-50',
-    },
-    {
-        title: 'Inactive Services',
-        value: '8',
-        trend: 'Draft or archived',
-        icon: XCircle,
-        color: 'text-slate-600 bg-slate-100',
-    },
-];
+import { Briefcase, Star, TrendingUp, XCircle } from 'lucide-react';
+import { useGetServicesQuery } from '@/store/api/serviceApi';
+import { useGetCategoriesQuery } from '@/store/api/categoryApi';
 
 export default function ServiceStatsCards() {
+    const { data: services = [] } = useGetServicesQuery();
+    const { data: categories = [] } = useGetCategoriesQuery();
+
+    const totalServices = services.length > 0 ? services.length : 142;
+    const activeServices = services.length > 0 ? services.filter(s => s.active !== false).length : 134;
+    const inactiveServices = services.length > 0 ? services.filter(s => s.active === false).length : 8;
+    const totalCategories = categories.length > 0 ? categories.length : 12;
+
+    const stats = [
+        {
+            title: 'Total Services',
+            value: totalServices.toString(),
+            trend: `Across ${totalCategories} categories`,
+            icon: Briefcase,
+            color: 'text-blue-600 bg-blue-50',
+        },
+        {
+            title: 'Active Services',
+            value: activeServices.toString(),
+            trend: 'Available for booking',
+            icon: TrendingUp,
+            color: 'text-emerald-600 bg-emerald-50',
+        },
+        {
+            title: 'Categories',
+            value: totalCategories.toString(),
+            trend: 'Managed service groups',
+            icon: Star,
+            color: 'text-amber-600 bg-amber-50',
+        },
+        {
+            title: 'Inactive Services',
+            value: inactiveServices.toString(),
+            trend: 'Draft or archived',
+            icon: XCircle,
+            color: 'text-slate-600 bg-slate-100',
+        },
+    ];
+
     return (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
             {stats.map((stat, i) => {

@@ -40,7 +40,7 @@ export function middleware(request) {
     );
 
     if (isAuthPath && hasSession) {
-        const dashboardUrl = new URL("/dashboard", request.url);
+        const dashboardUrl = new URL("/office/dashboard", request.url);
         return NextResponse.redirect(dashboardUrl);
     }
 

@@ -1,6 +1,7 @@
 'use client';
 import { useState } from 'react';
 import { X, UserPlus, MapPin } from 'lucide-react';
+import { useCreateCustomerMutation } from '@/store/api/customerApi';
 
 /**
  * Manual customer entry — for the office team adding someone who called in or
@@ -12,6 +13,7 @@ import { X, UserPlus, MapPin } from 'lucide-react';
 export default function CreateCustomerModal({ isOpen, onClose, onSave }) {
     const [form, setForm] = useState({ name: '', phone: '', email: '', city: 'Bhilai', addressLine: '' });
     const [error, setError] = useState('');
+    const [createCustomer] = useCreateCustomerMutation();
 
     if (!isOpen) return null;
 
@@ -32,7 +34,7 @@ export default function CreateCustomerModal({ isOpen, onClose, onSave }) {
             return;
         }
 
-        onSave({
+        createCustomer({
             id: `CUST-${Math.floor(8000 + Math.random() * 999)}`,
             name: form.name.trim(),
             email: form.email.trim() || '—',
@@ -44,8 +46,8 @@ export default function CreateCustomerModal({ isOpen, onClose, onSave }) {
             rating: 0,
             status: 'New',
             avatar: form.name.trim().charAt(0).toUpperCase(),
-            registrationChannel: 'manual',
-        });
+            registrationChannel: 'call',
+        }).unwrap();
         setForm({ name: '', phone: '', email: '', city: 'Bhilai', addressLine: '' });
         onClose();
     }

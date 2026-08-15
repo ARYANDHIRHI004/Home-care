@@ -13,7 +13,7 @@ export const createEnquiry = async (req, res) => {
         phone,
         email,
         otpVerified: false,
-        registrationChannel: source || "call",
+        registrationChannel: "call",
       });
     }
 
