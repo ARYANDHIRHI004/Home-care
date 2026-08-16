@@ -4,13 +4,6 @@ import { MoreHorizontal, ChevronUp, ChevronDown, CheckCircle2, Clock } from 'luc
 import { useState } from 'react';
 import { useGetServicesQuery } from '@/store/api/serviceApi';
 
-const fallbackPricing = [
-    { id: 'PRC-101', service: 'Deep Home Cleaning (3 BHK)', category: 'Deep Cleaning', base: 4000, visit: 0, labour: 800, gst: 18, emergency: 500, weekend: 200, status: 'Active' },
-    { id: 'PRC-102', service: 'Split AC Servicing', category: 'AC Repair', base: 400, visit: 150, labour: 200, gst: 18, emergency: 200, weekend: 100, status: 'Active' },
-    { id: 'PRC-103', service: 'Wash Basin Pipe Repair', category: 'Plumbing', base: 0, visit: 149, labour: 150, gst: 18, emergency: 100, weekend: 50, status: 'Active' },
-    { id: 'PRC-104', service: 'Termite Control (2 BHK)', category: 'Pest Control', base: 2500, visit: 0, labour: 500, gst: 18, emergency: 0, weekend: 300, status: 'Active' },
-];
-
 export default function PricingTable({ searchQuery, onRowClick }) {
     const { data: rawServices = [], isLoading } = useGetServicesQuery();
     const [sortCol, setSortCol] = useState('service');
@@ -26,22 +19,21 @@ export default function PricingTable({ searchQuery, onRowClick }) {
         ? (sortDir === 'asc' ? <ChevronUp className="w-3.5 h-3.5 text-blue-500" /> : <ChevronDown className="w-3.5 h-3.5 text-blue-500" />)
         : <ChevronDown className="w-3.5 h-3.5 text-slate-300" />;
 
-    const pricing = rawServices.length > 0
-        ? rawServices.map(s => ({
-            id: `PRC-${s._id?.slice(-4).toUpperCase()}`,
-            _id: s._id,
-            service: s.name,
-            category: s.categoryId?.name || 'General',
-            base: s.basePrice || 0,
-            visit: s.visitCharges || 0,
-            labour: Math.round((s.basePrice || 0) * 0.2),
-            gst: 18,
-            emergency: 200,
-            weekend: 100,
-            status: s.active !== false ? 'Active' : 'Inactive',
-            _raw: s,
-        }))
-        : fallbackPricing;
+    // Only base/visit are real Service fields (see service.model.js) —
+    // labour/GST/surcharges were previously fabricated per-row (a random-ish
+    // 20%-of-base "labour" figure and hardcoded 18%/₹200/₹100) and shown as
+    // if they were real configured values. Dropped rather than kept as fake
+    // data with a real-looking column.
+    const pricing = rawServices.map(s => ({
+        id: `PRC-${s._id?.slice(-4).toUpperCase()}`,
+        _id: s._id,
+        service: s.name,
+        category: s.categoryId?.name || 'General',
+        base: s.basePrice || 0,
+        visit: s.visitCharges || 0,
+        status: s.active !== false ? 'Active' : 'Inactive',
+        _raw: s,
+    }));
 
     const filtered = pricing.filter(p =>
         !searchQuery ||
@@ -63,7 +55,7 @@ export default function PricingTable({ searchQuery, onRowClick }) {
                     <thead>
                         <tr className="bg-slate-50 border-b border-slate-100">
                             <th className="w-8 pl-5 py-3"><input type="checkbox" className="rounded border-slate-300 text-blue-600 focus:ring-blue-500" /></th>
-                            {['Service', 'Category', 'Base Price', 'Visit Charge', 'Estimated Labour', 'GST Rate', 'Status', 'Actions'].map((col, i) => (
+                            {['Service', 'Category', 'Base Price', 'Visit Charge', 'Status', 'Actions'].map((col, i) => (
                                 <th key={i} onClick={() => col !== 'Actions' && toggleSort(col.toLowerCase())} className={`px-4 py-3 text-left text-xs font-semibold text-slate-500 uppercase tracking-wider whitespace-nowrap ${col !== 'Actions' ? 'cursor-pointer hover:text-slate-700 select-none' : ''}`}>
                                     <div className="flex items-center gap-1">
                                         {col}
@@ -88,8 +80,6 @@ export default function PricingTable({ searchQuery, onRowClick }) {
                                 </td>
                                 <td className="px-4 py-3.5 font-bold text-slate-900">₹{p.base.toLocaleString()}</td>
                                 <td className="px-4 py-3.5 text-slate-600">₹{p.visit.toLocaleString()}</td>
-                                <td className="px-4 py-3.5 text-slate-600">₹{p.labour.toLocaleString()}</td>
-                                <td className="px-4 py-3.5 text-slate-500">{p.gst}%</td>
                                 <td className="px-4 py-3.5">
                                     {p.status === 'Active' ? (
                                         <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wide bg-emerald-100 text-emerald-700">
@@ -113,6 +103,12 @@ export default function PricingTable({ searchQuery, onRowClick }) {
                         ))}
                     </tbody>
                 </table>
+                {filtered.length === 0 && (
+                    <div className="text-center py-16">
+                        <h3 className="text-sm font-semibold text-slate-900 mb-1">No Pricing Configurations Found</h3>
+                        <p className="text-slate-500 text-xs mb-4">Try adjusting your filters or search query.</p>
+                    </div>
+                )}
             </div>
         </div>
     );

@@ -417,13 +417,13 @@ function FinalCTA() {
               Our Customer Support team is always available to help you process your request or find a better solution.
             </p>
             <div className="flex flex-wrap justify-center gap-4">
-              <a href="tel:+919876543210" className="px-8 py-4 bg-white text-blue-700 font-bold rounded-2xl shadow-lg hover:-translate-y-0.5 transition-all flex items-center gap-2">
+              <a href="tel:+919111466642" className="px-8 py-4 bg-white text-blue-700 font-bold rounded-2xl shadow-lg hover:-translate-y-0.5 transition-all flex items-center gap-2">
                 <Phone className="w-5 h-5" /> Call Support
               </a>
               <a href="#" className="px-8 py-4 bg-green-500 hover:bg-green-600 text-white font-bold rounded-2xl shadow-lg hover:-translate-y-0.5 transition-all flex items-center gap-2">
                 <FaWhatsapp className="w-5 h-5" /> WhatsApp Support
               </a>
-              <a href="mailto:support@homecare.in" className="px-8 py-4 bg-blue-700 border border-blue-500 hover:bg-blue-800 text-white font-bold rounded-2xl shadow-lg hover:-translate-y-0.5 transition-all flex items-center gap-2">
+              <a href="mailto:homecarre2405@gmail.com" className="px-8 py-4 bg-blue-700 border border-blue-500 hover:bg-blue-800 text-white font-bold rounded-2xl shadow-lg hover:-translate-y-0.5 transition-all flex items-center gap-2">
                 <Mail className="w-5 h-5" /> Email Support
               </a>
             </div>

@@ -1,37 +1,61 @@
 import { IndianRupee, ArrowUpCircle, ArrowDownCircle, Clock } from 'lucide-react';
-
-const stats = [
-    {
-        title: 'Avg Service Price',
-        value: '₹1,240',
-        trend: '+₹120 vs last month',
-        icon: IndianRupee,
-        color: 'text-blue-600 bg-blue-50',
-    },
-    {
-        title: 'Highest Price',
-        value: '₹14,999',
-        trend: 'Full Home Deep Clean',
-        icon: ArrowUpCircle,
-        color: 'text-emerald-600 bg-emerald-50',
-    },
-    {
-        title: 'Lowest Price',
-        value: '₹149',
-        trend: 'Wash Basin Repair',
-        icon: ArrowDownCircle,
-        color: 'text-amber-600 bg-amber-50',
-    },
-    {
-        title: 'Recently Updated',
-        value: '12',
-        trend: 'Prices changed this week',
-        icon: Clock,
-        color: 'text-violet-600 bg-violet-50',
-    },
-];
+import { useGetServicesQuery } from '@/store/api/serviceApi';
 
 export default function PricingStatsCards() {
+    const { data: rawServices = [] } = useGetServicesQuery();
+
+    const validPrices = rawServices.filter(s => s.basePrice !== undefined && s.basePrice !== null);
+    
+    let avgPrice = 0;
+    let highestPrice = { value: 0, name: '-' };
+    let lowestPrice = { value: 0, name: '-' };
+    
+    if (validPrices.length > 0) {
+        const total = validPrices.reduce((sum, s) => sum + s.basePrice, 0);
+        avgPrice = Math.round(total / validPrices.length);
+        
+        const sortedDesc = [...validPrices].sort((a, b) => b.basePrice - a.basePrice);
+        highestPrice = { value: sortedDesc[0].basePrice, name: sortedDesc[0].name };
+        
+        const sortedAsc = [...validPrices].sort((a, b) => a.basePrice - b.basePrice);
+        lowestPrice = { value: sortedAsc[0].basePrice, name: sortedAsc[0].name };
+    }
+
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
+    const recentCount = rawServices.filter(s => new Date(s.updatedAt) >= sevenDaysAgo).length;
+
+    const stats = [
+        {
+            title: 'Avg Service Price',
+            value: `₹${avgPrice.toLocaleString()}`,
+            trend: 'Across all services',
+            icon: IndianRupee,
+            color: 'text-blue-600 bg-blue-50',
+        },
+        {
+            title: 'Highest Price',
+            value: `₹${highestPrice.value.toLocaleString()}`,
+            trend: highestPrice.name,
+            icon: ArrowUpCircle,
+            color: 'text-emerald-600 bg-emerald-50',
+        },
+        {
+            title: 'Lowest Price',
+            value: `₹${lowestPrice.value.toLocaleString()}`,
+            trend: lowestPrice.name,
+            icon: ArrowDownCircle,
+            color: 'text-amber-600 bg-amber-50',
+        },
+        {
+            title: 'Recently Updated',
+            value: recentCount.toString(),
+            trend: 'Prices changed this week',
+            icon: Clock,
+            color: 'text-violet-600 bg-violet-50',
+        },
+    ];
+
     return (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
             {stats.map((stat, i) => {

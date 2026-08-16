@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
+import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { BsShieldCheck } from 'react-icons/bs';
 import { FiClock, FiLock, FiHeadphones, FiFileText } from 'react-icons/fi';
@@ -42,15 +43,6 @@ import {
 // ==========================================
 // MOCK DATA & CONFIGURATION
 // ==========================================
-
-const TRUST_BAR_ITEMS = [
-  { icon: BsShieldCheck, label: 'Verified Experts' },
-  { icon: DollarSign, label: 'Transparent Pricing' },
-  { icon: FiClock, label: 'Same-Day Service' },
-  { icon: FiLock, label: 'Secure Payments' },
-  { icon: FiHeadphones, label: '24/7 Support' },
-  { icon: FiFileText, label: 'GST Billing' },
-];
 
 const SERVICE_CATEGORIES = [
   {
@@ -160,11 +152,18 @@ const WHY_CHOOSE_US = [
 ];
 
 const PROCESS_STEPS = [
-  { step: '01', title: 'Book Service', desc: 'Select service online or request an instant call back.' },
-  { step: '02', title: 'Receive Estimate', desc: 'Our office reviews your scope & sends an official quote.' },
-  { step: '03', title: 'Professional Assigned', desc: 'Background-verified expert is dispatched with live status.' },
-  { step: '04', title: 'Service Completed', desc: 'Expert carries out work following strict safety standards.' },
-  { step: '05', title: 'Invoice & Payment', desc: 'Inspect work, receive digital GST bill & pay via UPI/Cash.' },
+  { step: '01', title: 'Request', desc: 'Pick a service & submit your requirement.', icon: FileCheck },
+  { step: '02', title: 'We Call to Confirm', desc: 'Office team calls within 15 mins with a fixed estimate.', icon: FiHeadphones },
+  { step: '03', title: 'Service Done', desc: 'Verified professional completes the job on schedule.', icon: UserCheck },
+  { step: '04', title: 'Pay', desc: 'Pay via UPI/Cash & get a digital GST invoice.', icon: Receipt },
+];
+
+const QUICK_CATEGORIES = [
+  { id: 'cleaning', name: 'Cleaning', icon: Sparkles },
+  { id: 'electrical', name: 'Electrical', icon: Zap },
+  { id: 'plumbing', name: 'Plumbing', icon: Wrench },
+  { id: 'ac-service', name: 'AC Service', icon: Wind },
+  { id: 'painting', name: 'Painting', icon: Paintbrush },
 ];
 
 const STATS = [
@@ -198,32 +197,11 @@ const BEFORE_AFTER_DATA = [
 
 const TESTIMONIALS = [
   {
-    name: 'Aakash Sharma',
-    city: 'Raipur',
-    rating: 5,
-    review: 'Booked AC jet cleaning in the morning, and the team arrived by 2 PM. Transparent pricing of ₹399 as quoted. Very clean work!',
-    image: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=200',
-  },
-  {
     name: 'Priya Verma',
     city: 'Bhilai - Durg',
     rating: 5,
     review: 'The full house deep cleaning team was extremely polite and thorough. They spent 5 hours and made the tiles shine like new.',
     image: 'https://images.unsplash.com/photo-1517841905240-472988babdf9?auto=format&fit=crop&q=80&w=200',
-  },
-  {
-    name: 'Ramesh Patel',
-    city: 'Nagpur',
-    rating: 5,
-    review: 'I love that they send a GST invoice directly to WhatsApp. Background-verified electrician fixed my main trip issue safely.',
-    image: 'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=200',
-  },
-  {
-    name: 'Sneh Lata Sahu',
-    city: 'Raipur',
-    rating: 5,
-    review: 'Prompt response time! Got a call within 10 minutes of submitting my enquiry. Great platform for Tier-2 cities.',
-    image: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&q=80&w=200',
   },
   {
     name: 'Vikramjit Singh',
@@ -323,18 +301,33 @@ export default function HomeServiceLandingPage() {
               {/* Action Buttons */}
               <div className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4 pt-2">
                 <a
-                  href="#book"
+                  href="#services"
                   className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-[#F97316] hover:bg-orange-600 text-white font-bold text-base px-8 py-4 rounded-xl shadow-lg shadow-orange-500/25 hover:shadow-xl hover:shadow-orange-500/35 transition-all duration-200 transform hover:-translate-y-0.5"
                 >
                   <span>Book Service Now</span>
                   <ArrowRight className="w-5 h-5" />
                 </a>
                 <a
-                  href="#services"
+                  href="tel:+919111466642"
                   className="w-full sm:w-auto inline-flex items-center justify-center gap-2 bg-white hover:bg-gray-50 text-[#111827] font-semibold text-base px-8 py-4 rounded-xl border border-[#E5E7EB] shadow-sm transition-all duration-200"
                 >
-                  <span>Explore Services</span>
+                  <Phone className="w-4 h-4" />
+                  <span>Call Us Directly</span>
                 </a>
+              </div>
+
+              {/* Quick Category Picker — first interaction is "find my service" */}
+              <div className="flex flex-wrap items-center justify-center lg:justify-start gap-2.5 pt-1">
+                {QUICK_CATEGORIES.map((cat) => (
+                  <a
+                    key={cat.id}
+                    href="#services"
+                    className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-full bg-white hover:bg-blue-50 border border-[#E5E7EB] hover:border-blue-200 text-xs font-semibold text-gray-700 hover:text-[#2563EB] shadow-sm transition-colors"
+                  >
+                    <cat.icon className="w-3.5 h-3.5" />
+                    <span>{cat.name}</span>
+                  </a>
+                ))}
               </div>
 
               {/* Trust Indicators Bar */}
@@ -445,23 +438,7 @@ export default function HomeServiceLandingPage() {
       </section>
 
       {/* ==========================================
-          3. TRUST BAR
-      ========================================== */}
-      <section className="bg-[#F8FAFC] border-y border-[#E5E7EB] py-6">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6 items-center">
-            {TRUST_BAR_ITEMS.map((item, idx) => (
-              <div key={idx} className="flex items-center justify-center lg:justify-start gap-2.5">
-                <item.icon className="w-5 h-5 text-[#2563EB] shrink-0" />
-                <span className="text-xs font-semibold text-gray-800 whitespace-nowrap">{item.label}</span>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ==========================================
-          4. SERVICE CATEGORIES GRID
+          3. SERVICE CATEGORIES GRID
       ========================================== */}
       <section id="services" className="py-24 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -523,22 +500,40 @@ export default function HomeServiceLandingPage() {
       </section>
 
       {/* ==========================================
-          5. WHY CHOOSE US
+          4. HOW IT WORKS — condensed strip
       ========================================== */}
-      <section className="py-24 bg-[#F8FAFC] border-y border-[#E5E7EB]">
+      <section id="how-it-works" className="py-14 bg-white border-y border-[#E5E7EB]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-3xl mx-auto space-y-4 mb-16">
-            <span className="text-xs font-bold uppercase tracking-widest text-[#2563EB] bg-blue-50 px-3.5 py-1.5 rounded-full border border-blue-100">
-              The HomeCare Difference
-            </span>
-            <h2 className="font-['Poppins',sans-serif] text-3xl sm:text-4xl font-bold text-[#111827]">
-              Why Homeowners Choose Us
+          <div className="text-center mb-10">
+            <h2 className="font-['Poppins',sans-serif] text-xl sm:text-2xl font-bold text-[#111827]">
+              How It Works
             </h2>
-            <p className="text-base text-gray-600">
-              We operate like a multi-city enterprise, ensuring safety, quality, and complete transparency.
-            </p>
           </div>
 
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 lg:gap-6">
+            {PROCESS_STEPS.map((step, idx) => (
+              <div key={step.step} className="relative flex items-start gap-3 p-4 rounded-xl bg-[#F8FAFC] border border-[#E5E7EB]">
+                <div className="w-10 h-10 rounded-full bg-[#2563EB] text-white flex items-center justify-center shrink-0">
+                  <step.icon className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-['Poppins',sans-serif] font-bold text-sm text-[#111827]">{step.title}</h3>
+                  <p className="text-xs text-gray-500 leading-snug mt-0.5">{step.desc}</p>
+                </div>
+                {idx < PROCESS_STEPS.length - 1 && (
+                  <ChevronRight className="hidden lg:block absolute top-1/2 -right-5 -translate-y-1/2 w-4 h-4 text-gray-300" />
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ==========================================
+          5. TRUST BADGES
+      ========================================== */}
+      <section className="py-20 bg-[#F8FAFC] border-b border-[#E5E7EB]">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-8">
             {WHY_CHOOSE_US.map((item, idx) => (
               <motion.div
@@ -562,156 +557,94 @@ export default function HomeServiceLandingPage() {
       </section>
 
       {/* ==========================================
-          6. HOW IT WORKS (TIMELINE)
+          6. TESTIMONIALS & REVIEWS
       ========================================== */}
-    
-      {/* ==========================================
-          7. HOMECARE SERVICE STANDARDS
-      ========================================== */}
-      <section className="py-24 bg-[#2563EB] text-white relative overflow-hidden">
-        {/* Subtle Background Gradients & Glows */}
-        <div className="absolute top-0 left-1/4 w-[500px] h-[500px] bg-blue-400/30 rounded-full mix-blend-overlay filter blur-[100px] animate-pulse" style={{ animationDuration: '4s' }} />
-        <div className="absolute bottom-0 right-1/4 w-[500px] h-[500px] bg-indigo-500/30 rounded-full mix-blend-overlay filter blur-[120px] animate-pulse" style={{ animationDuration: '6s' }} />
-
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          
-          {/* Section Header */}
-          <div className="text-center max-w-3xl mx-auto space-y-5 mb-16">
-            <motion.div 
-              initial={{ opacity: 0, y: 20 }} 
-              whileInView={{ opacity: 1, y: 0 }} 
-              viewport={{ once: true }}
-              className="inline-flex items-center justify-center"
-            >
-              <span className="text-[11px] font-bold uppercase tracking-[0.2em] text-blue-100 bg-white/10 backdrop-blur-md px-4 py-2 rounded-full border border-white/20 shadow-[0_0_15px_rgba(255,255,255,0.1)]">
-                Our Service Standards
-              </span>
-            </motion.div>
-            <motion.h2 
-              initial={{ opacity: 0, y: 20 }} 
-              whileInView={{ opacity: 1, y: 0 }} 
-              viewport={{ once: true }}
-              transition={{ delay: 0.1 }}
-              className="font-['Poppins',sans-serif] text-3xl sm:text-4xl md:text-5xl font-bold text-white tracking-tight leading-[1.15]"
-            >
-              Every Service Follows<br className="hidden sm:block" /> The Same Professional Standard
-            </motion.h2>
-            <motion.p 
-              initial={{ opacity: 0, y: 20 }} 
-              whileInView={{ opacity: 1, y: 0 }} 
-              viewport={{ once: true }}
-              transition={{ delay: 0.2 }}
-              className="text-base sm:text-lg text-blue-100/90 font-light max-w-2xl mx-auto leading-relaxed"
-            >
-              Every HomeCare booking follows a standardized operating process to ensure transparency, professionalism and complete customer satisfaction.
-            </motion.p>
-          </div>
-
-          {/* Premium Cards Grid */}
-          <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-5 gap-6 mb-24">
-            {[
-              { title: 'Verified Professionals', desc: 'Background & Identity Verified', icon: BsShieldCheck },
-              { title: 'Official Estimate', desc: 'Transparent pricing before work begins', icon: FiFileText },
-              { title: 'Live Service Updates', desc: 'Real-time WhatsApp booking notifications', icon: Smartphone },
-              { title: 'Digital GST Invoice', desc: 'Professional digital billing after completion', icon: Receipt },
-              { title: 'Dedicated Customer Support', desc: 'Support before, during and after service', icon: FiHeadphones }
-            ].map((card, idx) => (
-              <motion.div
-                key={idx}
-                initial={{ opacity: 0, y: 30 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ delay: idx * 0.1 + 0.3, duration: 0.5, ease: "easeOut" }}
-                whileHover={{ y: -8, scale: 1.02 }}
-                className="group relative bg-white/10 backdrop-blur-xl border border-white/20 rounded-2xl p-6 text-left hover:bg-white/15 transition-all duration-300 shadow-[0_8px_32px_rgba(0,0,0,0.1)] overflow-hidden"
-              >
-                {/* Glass reflection effect on hover */}
-                <div className="absolute inset-0 bg-gradient-to-br from-white/20 to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-500 rounded-2xl pointer-events-none" />
-                
-                <div className="w-12 h-12 rounded-xl bg-white/20 flex items-center justify-center mb-5 border border-white/30 group-hover:scale-110 transition-transform duration-300">
-                  <card.icon className="w-6 h-6 text-white" />
-                </div>
-                <h3 className="font-['Poppins',sans-serif] font-bold text-lg text-white mb-2 leading-snug">
-                  {card.title}
-                </h3>
-                <p className="text-sm text-blue-100/80 font-normal leading-relaxed">
-                  {card.desc}
-                </p>
-              </motion.div>
-            ))}
-          </div>
-
-          {/* Horizontal/Vertical Timeline */}
-          <div className="max-w-6xl mx-auto">
-            <motion.div 
-              initial={{ opacity: 0 }}
-              whileInView={{ opacity: 1 }}
-              viewport={{ once: true }}
-              className="text-center mb-12"
-            >
-              <h3 className="text-sm font-bold uppercase tracking-widest text-white/90">HomeCare Service Process</h3>
-            </motion.div>
-
-            <div className="relative">
-              {/* Connecting Line Desktop */}
-              <div className="hidden lg:block absolute top-5 left-0 w-full h-0.5 bg-white/10 rounded-full overflow-hidden">
-                 <motion.div 
-                   initial={{ scaleX: 0 }}
-                   whileInView={{ scaleX: 1 }}
-                   viewport={{ once: true }}
-                   transition={{ duration: 1.5, ease: "easeInOut" }}
-                   className="w-full h-full bg-gradient-to-r from-blue-300 via-white to-blue-300 origin-left"
-                 />
-              </div>
-
-              {/* Connecting Line Mobile/Tablet */}
-              <div className="block lg:hidden absolute left-[19px] top-4 bottom-4 w-0.5 bg-white/10 rounded-full overflow-hidden">
-                <motion.div 
-                   initial={{ scaleY: 0 }}
-                   whileInView={{ scaleY: 1 }}
-                   viewport={{ once: true }}
-                   transition={{ duration: 1.5, ease: "easeInOut" }}
-                   className="w-full h-full bg-gradient-to-b from-blue-300 via-white to-blue-300 origin-top"
-                 />
-              </div>
-
-              <div className="flex flex-col lg:flex-row justify-between relative z-10 gap-8 lg:gap-2">
-                {[
-                  'Service Request',
-                  'Requirement Review',
-                  'Official Estimate',
-                  'Professional Assignment',
-                  'Service Completion',
-                  'Digital Invoice',
-                  'Post-Service Support'
-                ].map((step, idx) => (
-                  <motion.div
-                    key={idx}
-                    initial={{ opacity: 0, y: 20 }}
-                    whileInView={{ opacity: 1, y: 0 }}
-                    viewport={{ once: true }}
-                    transition={{ delay: 0.5 + (idx * 0.1) }}
-                    className="flex lg:flex-col items-center gap-4 lg:gap-4 group"
-                  >
-                    <div className="w-10 h-10 rounded-full bg-[#2563EB] border-4 border-white/20 flex items-center justify-center shrink-0 group-hover:border-white/50 group-hover:bg-white transition-all duration-300">
-                      <div className="w-2.5 h-2.5 rounded-full bg-white group-hover:bg-[#2563EB] transition-colors shadow-[0_0_10px_rgba(255,255,255,0.8)]" />
-                    </div>
-                    <span className="text-sm font-semibold text-blue-100 group-hover:text-white transition-colors lg:text-center lg:max-w-[120px] leading-tight">
-                      {step}
-                    </span>
-                  </motion.div>
+      <section className="py-24 bg-[#F8FAFC] border-y border-[#E5E7EB]">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center max-w-3xl mx-auto space-y-4 mb-16">
+            <span className="text-xs font-bold uppercase tracking-widest text-[#2563EB] bg-blue-50 px-3.5 py-1.5 rounded-full border border-blue-100">
+              Customer Feedback
+            </span>
+            <h2 className="font-['Poppins',sans-serif] text-3xl sm:text-4xl font-bold text-[#111827]">
+              Loved by Homeowners in Bhilai-Durg
+            </h2>
+            <div className="inline-flex items-center gap-2 bg-white px-4 py-2 rounded-xl border border-gray-200 shadow-sm">
+              <span className="font-bold text-sm text-gray-900">Google Review Verified</span>
+              <div className="flex text-amber-400">
+                {[...Array(5)].map((_, i) => (
+                  <Star key={i} className="w-4 h-4 fill-current" />
                 ))}
               </div>
+              <span className="text-xs font-bold text-gray-600">4.9 / 5</span>
             </div>
           </div>
 
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {TESTIMONIALS.map((review, idx) => (
+              <div key={idx} className="bg-white p-6 rounded-2xl border border-[#E5E7EB] shadow-sm flex flex-col justify-between">
+                <div className="space-y-3">
+                  <div className="flex text-amber-400">
+                    {[...Array(review.rating)].map((_, i) => (
+                      <Star key={i} className="w-4 h-4 fill-current" />
+                    ))}
+                  </div>
+                  <p className="text-xs text-gray-600 leading-relaxed font-normal">
+                    "{review.review}"
+                  </p>
+                </div>
+
+                <div className="flex items-center gap-3 pt-4 mt-4 border-t border-gray-100">
+                  <img src={review.image} alt={review.name} className="w-10 h-10 rounded-full object-cover" />
+                  <div>
+                    <h4 className="font-['Poppins',sans-serif] font-bold text-xs text-[#111827]">{review.name}</h4>
+                    <p className="text-[11px] text-gray-400">{review.city}</p>
+                  </div>
+                </div>
+              </div>
+            ))}
+          </div>
         </div>
       </section>
 
       {/* ==========================================
-          8. BEFORE & AFTER GALLERY
+          7. TRUST & SAFETY (LARGE SECTION)
       ========================================== */}
       <section className="py-24 bg-white">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="text-center max-w-3xl mx-auto space-y-4 mb-16">
+            <span className="text-xs font-bold uppercase tracking-widest text-[#2563EB] bg-blue-50 px-3.5 py-1.5 rounded-full border border-blue-100">
+              Safety First Policy
+            </span>
+            <h2 className="font-['Poppins',sans-serif] text-3xl sm:text-4xl font-bold text-[#111827]">
+              Complete Protection For Your Home
+            </h2>
+          </div>
+
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
+            {[
+              { title: 'Police Verified Staff', icon: BsShieldCheck, desc: 'Official background checks on all technicians.' },
+              { title: 'Background Verification', icon: UserCheck, desc: 'Aadhaar & permanent address logged.' },
+              { title: 'GST Registered', icon: FiFileText, desc: 'Compliant tax invoices for all orders.' },
+              { title: 'Invoice Provided', icon: Download, desc: 'Automated WhatsApp & Email PDF bills.' },
+              { title: 'Secure Online Payments', icon: FiLock, desc: '256-bit encrypted Razorpay checkout.' },
+              
+              { title: 'Uniformed Professionals', icon: UserCheck, desc: 'Standardized ID badges & carrying toolkits.' },
+              { title: '24/7 Support Desk', icon: FiHeadphones, desc: 'Dedicated helpline for booking queries.' },
+            ].map((item, idx) => (
+              <div key={idx} className="p-6 bg-[#F8FAFC] rounded-2xl border border-[#E5E7EB] text-center space-y-2">
+                <item.icon className="w-8 h-8 text-[#2563EB] mx-auto mb-3" />
+                <h3 className="font-['Poppins',sans-serif] font-bold text-sm text-[#111827]">{item.title}</h3>
+                <p className="text-xs text-gray-500 leading-relaxed">{item.desc}</p>
+              </div>
+            ))}
+          </div>
+        </div>
+      </section>
+
+      {/* ==========================================
+          8. BEFORE & AFTER GALLERY — optional secondary content, below the fold
+      ========================================== */}
+      <section className="py-24 bg-[#F8FAFC] border-y border-[#E5E7EB]">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="text-center max-w-3xl mx-auto space-y-4 mb-16">
             <span className="text-xs font-bold uppercase tracking-widest text-[#2563EB] bg-blue-50 px-3.5 py-1.5 rounded-full border border-blue-100">
@@ -772,139 +705,7 @@ export default function HomeServiceLandingPage() {
       </section>
 
       {/* ==========================================
-          9. TESTIMONIALS & REVIEWS
-      ========================================== */}
-      <section className="py-24 bg-[#F8FAFC] border-y border-[#E5E7EB]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-3xl mx-auto space-y-4 mb-16">
-            <span className="text-xs font-bold uppercase tracking-widest text-[#2563EB] bg-blue-50 px-3.5 py-1.5 rounded-full border border-blue-100">
-              Customer Feedback
-            </span>
-            <h2 className="font-['Poppins',sans-serif] text-3xl sm:text-4xl font-bold text-[#111827]">
-              Loved by Homeowners in Your City
-            </h2>
-            <div className="inline-flex items-center gap-2 bg-white px-4 py-2 rounded-xl border border-gray-200 shadow-sm">
-              <span className="font-bold text-sm text-gray-900">Google Review Verified</span>
-              <div className="flex text-amber-400">
-                {[...Array(5)].map((_, i) => (
-                  <Star key={i} className="w-4 h-4 fill-current" />
-                ))}
-              </div>
-              <span className="text-xs font-bold text-gray-600">4.9 / 5</span>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {TESTIMONIALS.map((review, idx) => (
-              <div key={idx} className="bg-white p-6 rounded-2xl border border-[#E5E7EB] shadow-sm flex flex-col justify-between">
-                <div className="space-y-3">
-                  <div className="flex text-amber-400">
-                    {[...Array(review.rating)].map((_, i) => (
-                      <Star key={i} className="w-4 h-4 fill-current" />
-                    ))}
-                  </div>
-                  <p className="text-xs text-gray-600 leading-relaxed font-normal">
-                    "{review.review}"
-                  </p>
-                </div>
-
-                <div className="flex items-center gap-3 pt-4 mt-4 border-t border-gray-100">
-                  <img src={review.image} alt={review.name} className="w-10 h-10 rounded-full object-cover" />
-                  <div>
-                    <h4 className="font-['Poppins',sans-serif] font-bold text-xs text-[#111827]">{review.name}</h4>
-                    <p className="text-[11px] text-gray-400">{review.city}</p>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ==========================================
-          10. COMPANY PROCESS INFOGRAPHIC
-      ========================================== */}
-   
-      
-      {/* ==========================================
-          12. TRUST & SAFETY (LARGE SECTION)
-      ========================================== */}
-      <section className="py-24 bg-white">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-3xl mx-auto space-y-4 mb-16">
-            <span className="text-xs font-bold uppercase tracking-widest text-[#2563EB] bg-blue-50 px-3.5 py-1.5 rounded-full border border-blue-100">
-              Safety First Policy
-            </span>
-            <h2 className="font-['Poppins',sans-serif] text-3xl sm:text-4xl font-bold text-[#111827]">
-              Complete Protection For Your Home
-            </h2>
-          </div>
-
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-6">
-            {[
-              { title: 'Police Verified Staff', icon: BsShieldCheck, desc: 'Official background checks on all technicians.' },
-              { title: 'Background Verification', icon: UserCheck, desc: 'Aadhaar & permanent address logged.' },
-              { title: 'GST Registered', icon: FiFileText, desc: 'Compliant tax invoices for all orders.' },
-              { title: 'Invoice Provided', icon: Download, desc: 'Automated WhatsApp & Email PDF bills.' },
-              { title: 'Secure Online Payments', icon: FiLock, desc: '256-bit encrypted Razorpay checkout.' },
-              
-              { title: 'Uniformed Professionals', icon: UserCheck, desc: 'Standardized ID badges & carrying toolkits.' },
-              { title: '24/7 Support Desk', icon: FiHeadphones, desc: 'Dedicated helpline for booking queries.' },
-            ].map((item, idx) => (
-              <div key={idx} className="p-6 bg-[#F8FAFC] rounded-2xl border border-[#E5E7EB] text-center space-y-2">
-                <item.icon className="w-8 h-8 text-[#2563EB] mx-auto mb-3" />
-                <h3 className="font-['Poppins',sans-serif] font-bold text-sm text-[#111827]">{item.title}</h3>
-                <p className="text-xs text-gray-500 leading-relaxed">{item.desc}</p>
-              </div>
-            ))}
-          </div>
-        </div>
-      </section>
-
-      {/* ==========================================
-          13. COMPANY STORY
-      ========================================== */}
-      <section id="about" className="py-24 bg-[#F8FAFC] border-y border-[#E5E7EB]">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
-            <div className="lg:col-span-6 space-y-6">
-              <span className="text-xs font-bold uppercase tracking-widest text-[#2563EB] bg-blue-50 px-3.5 py-1.5 rounded-full border border-blue-100">
-                Who We Are
-              </span>
-              <h2 className="font-['Poppins',sans-serif] text-3xl sm:text-4xl font-bold text-[#111827]">
-                Building the Future of Home Services in Regional India
-              </h2>
-              <p className="text-sm text-gray-600 leading-relaxed">
-                Founded with a mission to organize the fragmented home care sector in Tier-2 & Tier-3 cities, HomeCare bridges the gap between skilled local technicians and homeowners seeking quality, safety, and fixed pricing.
-              </p>
-
-              <div className="grid grid-cols-2 gap-4 pt-2">
-                <div className="bg-white p-4 rounded-xl border border-gray-200">
-                  <h4 className="font-bold text-sm text-[#2563EB] mb-1">Our Mission</h4>
-                  <p className="text-xs text-gray-500">Provide safe, transparent, and instant home services through digital office management.</p>
-                </div>
-                <div className="bg-white p-4 rounded-xl border border-gray-200">
-                  <h4 className="font-bold text-sm text-[#2563EB] mb-1">Our Vision</h4>
-                  <p className="text-xs text-gray-500">Become the most trusted household brand for home maintenance across 50+ regional hubs.</p>
-                </div>
-              </div>
-            </div>
-
-            <div className="lg:col-span-6">
-              <div className="relative rounded-2xl overflow-hidden shadow-xl border border-gray-200">
-                <img
-                  src="https://images.unsplash.com/photo-1521737711867-e3b97375f902?auto=format&fit=crop&q=80&w=800"
-                  alt="Professional Team"
-                  className="w-full h-[400px] object-cover"
-                />
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* ==========================================
-          14. FAQ (ACCORDION)
+          9. FAQ (ACCORDION)
       ========================================== */}
       <section id="faq" className="py-24 bg-white">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -946,7 +747,7 @@ export default function HomeServiceLandingPage() {
       </section>
 
       {/* ==========================================
-          15. FINAL CTA BANNER
+          10. FINAL CTA BANNER
       ========================================== */}
       <section id="book" className="py-16 max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="relative rounded-3xl p-10 lg:p-16 overflow-hidden bg-gradient-to-r from-blue-600 via-blue-700 to-indigo-800 text-white shadow-2xl text-center lg:text-left flex flex-col lg:flex-row items-center justify-between gap-8">
@@ -963,14 +764,14 @@ export default function HomeServiceLandingPage() {
           </div>
 
           <div className="flex flex-col sm:flex-row items-center gap-4 relative z-10 w-full lg:w-auto">
-            <a
-              href="#book"
+            <Link
+              href="/customer/book"
               className="w-full sm:w-auto bg-[#F97316] hover:bg-orange-600 text-white font-bold text-base px-8 py-4 rounded-xl shadow-lg transition-all text-center"
             >
               Book Service Now
-            </a>
+            </Link>
             <a
-              href="tel:+919876543210"
+              href="tel:+919111466642"
               className="w-full sm:w-auto bg-white/10 hover:bg-white/20 border border-white/30 text-white font-bold text-base px-8 py-4 rounded-xl transition-all flex items-center justify-center gap-2"
             >
               <Phone className="w-5 h-5" />

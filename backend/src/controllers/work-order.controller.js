@@ -1,5 +1,48 @@
 import WorkOrder from "../models/work-order.model.js";
 import Enquiry from "../models/enquiry.model.js";
+import ServicePartner from "../models/servicePartner.model.js";
+import { sendEmail } from "../utils/mailer.js";
+import { buildStatusUpdateEmailHtml } from "../emails/statusUpdateEmail.js";
+import { resolveCustomerFromWorkOrder } from "../utils/resolveCustomer.js";
+import { notifyCustomer } from "./notification.controller.js";
+import { env } from "../utils/env.js";
+
+// Fire-and-record, same pattern as the estimate/invoice emails — a failed
+// send must not undo the assignment that was just made.
+const trySendPartnerAssignedEmail = async (workOrder, partnerName) => {
+  const customer = await resolveCustomerFromWorkOrder(workOrder);
+  if (!customer) return;
+
+  await notifyCustomer({
+    customerId: customer._id,
+    type: "partner_assigned",
+    message: `${partnerName || "A professional"} has been assigned to your request ${workOrder.workOrderNumber}.`,
+  });
+
+  if (!customer.email) return; // phone-only signups are valid, just skip the email leg
+
+  try {
+    const dashboardUrl = `${env.CUSTOMER_APP_URL}/customer/services`;
+    const html = buildStatusUpdateEmailHtml({
+      customerName: customer.name || workOrder.customerName,
+      headline: "A professional has been assigned",
+      detail: `${partnerName || "Our team"} will be handling your request (${workOrder.workOrderNumber}). Check your dashboard for updates.`,
+      dashboardUrl,
+      ctaLabel: "View My Services",
+    });
+    await sendEmail({
+      to: customer.email,
+      subject: `Professional assigned — ${workOrder.workOrderNumber}`,
+      html,
+    });
+    workOrder.emailSentAt = new Date();
+    workOrder.emailSendError = null;
+  } catch (error) {
+    workOrder.emailSentAt = null;
+    workOrder.emailSendError = error.message || "Unknown error sending email";
+  }
+  await workOrder.save();
+};
 
 const generateWorkOrderNumber = () => {
   const year = new Date().getFullYear();
@@ -99,6 +142,12 @@ export const assignPartner = async (req, res) => {
     );
 
     if (!workOrder) return res.status(404).json({ message: "Work order not found" });
+
+    const partner = assignedPartnerId
+      ? await ServicePartner.findById(assignedPartnerId).select("name").lean()
+      : null;
+    await trySendPartnerAssignedEmail(workOrder, partner?.name);
+
     res.json(workOrder);
   } catch (error) {
     res.status(400).json({ message: error.message });

@@ -1,4 +1,4 @@
-import { MoreHorizontal, ChevronUp, ChevronDown, FileText, CheckCircle2, Clock, Send, FileEdit, Download } from 'lucide-react';
+import { MoreHorizontal, ChevronUp, ChevronDown, FileText, CheckCircle2, AlertCircle, Clock, Send, FileEdit, Download } from 'lucide-react';
 import { useState } from 'react';
 import { useGetInvoicesQuery } from '@/store/api/invoiceApi';
 
@@ -9,16 +9,19 @@ export default function InvoiceTable({ searchQuery, onRowClick, onEditInvoice })
     const [openMenuId, setOpenMenuId] = useState(null);
     const { data: rawInvoices = [], isLoading, isError } = useGetInvoicesQuery();
 
+    // Invoice's real fields are workOrderId (a Ticket, populated with
+    // customerId), lineItems, tax, discount, total, paymentStatus
+    // (unpaid/partial/paid) — see invoice.model.js. customerId/totalAmount/
+    // gstAmount/subtotal aren't fields on this model at all.
     const invoices = rawInvoices.map(inv => ({
         id: inv._id,
         displayId: inv.invoiceNumber || `INV-${inv._id.slice(-6).toUpperCase()}`,
-        customer: inv.customerId?.name || 'Unknown',
-        booking: inv.workOrderId ? `WO-${String(inv.workOrderId).slice(-4).toUpperCase()}` : '—',
-        subtotal: inv.subtotal || 0,
-        gst: inv.gstAmount || 0,
+        customer: inv.workOrderId?.customerId?.name || inv.workOrderId?.customerName || 'Unknown',
+        booking: inv.workOrderId ? `WO-${String(inv.workOrderId._id || inv.workOrderId).slice(-4).toUpperCase()}` : '—',
+        gst: inv.tax || 0,
         discount: inv.discount || 0,
-        total: inv.totalAmount || 0,
-        status: inv.paymentStatus || inv.status || 'Draft',
+        total: inv.total || 0,
+        status: inv.paymentStatus || 'unpaid',
         date: inv.createdAt ? new Date(inv.createdAt).toLocaleDateString() : '—',
         _raw: inv,
     }));
@@ -38,12 +41,14 @@ export default function InvoiceTable({ searchQuery, onRowClick, onEditInvoice })
         i.displayId.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
+    // Matches Invoice.paymentStatus's real enum (unpaid/partial/paid) — the
+    // old Draft/Sent/Paid/Overdue keys never matched real data, so every
+    // real invoice rendered no badge at all.
     const getStatusBadge = (status) => {
         switch (status) {
-            case 'Paid': return <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wide bg-emerald-50 text-emerald-700 border border-emerald-200"><CheckCircle2 className="w-3 h-3" /> Paid</span>;
-            case 'Sent': return <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wide bg-blue-50 text-blue-700 border border-blue-200"><Send className="w-3 h-3" /> Sent</span>;
-            case 'Draft': return <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wide bg-slate-100 text-slate-700 border border-slate-200"><FileEdit className="w-3 h-3" /> Draft</span>;
-            case 'Overdue': return <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wide bg-rose-50 text-rose-700 border border-rose-200"><Clock className="w-3 h-3" /> Overdue</span>;
+            case 'paid': return <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wide bg-emerald-50 text-emerald-700 border border-emerald-200"><CheckCircle2 className="w-3 h-3" /> Paid</span>;
+            case 'partial': return <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wide bg-amber-50 text-amber-700 border border-amber-200"><Clock className="w-3 h-3" /> Partial</span>;
+            case 'unpaid': return <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wide bg-rose-50 text-rose-700 border border-rose-200"><AlertCircle className="w-3 h-3" /> Unpaid</span>;
             default: return null;
         }
     };
@@ -124,7 +129,7 @@ export default function InvoiceTable({ searchQuery, onRowClick, onEditInvoice })
                                         {openMenuId === inv.id && (
                                             <div className="absolute right-0 top-8 w-48 bg-white rounded-lg shadow-xl border border-slate-200 z-20 py-1">
                                                 <button onClick={() => onRowClick(inv)} className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2"><FileText className="w-4 h-4"/> View Details</button>
-                                                {inv.status !== 'Paid' && (
+                                                {inv.status !== 'paid' && (
                                                     <button onClick={() => onEditInvoice(inv)} className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50 flex items-center gap-2"><FileEdit className="w-4 h-4"/> Edit Invoice</button>
                                                 )}
                                                 <div className="border-t border-slate-100 my-1"></div>

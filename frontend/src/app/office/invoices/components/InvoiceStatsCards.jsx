@@ -4,16 +4,21 @@ import { useGetInvoicesQuery } from '@/store/api/invoiceApi';
 export default function InvoiceStatsCards() {
     const { data: rawInvoices = [] } = useGetInvoicesQuery();
 
+    // Invoice.paymentStatus is the only status field on the real model
+    // (unpaid/partial/paid — see invoice.model.js); there's no "Overdue" or
+    // "Draft"/"Sent" concept on it at all. Comparing against capitalized
+    // 'Paid'/'Pending'/'Failed' against real lowercase values meant these
+    // counts were silently wrong for every real invoice before this fix.
     const totalInvoices = rawInvoices.length;
-    
-    const paidInvoices = rawInvoices.filter(inv => inv.paymentStatus === 'Paid' || inv.status === 'Paid');
-    const totalPaid = paidInvoices.reduce((acc, inv) => acc + (inv.totalAmount || 0), 0);
 
-    const pendingInvoices = rawInvoices.filter(inv => inv.paymentStatus === 'Pending' || inv.status === 'Pending' || inv.status === 'Draft' || inv.status === 'Sent');
-    const totalPending = pendingInvoices.reduce((acc, inv) => acc + (inv.totalAmount || 0), 0);
+    const paidInvoices = rawInvoices.filter(inv => inv.paymentStatus === 'paid');
+    const totalPaid = paidInvoices.reduce((acc, inv) => acc + (inv.total || 0), 0);
 
-    const overdueInvoices = rawInvoices.filter(inv => inv.paymentStatus === 'Failed' || inv.status === 'Overdue');
-    const totalOverdue = overdueInvoices.reduce((acc, inv) => acc + (inv.totalAmount || 0), 0);
+    const partialInvoices = rawInvoices.filter(inv => inv.paymentStatus === 'partial');
+    const totalPartial = partialInvoices.reduce((acc, inv) => acc + (inv.total || 0), 0);
+
+    const unpaidInvoices = rawInvoices.filter(inv => inv.paymentStatus === 'unpaid' || !inv.paymentStatus);
+    const totalUnpaid = unpaidInvoices.reduce((acc, inv) => acc + (inv.total || 0), 0);
 
     const now = new Date();
     const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
@@ -35,16 +40,16 @@ export default function InvoiceStatsCards() {
             color: 'text-emerald-600 bg-emerald-50',
         },
         {
-            title: 'Pending',
-            value: pendingInvoices.length.toLocaleString(),
-            trend: `₹${totalPending.toLocaleString()} outstanding`,
+            title: 'Partially Paid',
+            value: partialInvoices.length.toLocaleString(),
+            trend: `₹${totalPartial.toLocaleString()} outstanding`,
             icon: Clock,
             color: 'text-amber-600 bg-amber-50',
         },
         {
-            title: 'Overdue',
-            value: overdueInvoices.length.toLocaleString(),
-            trend: `₹${totalOverdue.toLocaleString()} overdue`,
+            title: 'Unpaid',
+            value: unpaidInvoices.length.toLocaleString(),
+            trend: `₹${totalUnpaid.toLocaleString()} unpaid`,
             icon: AlertCircle,
             color: 'text-rose-600 bg-rose-50',
         },

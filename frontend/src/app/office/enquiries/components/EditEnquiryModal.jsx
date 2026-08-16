@@ -2,18 +2,31 @@
 import { useState, useEffect } from 'react';
 import Dialog from '@/components/office/ui/Dialog';
 import { useUpdateEnquiryMutation } from '@/store/api/enquiryApi';
+import { useGetEnumsQuery } from '@/store/api/configApi';
+import { useGetCategoriesQuery } from '@/store/api/categoryApi';
+
+const formatEnum = (str) => {
+    if (!str) return '';
+    return str.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+};
 
 export default function EditEnquiryModal({ isOpen, onClose, enquiry }) {
     const [updateEnquiry, { isLoading }] = useUpdateEnquiryMutation();
-    const [form, setForm] = useState({ serviceCategory: '', status: 'New', priority: 'Medium', description: '' });
+    const { data: enums = {} } = useGetEnumsQuery();
+    const { data: categories = [] } = useGetCategoriesQuery('active=true');
+    const [form, setForm] = useState({ serviceCategory: '', status: 'new', priority: 'normal', description: '' });
     const [error, setError] = useState(null);
 
     useEffect(() => {
         if (enquiry) {
             setForm({
                 serviceCategory: enquiry.service || enquiry._raw?.serviceCategory || '',
-                status: enquiry.status || 'New',
-                priority: enquiry.priority || 'Medium',
+                // enquiry.status is already the raw backend value (lowercase:
+                // new/contacted/qualified/converted/dropped) — this used to
+                // default to 'New' (Title Case), which isn't a valid option
+                // in the select below and would never actually match.
+                status: enquiry.status || 'new',
+                priority: enquiry.priority || 'normal',
                 description: enquiry._raw?.description || '',
             });
         }
@@ -60,31 +73,25 @@ export default function EditEnquiryModal({ isOpen, onClose, enquiry }) {
                             <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Service Category</label>
                             <select name="serviceCategory" value={form.serviceCategory} onChange={handleChange} className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors">
                                 <option value="">Select Category</option>
-                                <option value="Cleaning">Cleaning</option>
-                                <option value="Repair">Repair</option>
-                                <option value="Pest Control">Pest Control</option>
-                                <option value="Painting">Painting</option>
-                                <option value="Electrical">Electrical</option>
-                                <option value="Plumbing">Plumbing</option>
-                                <option value="AC Service">AC Service</option>
+                                {categories.map(c => (
+                                    <option key={c._id} value={c.name}>{c.name}</option>
+                                ))}
                             </select>
                         </div>
                         <div className="space-y-1">
                             <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Status</label>
                             <select name="status" value={form.status} onChange={handleChange} className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors">
-                                <option value="New">New</option>
-                                <option value="Contacted">Contacted</option>
-                                <option value="Qualified">Qualified</option>
-                                <option value="Disqualified">Disqualified</option>
+                                {(enums.enquiry?.status || ['new', 'contacted', 'qualified', 'converted', 'dropped']).map(s => (
+                                    <option key={s} value={s}>{formatEnum(s)}</option>
+                                ))}
                             </select>
                         </div>
                         <div className="space-y-1">
                             <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Priority</label>
                             <select name="priority" value={form.priority} onChange={handleChange} className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors">
-                                <option value="Low">Low</option>
-                                <option value="Medium">Medium</option>
-                                <option value="High">High</option>
-                                <option value="Urgent">Urgent</option>
+                                {(enums.workOrder?.priority || ['low', 'normal', 'high']).map(p => (
+                                    <option key={p} value={p}>{formatEnum(p)}</option>
+                                ))}
                             </select>
                         </div>
                     </div>

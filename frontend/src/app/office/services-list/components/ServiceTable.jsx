@@ -4,16 +4,9 @@ import { MoreHorizontal, ChevronUp, ChevronDown, CheckCircle2, XCircle, Image as
 import { useState } from 'react';
 import { useGetServicesQuery, useToggleServiceMutation, useDeleteServiceMutation } from '@/store/api/serviceApi';
 
-const fallbackServices = [
-    { id: 'SRV-001', _id: '1', name: 'Deep Home Cleaning (3 BHK)', category: 'Deep Cleaning', price: '₹4,499', basePrice: 4499, duration: '5-6 Hours', warranty: '30 Days', status: 'Active', active: true, featured: true },
-    { id: 'SRV-002', _id: '2', name: 'Split AC Servicing', category: 'AC Repair', price: '₹599', basePrice: 599, duration: '45 Mins', warranty: '30 Days', status: 'Active', active: true, featured: true },
-    { id: 'SRV-003', _id: '3', name: 'Wash Basin Pipe Repair', category: 'Plumbing', price: '₹149', basePrice: 149, duration: '30 Mins', warranty: '-', status: 'Active', active: true, featured: false },
-    { id: 'SRV-004', _id: '4', name: 'Termite Control (2 BHK)', category: 'Pest Control', price: '₹3,199', basePrice: 3199, duration: '2 Hours', warranty: '1 Year', status: 'Active', active: true, featured: false },
-    { id: 'SRV-005', _id: '5', name: 'Sofa Cleaning (3 Seater)', category: 'Deep Cleaning', price: '₹899', basePrice: 899, duration: '1.5 Hours', warranty: '-', status: 'Inactive', active: false, featured: false },
-];
 
 export default function ServiceTable({ searchQuery, onRowClick }) {
-    const { data: rawServices = [], isLoading } = useGetServicesQuery();
+    const { data: rawServices = [], isLoading, isError } = useGetServicesQuery();
     const [toggleService] = useToggleServiceMutation();
     const [deleteService] = useDeleteServiceMutation();
 
@@ -30,8 +23,7 @@ export default function ServiceTable({ searchQuery, onRowClick }) {
         ? (sortDir === 'asc' ? <ChevronUp className="w-3.5 h-3.5 text-blue-500" /> : <ChevronDown className="w-3.5 h-3.5 text-blue-500" />)
         : <ChevronDown className="w-3.5 h-3.5 text-slate-300" />;
 
-    const services = rawServices.length > 0
-        ? rawServices.map(s => ({
+    const services = rawServices.map(s => ({
             id: `SRV-${s._id?.slice(-4).toUpperCase()}`,
             _id: s._id,
             name: s.name,
@@ -46,8 +38,7 @@ export default function ServiceTable({ searchQuery, onRowClick }) {
             featured: !!s.featured,
             description: s.description || '',
             _raw: s,
-        }))
-        : fallbackServices;
+        }));
 
     const filtered = services.filter(s =>
         !searchQuery ||
@@ -75,6 +66,9 @@ export default function ServiceTable({ searchQuery, onRowClick }) {
             }
         }
     };
+
+    if (isLoading) return <div className="py-16 text-center text-sm text-slate-500">Loading services...</div>;
+    if (isError) return <div className="py-16 text-center text-sm text-rose-600">Unable to load services.</div>;
 
     return (
         <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex-1">
@@ -133,7 +127,7 @@ export default function ServiceTable({ searchQuery, onRowClick }) {
                                 <td className="px-4 py-3.5 text-slate-500 text-xs">{s.warranty}</td>
                                 <td className="px-4 py-3.5" onClick={e => e.stopPropagation()}>
                                     <button 
-                                        onClick={(e) => s._raw ? handleToggle(s._id, e) : null}
+                                        onClick={(e) => handleToggle(s._id, e)}
                                         className="cursor-pointer"
                                     >
                                         {s.status === 'Active' ? (
@@ -161,7 +155,7 @@ export default function ServiceTable({ searchQuery, onRowClick }) {
                                                     <Edit className="w-3.5 h-3.5" /> Edit Service
                                                 </button>
                                                 <div className="border-t border-slate-100 my-1"></div>
-                                                <button onClick={(e) => s._raw ? handleDelete(s._id, e) : null} className="w-full text-left px-4 py-2 text-sm text-rose-600 hover:bg-rose-50 flex items-center gap-2">
+                                                <button onClick={(e) => handleDelete(s._id, e)} className="w-full text-left px-4 py-2 text-sm text-rose-600 hover:bg-rose-50 flex items-center gap-2">
                                                     <Trash2 className="w-3.5 h-3.5" /> Delete
                                                 </button>
                                             </div>

@@ -6,6 +6,9 @@ import { PERMISSIONS as P } from "../constants/permissions.js";
 
 const router = Router();
 router.use(requireAuth);
+router.get("/me/addresses", controller.getMyAddresses);
+router.post("/me/addresses", controller.addMyAddress);
+router.delete("/me/addresses/:addressId", controller.deleteMyAddress);
 router.post("/find-or-create", requirePermission(P.CUSTOMER_CREATE), controller.findOrCreateByPhone);
 router.post("/", requirePermission(P.CUSTOMER_CREATE), controller.createCustomer);
 router.get("/", requirePermission(P.CUSTOMER_READ), controller.getCustomers);

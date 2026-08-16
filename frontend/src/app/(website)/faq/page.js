@@ -462,9 +462,9 @@ function MainContent({ searchQuery, activeCategory }) {
 
 function QuickContact() {
   const contacts = [
-    { title: 'Call Support', icon: Phone, detail: '+91 98765 43210', color: 'blue' },
+    { title: 'Call Support', icon: Phone, detail: '+91 91114 66642', color: 'blue' },
     { title: 'WhatsApp Support', icon: FaWhatsapp, detail: 'Chat with us', color: 'green' },
-    { title: 'Email Support', icon: Mail, detail: 'support@homecare.in', color: 'orange' },
+    { title: 'Email Support', icon: Mail, detail: 'homecarre2405@gmail.com', color: 'orange' },
     { title: 'Visit Office', icon: Building, detail: '123 HomeCare Tower', color: 'purple' },
   ];
 
@@ -516,7 +516,7 @@ export default function FAQPage() {
       
       {/* Sticky Mobile Contact Buttons */}
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 p-4 lg:hidden z-50 flex gap-4 pb-safe">
-        <a href="tel:+919876543210" className="flex-1 bg-blue-600 text-white font-semibold py-3 rounded-xl flex items-center justify-center gap-2">
+        <a href="tel:+919111466642" className="flex-1 bg-blue-600 text-white font-semibold py-3 rounded-xl flex items-center justify-center gap-2">
           <Phone className="w-5 h-5" /> Call
         </a>
         <a href="#" className="flex-1 bg-green-500 text-white font-semibold py-3 rounded-xl flex items-center justify-center gap-2">

@@ -1,4 +1,5 @@
 import Customer from "../models/customer.model.js";
+import { resolveCustomerIdForSession } from "../utils/resolveCustomer.js";
 
 export const findOrCreateByPhone = async (req, res) => {
   try {
@@ -20,6 +21,72 @@ export const findOrCreateByPhone = async (req, res) => {
     return res.status(201).json({ message: "Customer created", customer });
   } catch (error) {
     return res.status(500).json({ message: error.message });
+  }
+};
+
+// Customer-scoped counterpart to getCustomers/createCustomer — checkout's
+// saved-address picker and the registration flow both need to read/write
+// the logged-in customer's own addresses[] without staff CUSTOMER_* permissions,
+// the same way getMyBookings etc. resolve identity from the session instead
+// of trusting a client-supplied id.
+export const getMyAddresses = async (req, res) => {
+  try {
+    const customerId = await resolveCustomerIdForSession(req);
+    if (!customerId) return res.json([]);
+    const customer = await Customer.findById(customerId).select("addresses").lean();
+    res.json(customer?.addresses || []);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const addMyAddress = async (req, res) => {
+  try {
+    const customerId = await resolveCustomerIdForSession(req);
+    if (!customerId) return res.status(404).json({ message: "Customer profile not found for this account" });
+
+    const { label, addressText, lat, lng, placeId } = req.body;
+    if (!addressText?.trim()) {
+      return res.status(400).json({ message: "addressText is required" });
+    }
+
+    const address = {
+      label: label?.trim() || "Home",
+      addressText: addressText.trim(),
+      ...(typeof lat === "number" && typeof lng === "number"
+        ? { lat, lng, location: { type: "Point", coordinates: [lng, lat] } }
+        : {}),
+      ...(placeId ? { placeId } : {}),
+    };
+
+    const customer = await Customer.findByIdAndUpdate(
+      customerId,
+      { $push: { addresses: address } },
+      { new: true, runValidators: true }
+    ).select("addresses");
+
+    if (!customer) return res.status(404).json({ message: "Customer not found" });
+    res.status(201).json(customer.addresses);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
+  }
+};
+
+export const deleteMyAddress = async (req, res) => {
+  try {
+    const customerId = await resolveCustomerIdForSession(req);
+    if (!customerId) return res.status(404).json({ message: "Customer profile not found for this account" });
+
+    const customer = await Customer.findByIdAndUpdate(
+      customerId,
+      { $pull: { addresses: { _id: req.params.addressId } } },
+      { new: true }
+    ).select("addresses");
+
+    if (!customer) return res.status(404).json({ message: "Customer not found" });
+    res.json(customer.addresses);
+  } catch (error) {
+    res.status(400).json({ message: error.message });
   }
 };
 

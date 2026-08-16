@@ -509,7 +509,7 @@ export default function TermsAndConditions() {
                         </div>
                         <div>
                           <p className="text-xs text-gray-500 font-bold uppercase tracking-wider mb-1">Phone</p>
-                          <p className="font-semibold text-gray-900 text-sm">+91 80000 80000</p>
+                          <p className="font-semibold text-gray-900 text-sm">+91 91114 66642</p>
                         </div>
                       </div>
                       
@@ -545,7 +545,7 @@ export default function TermsAndConditions() {
                     </div>
                     
                     <div className="flex flex-wrap gap-4 pt-6 border-t border-blue-50">
-                      <a href="tel:+918000080000" className="px-6 py-3 bg-[#2563EB] hover:bg-blue-600 text-white font-bold rounded-xl shadow-lg shadow-blue-500/20 transition-all text-sm flex items-center gap-2">
+                      <a href="tel:+919111466642" className="px-6 py-3 bg-[#2563EB] hover:bg-blue-600 text-white font-bold rounded-xl shadow-lg shadow-blue-500/20 transition-all text-sm flex items-center gap-2">
                         <Phone className="w-4 h-4" /> Call Now
                       </a>
                       <Link href="/contact" className="px-6 py-3 bg-white hover:bg-gray-50 border border-gray-200 text-gray-900 font-bold rounded-xl shadow-sm transition-all text-sm">

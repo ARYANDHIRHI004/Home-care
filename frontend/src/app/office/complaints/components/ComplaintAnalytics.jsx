@@ -1,28 +1,58 @@
 import { BarChart3, TrendingUp, AlertTriangle, Clock } from 'lucide-react';
-
-const topServices = [
-    { name: 'AC Repair & Service', count: 84, pct: 84 },
-    { name: 'Plumbing', count: 67, pct: 67 },
-    { name: 'Electrical', count: 52, pct: 52 },
-    { name: 'Deep Cleaning', count: 38, pct: 38 },
-    { name: 'Appliance Repair', count: 29, pct: 29 },
-];
-
-const topPartners = [
-    { name: 'Amit Kumar', count: 18, color: 'bg-rose-400' },
-    { name: 'Sunil Das', count: 14, color: 'bg-orange-400' },
-    { name: 'Dev Sharma', count: 11, color: 'bg-amber-400' },
-    { name: 'Manoj T.', count: 8, color: 'bg-slate-300' },
-];
-
-const categories = [
-    { label: 'Service Quality', pct: 42, color: 'bg-rose-400' },
-    { label: 'Technician Behavior', pct: 28, color: 'bg-orange-400' },
-    { label: 'Delayed Arrival', pct: 18, color: 'bg-amber-400' },
-    { label: 'Pricing Issue', pct: 12, color: 'bg-blue-400' },
-];
+import { useGetTicketsQuery } from '@/store/api/ticketApi';
 
 export default function ComplaintAnalytics() {
+    const { data: tickets = [] } = useGetTicketsQuery();
+
+    // Calculate top services
+    const serviceCounts = {};
+    tickets.forEach(t => {
+        const service = t.enquiryId?.serviceCategory || 'Other';
+        serviceCounts[service] = (serviceCounts[service] || 0) + 1;
+    });
+    const totalWithService = Object.values(serviceCounts).reduce((a, b) => a + b, 0);
+    const topServices = Object.entries(serviceCounts)
+        .map(([name, count]) => ({
+            name,
+            count,
+            pct: totalWithService > 0 ? Math.round((count / totalWithService) * 100) : 0
+        }))
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 5);
+
+    // Calculate top partners
+    const partnerCounts = {};
+    tickets.forEach(t => {
+        if (t.assignedPartnerId?.name) {
+            partnerCounts[t.assignedPartnerId.name] = (partnerCounts[t.assignedPartnerId.name] || 0) + 1;
+        }
+    });
+    const maxPartnerCount = Math.max(...Object.values(partnerCounts), 1);
+    const partnerColors = ['bg-rose-400', 'bg-orange-400', 'bg-amber-400', 'bg-slate-300'];
+    const topPartners = Object.entries(partnerCounts)
+        .map(([name, count], i) => ({
+            name,
+            count,
+            color: partnerColors[i % partnerColors.length]
+        }))
+        .sort((a, b) => b.count - a.count)
+        .slice(0, 4);
+
+    // Calculate categories (we'll just use a few common ones or priority for now)
+    const priorityCounts = {};
+    tickets.forEach(t => {
+        const priority = t.priority || 'normal';
+        priorityCounts[priority] = (priorityCounts[priority] || 0) + 1;
+    });
+    const totalPriority = Object.values(priorityCounts).reduce((a, b) => a + b, 0);
+    const catColors = ['bg-rose-400', 'bg-orange-400', 'bg-amber-400', 'bg-blue-400'];
+    const categories = Object.entries(priorityCounts)
+        .map(([label, count], i) => ({
+            label: label.charAt(0).toUpperCase() + label.slice(1) + ' Priority',
+            pct: totalPriority > 0 ? Math.round((count / totalPriority) * 100) : 0,
+            color: catColors[i % catColors.length]
+        }))
+        .sort((a, b) => b.pct - a.pct);
     return (
         <div className="grid grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4 mt-6">
 
@@ -90,7 +120,7 @@ export default function ComplaintAnalytics() {
                                         <span className="text-slate-500">{p.count} complaints</span>
                                     </div>
                                     <div className="w-full h-1.5 bg-slate-100 rounded-full">
-                                        <div className={`h-full rounded-full ${p.color}`} style={{ width: `${(p.count / 18) * 100}%` }}></div>
+                                        <div className={`h-full rounded-full ${p.color}`} style={{ width: `${(p.count / maxPartnerCount) * 100}%` }}></div>
                                     </div>
                                 </div>
                             </div>

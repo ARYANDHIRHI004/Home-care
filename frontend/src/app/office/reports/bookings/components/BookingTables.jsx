@@ -1,5 +1,6 @@
 import { CheckCircle2, Clock, XCircle, Loader2, Star } from 'lucide-react';
-import { recentBookings, topServices, topPartners } from '../data/bookingData';
+import { useGetWorkOrdersQuery } from '@/store/api/workOrderApi';
+import { useGetPartnersQuery } from '@/store/api/partnerApi';
 
 function StatusBadge({ status }) {
     switch (status) {
@@ -21,6 +22,21 @@ function RatingStars({ rating }) {
 }
 
 export function RecentBookingsTable() {
+    const { data: rawWorkOrders = [] } = useGetWorkOrdersQuery();
+
+    const recentBookingsList = [...rawWorkOrders]
+        .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
+        .slice(0, 5)
+        .map(wo => ({
+            id: wo.workOrderNumber || `#WO-${wo._id?.slice(-4).toUpperCase()}`,
+            customer: wo.customerId?.name || 'Customer',
+            service: wo.title || wo.enquiryId?.serviceCategory || 'Service',
+            partner: wo.assignedPartnerId?.name || 'Unassigned',
+            status: wo.status || 'New',
+            amount: wo.price || 0,
+            date: new Date(wo.createdAt).toLocaleDateString()
+        }));
+
     return (
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
             <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between">
@@ -44,7 +60,7 @@ export function RecentBookingsTable() {
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
-                        {recentBookings.map((b) => (
+                        {recentBookingsList.length > 0 ? recentBookingsList.map((b) => (
                             <tr key={b.id} className="hover:bg-blue-50/20 transition-colors">
                                 <td className="px-6 py-4 font-bold text-blue-600">{b.id}</td>
                                 <td className="px-6 py-4 font-semibold text-slate-900">{b.customer}</td>
@@ -56,10 +72,12 @@ export function RecentBookingsTable() {
                                     }
                                 </td>
                                 <td className="px-6 py-4 text-center"><StatusBadge status={b.status} /></td>
-                                <td className="px-6 py-4 text-right font-bold text-slate-900">₹{b.amount.toLocaleString()}</td>
+                                <td className="px-6 py-4 text-right font-bold text-slate-900">₹{Number(b.amount).toLocaleString()}</td>
                                 <td className="px-6 py-4 text-right text-xs text-slate-500 whitespace-nowrap">{b.date}</td>
                             </tr>
-                        ))}
+                        )) : (
+                            <tr><td colSpan="7" className="px-6 py-4 text-center text-slate-500">No data available</td></tr>
+                        )}
                     </tbody>
                 </table>
             </div>
@@ -68,6 +86,25 @@ export function RecentBookingsTable() {
 }
 
 export function TopServicesTable() {
+    const { data: rawWorkOrders = [] } = useGetWorkOrdersQuery();
+
+    const servicesMap = rawWorkOrders.reduce((acc, wo) => {
+        const service = wo.enquiryId?.serviceCategory || wo.title || 'Unknown Service';
+        if (!acc[service]) acc[service] = { service, bookings: 0, completed: 0, revenue: 0 };
+        acc[service].bookings += 1;
+        acc[service].revenue += (wo.price || 0);
+        if (wo.status === 'Completed') acc[service].completed += 1;
+        return acc;
+    }, {});
+
+    const topServicesList = Object.values(servicesMap)
+        .sort((a, b) => b.bookings - a.bookings)
+        .slice(0, 5)
+        .map(s => ({
+            ...s,
+            completionRate: s.bookings > 0 ? ((s.completed / s.bookings) * 100).toFixed(0) : 0
+        }));
+
     return (
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
             <div className="px-6 py-4 border-b border-slate-100">
@@ -86,7 +123,7 @@ export function TopServicesTable() {
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
-                        {topServices.map((s, i) => (
+                        {topServicesList.length > 0 ? topServicesList.map((s, i) => (
                             <tr key={s.service} className="hover:bg-blue-50/20 transition-colors">
                                 <td className="px-6 py-4">
                                     <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${i === 0 ? 'bg-amber-100 text-amber-700' : i === 1 ? 'bg-slate-200 text-slate-600' : 'bg-slate-50 text-slate-500'}`}>
@@ -106,9 +143,11 @@ export function TopServicesTable() {
                                         <span className="text-xs font-bold text-slate-900 w-8 text-right">{s.completionRate}%</span>
                                     </div>
                                 </td>
-                                <td className="px-6 py-4 text-right font-bold text-slate-900">₹{s.revenue.toLocaleString()}</td>
+                                <td className="px-6 py-4 text-right font-bold text-slate-900">₹{Number(s.revenue).toLocaleString()}</td>
                             </tr>
-                        ))}
+                        )) : (
+                            <tr><td colSpan="5" className="px-6 py-4 text-center text-slate-500">No data available</td></tr>
+                        )}
                     </tbody>
                 </table>
             </div>
@@ -117,6 +156,27 @@ export function TopServicesTable() {
 }
 
 export function TopPartnersTable() {
+    const { data: rawWorkOrders = [] } = useGetWorkOrdersQuery();
+    const { data: partners = [] } = useGetPartnersQuery();
+
+    const partnerStats = partners.map(p => {
+        const jobs = rawWorkOrders.filter(wo => wo.assignedPartnerId?._id === p._id);
+        const completedJobs = jobs.filter(wo => wo.status === 'Completed').length;
+        const totalAssigned = jobs.length;
+        
+        return {
+            id: p._id,
+            partner: p.name || 'Unknown Partner',
+            completedJobs,
+            rating: p.rating || 4.5, // default if missing
+            acceptanceRate: totalAssigned > 0 ? (((totalAssigned - jobs.filter(wo => wo.status === 'Cancelled').length) / totalAssigned) * 100).toFixed(0) : 100
+        };
+    });
+
+    const topPartnersList = partnerStats
+        .sort((a, b) => b.completedJobs - a.completedJobs)
+        .slice(0, 5);
+
     return (
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
             <div className="px-6 py-4 border-b border-slate-100">
@@ -135,8 +195,8 @@ export function TopPartnersTable() {
                         </tr>
                     </thead>
                     <tbody className="divide-y divide-slate-100">
-                        {topPartners.map((p, i) => (
-                            <tr key={p.partner} className="hover:bg-blue-50/20 transition-colors">
+                        {topPartnersList.length > 0 ? topPartnersList.map((p, i) => (
+                            <tr key={p.id} className="hover:bg-blue-50/20 transition-colors">
                                 <td className="px-6 py-4">
                                     <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${i === 0 ? 'bg-amber-100 text-amber-700' : i === 1 ? 'bg-slate-200 text-slate-600' : 'bg-slate-50 text-slate-500'}`}>
                                         {i + 1}
@@ -157,7 +217,9 @@ export function TopPartnersTable() {
                                     </div>
                                 </td>
                             </tr>
-                        ))}
+                        )) : (
+                            <tr><td colSpan="5" className="px-6 py-4 text-center text-slate-500">No data available</td></tr>
+                        )}
                     </tbody>
                 </table>
             </div>

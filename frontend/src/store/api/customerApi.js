@@ -2,6 +2,18 @@ import { apiSlice } from '../apiSlice';
 
 export const customerApi = apiSlice.injectEndpoints({
     endpoints: (builder) => ({
+        getMyAddresses: builder.query({
+            query: () => '/api/customers/me/addresses',
+            providesTags: [{ type: 'Customer', id: 'MY_ADDRESSES' }],
+        }),
+        addMyAddress: builder.mutation({
+            query: (data) => ({ url: '/api/customers/me/addresses', method: 'POST', body: data }),
+            invalidatesTags: [{ type: 'Customer', id: 'MY_ADDRESSES' }],
+        }),
+        deleteMyAddress: builder.mutation({
+            query: (addressId) => ({ url: `/api/customers/me/addresses/${addressId}`, method: 'DELETE' }),
+            invalidatesTags: [{ type: 'Customer', id: 'MY_ADDRESSES' }],
+        }),
         getCustomers: builder.query({
             query: (queryStr = '') => `/api/customers${queryStr ? `?${queryStr}` : ''}`,
             providesTags: (result) =>
@@ -33,6 +45,9 @@ export const customerApi = apiSlice.injectEndpoints({
 });
 
 export const {
+    useGetMyAddressesQuery,
+    useAddMyAddressMutation,
+    useDeleteMyAddressMutation,
     useGetCustomersQuery,
     useGetCustomerByIdQuery,
     useCreateCustomerMutation,

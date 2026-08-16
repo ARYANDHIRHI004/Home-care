@@ -1,12 +1,13 @@
 import { IndianRupee, Wallet, AlertCircle, TrendingUp, Clock, BarChart2, ArrowUpRight } from 'lucide-react';
-import { summaryStats } from '../data/revenueData';
+import { useGetPaymentsQuery } from '@/store/api/paymentApi';
+import { useGetWorkOrdersQuery } from '@/store/api/workOrderApi';
 
 const cards = [
     {
         title: 'Total Revenue',
         key: 'totalRevenue',
-        format: (v) => `₹${(v / 100000).toFixed(2)}L`,
-        trend: '+18.4% YoY',
+        format: (v) => `₹${v.toLocaleString()}`,
+        trend: 'Till now',
         icon: IndianRupee,
         color: 'text-blue-600 bg-blue-50',
         trendUp: true,
@@ -14,8 +15,8 @@ const cards = [
     {
         title: 'Collected Amount',
         key: 'collectedAmount',
-        format: (v) => `₹${(v / 100000).toFixed(2)}L`,
-        trend: '91.5% collection rate',
+        format: (v) => `₹${v.toLocaleString()}`,
+        trend: 'Collected successfully',
         icon: Wallet,
         color: 'text-emerald-600 bg-emerald-50',
         trendUp: true,
@@ -23,7 +24,7 @@ const cards = [
     {
         title: 'Outstanding Amount',
         key: 'outstandingAmount',
-        format: (v) => `₹${(v / 1000).toFixed(0)}K`,
+        format: (v) => `₹${v.toLocaleString()}`,
         trend: 'Needs follow-up',
         icon: AlertCircle,
         color: 'text-rose-600 bg-rose-50',
@@ -33,7 +34,7 @@ const cards = [
         title: 'Avg Booking Value',
         key: 'avgBookingValue',
         format: (v) => `₹${v.toLocaleString()}`,
-        trend: '+5.2% from last month',
+        trend: 'Average ticket size',
         icon: TrendingUp,
         color: 'text-indigo-600 bg-indigo-50',
         trendUp: true,
@@ -41,8 +42,8 @@ const cards = [
     {
         title: "Today's Revenue",
         key: 'todayRevenue',
-        format: (v) => `₹${(v / 1000).toFixed(1)}K`,
-        trend: '12 payments received',
+        format: (v) => `₹${v.toLocaleString()}`,
+        trend: 'Received today',
         icon: Clock,
         color: 'text-amber-600 bg-amber-50',
         trendUp: true,
@@ -50,17 +51,17 @@ const cards = [
     {
         title: 'Monthly Growth',
         key: 'monthlyGrowth',
-        format: (v) => `+${v}%`,
+        format: (v) => `${v}%`,
         trend: 'vs last month',
         icon: BarChart2,
         color: 'text-violet-600 bg-violet-50',
         trendUp: true,
     },
     {
-        title: 'Net Profit',
+        title: 'Est. Net Profit',
         key: 'netProfit',
-        format: (v) => `₹${(v / 100000).toFixed(2)}L`,
-        trend: 'Revenue minus expenses',
+        format: (v) => `₹${v.toLocaleString()}`,
+        trend: '~75% of revenue',
         icon: ArrowUpRight,
         color: 'text-emerald-600 bg-emerald-50',
         trendUp: true,
@@ -68,11 +69,44 @@ const cards = [
 ];
 
 export default function RevenueSummaryCards() {
+    const { data: rawPayments = [] } = useGetPaymentsQuery();
+    const { data: rawWorkOrders = [] } = useGetWorkOrdersQuery();
+
+    const now = new Date();
+    const startOfThisMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const startOfLastMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+
+    const totalRevenue = rawPayments.reduce((acc, p) => acc + (p.amount || 0), 0);
+    const collectedAmount = rawPayments.filter(p => p.status === 'Paid' || p.status === 'verified').reduce((acc, p) => acc + (p.amountPaid || p.amount || 0), 0);
+    const outstandingAmount = rawPayments.filter(p => p.status === 'Pending' || p.status === 'Partial').reduce((acc, p) => acc + ((p.amount || 0) - (p.amountPaid || 0)), 0);
+    
+    const todayStr = now.toDateString();
+    const todayRevenue = rawPayments.filter(p => p.paidAt && new Date(p.paidAt).toDateString() === todayStr).reduce((acc, p) => acc + (p.amountPaid || p.amount || 0), 0);
+
+    const thisMonthRevenue = rawPayments.filter(p => p.paidAt && new Date(p.paidAt) >= startOfThisMonth).reduce((acc, p) => acc + (p.amountPaid || p.amount || 0), 0);
+    const lastMonthRevenue = rawPayments.filter(p => p.paidAt && new Date(p.paidAt) >= startOfLastMonth && new Date(p.paidAt) < startOfThisMonth).reduce((acc, p) => acc + (p.amountPaid || p.amount || 0), 0);
+    
+    const monthlyGrowth = lastMonthRevenue > 0 ? (((thisMonthRevenue - lastMonthRevenue) / lastMonthRevenue) * 100).toFixed(1) : 0;
+    
+    const avgBookingValue = rawWorkOrders.length > 0 ? (totalRevenue / rawWorkOrders.length).toFixed(0) : 0;
+    
+    const netProfit = (totalRevenue * 0.75).toFixed(0);
+
+    const summaryStats = {
+        totalRevenue,
+        collectedAmount,
+        outstandingAmount,
+        todayRevenue,
+        monthlyGrowth,
+        avgBookingValue: Number(avgBookingValue),
+        netProfit: Number(netProfit)
+    };
+
     return (
         <div className="grid grid-cols-2 md:grid-cols-4 xl:grid-cols-7 gap-4 mb-6">
             {cards.map((card) => {
                 const Icon = card.icon;
-                const value = summaryStats[card.key];
+                const value = summaryStats[card.key] || 0;
                 return (
                     <div key={card.key} className="bg-white rounded-2xl border border-slate-200 p-4 shadow-sm hover:shadow-md hover:border-blue-200 transition-all group cursor-pointer">
                         <div className="flex items-center justify-between mb-3">

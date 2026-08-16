@@ -6,10 +6,10 @@ import { useGetTicketsQuery } from '@/store/api/ticketApi';
 export default function ComplaintStatsCards() {
     const { data: tickets = [] } = useGetTicketsQuery();
 
-    const totalTickets = tickets.length > 0 ? tickets.length : 48;
-    const openTickets = tickets.length > 0 ? tickets.filter(t => ['open', 'in_progress', 'assigned'].includes(t.status)).length : 12;
-    const highPriorityTickets = tickets.length > 0 ? tickets.filter(t => t.priority === 'high').length : 5;
-    const resolvedTickets = tickets.length > 0 ? tickets.filter(t => ['completed', 'closed'].includes(t.status)).length : 36;
+    const totalTickets = tickets.length;
+    const openTickets = tickets.filter(t => ['open', 'in_progress', 'assigned'].includes(t.status)).length;
+    const highPriorityTickets = tickets.filter(t => t.priority === 'high').length;
+    const resolvedTickets = tickets.filter(t => ['completed', 'closed'].includes(t.status)).length;
 
     const stats = [
         {

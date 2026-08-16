@@ -1,15 +1,12 @@
-import { MoreHorizontal, ChevronUp, ChevronDown, CheckCircle2, Clock, PauseCircle, XCircle } from 'lucide-react';
+import { MoreHorizontal, ChevronUp, ChevronDown, CheckCircle2, Clock, PauseCircle, XCircle, Ticket } from 'lucide-react';
 import { useState } from 'react';
+import { useDeleteCouponMutation, useGetCouponsQuery, useUpdateCouponStatusMutation } from '@/store/api/couponApi';
 
-const mockCoupons = [
-    { id: 'CPN-001', code: 'DIWALI20', campaign: 'Diwali Festival Bonanza', discount: '20% OFF', type: 'percentage', services: 'All Services', usage: '450 / 1000', validity: '10 Nov - 20 Nov', status: 'Active', createdBy: 'Admin' },
-    { id: 'CPN-002', code: 'FIRST500', campaign: 'New User Acquisition', discount: '₹500 OFF', type: 'flat', services: 'Deep Cleaning', usage: '12 / ∞', validity: 'Until Cancelled', status: 'Active', createdBy: 'Marketing' },
-    { id: 'CPN-003', code: 'FREEVISIT', campaign: 'Weekend Plumbing Push', discount: 'Free Visit', type: 'free_visit', services: 'Plumbing', usage: '0 / 50', validity: 'Starts 25 Nov', status: 'Scheduled', createdBy: 'Admin' },
-    { id: 'CPN-004', code: 'WINTERCLEAN', campaign: 'Winter Prep', discount: '15% OFF', type: 'percentage', services: 'All Services', usage: '100 / 100', validity: '1 Nov - 10 Nov', status: 'Expired', createdBy: 'Marketing' },
-    { id: 'CPN-005', code: 'SORRY100', campaign: 'Customer Retention', discount: '₹100 OFF', type: 'flat', services: 'Any Service', usage: '5 / 20', validity: 'Until Cancelled', status: 'Paused', createdBy: 'Support' },
-];
 
 export default function CouponTable({ searchQuery, onRowClick }) {
+    const { data: rawCoupons = [], isLoading, isError } = useGetCouponsQuery();
+    const [updateCouponStatus] = useUpdateCouponStatusMutation();
+    const [deleteCoupon] = useDeleteCouponMutation();
     const [sortCol, setSortCol] = useState('code');
     const [sortDir, setSortDir] = useState('asc');
     const [openMenuId, setOpenMenuId] = useState(null);
@@ -23,11 +20,38 @@ export default function CouponTable({ searchQuery, onRowClick }) {
         ? (sortDir === 'asc' ? <ChevronUp className="w-3.5 h-3.5 text-blue-500" /> : <ChevronDown className="w-3.5 h-3.5 text-blue-500" />)
         : <ChevronDown className="w-3.5 h-3.5 text-slate-300" />;
 
-    const filtered = mockCoupons.filter(c =>
+    const coupons = rawCoupons.map((c) => ({
+        id: c._id,
+        code: c.code,
+        campaign: c.campaign,
+        discount: c.type === 'percentage' ? `${c.discountValue}% OFF` : c.type === 'flat' ? `₹${c.discountValue} OFF` : 'Free Visit',
+        type: c.type,
+        services: c.services || 'All Services',
+        usage: `${c.usageCount || 0} / ${c.usageLimit || '∞'}`,
+        validity: c.startsAt || c.expiresAt
+            ? `${c.startsAt ? new Date(c.startsAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }) : 'Now'} - ${c.expiresAt ? new Date(c.expiresAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' }) : 'Until Cancelled'}`
+            : 'Until Cancelled',
+        status: c.status?.replace(/^\w/, (m) => m.toUpperCase()) || 'Active',
+        createdBy: c.createdBy || 'Admin',
+        _raw: c,
+    }));
+
+    const filtered = coupons.filter(c =>
         !searchQuery ||
         c.code.toLowerCase().includes(searchQuery.toLowerCase()) ||
         c.campaign.toLowerCase().includes(searchQuery.toLowerCase())
     );
+
+    const handleStatus = async (coupon, status) => {
+        await updateCouponStatus({ id: coupon.id, status }).unwrap();
+        setOpenMenuId(null);
+    };
+
+    const handleDelete = async (coupon) => {
+        if (!window.confirm('Are you sure you want to delete this coupon?')) return;
+        await deleteCoupon(coupon.id).unwrap();
+        setOpenMenuId(null);
+    };
 
     const getStatusBadge = (status) => {
         switch (status) {
@@ -46,6 +70,9 @@ export default function CouponTable({ searchQuery, onRowClick }) {
         
         return <span className={`inline-flex px-2 py-1 rounded-md text-xs font-bold border ${color}`}>{discount}</span>;
     };
+
+    if (isLoading) return <div className="py-16 text-center text-sm text-slate-500">Loading coupons...</div>;
+    if (isError) return <div className="py-16 text-center text-sm text-rose-600">Unable to load coupons.</div>;
 
     return (
         <div className="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden flex-1">
@@ -122,12 +149,12 @@ export default function CouponTable({ searchQuery, onRowClick }) {
                                                 <button className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">Duplicate</button>
                                                 <div className="border-t border-slate-100 my-1"></div>
                                                 {c.status === 'Active' ? (
-                                                    <button className="w-full text-left px-4 py-2 text-sm text-amber-600 hover:bg-amber-50">Pause Coupon</button>
+                                                    <button onClick={() => handleStatus(c, 'paused')} className="w-full text-left px-4 py-2 text-sm text-amber-600 hover:bg-amber-50">Pause Coupon</button>
                                                 ) : (
-                                                    <button className="w-full text-left px-4 py-2 text-sm text-emerald-600 hover:bg-emerald-50">Activate Coupon</button>
+                                                    <button onClick={() => handleStatus(c, 'active')} className="w-full text-left px-4 py-2 text-sm text-emerald-600 hover:bg-emerald-50">Activate Coupon</button>
                                                 )}
-                                                <button className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">Archive</button>
-                                                <button className="w-full text-left px-4 py-2 text-sm text-rose-600 hover:bg-rose-50">Delete</button>
+                                                <button onClick={() => handleStatus(c, 'archived')} className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">Archive</button>
+                                                <button onClick={() => handleDelete(c)} className="w-full text-left px-4 py-2 text-sm text-rose-600 hover:bg-rose-50">Delete</button>
                                             </div>
                                         )}
                                     </div>

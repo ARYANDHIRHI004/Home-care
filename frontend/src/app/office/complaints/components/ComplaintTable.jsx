@@ -4,15 +4,6 @@ import { MoreHorizontal, ChevronUp, ChevronDown, Trash2, Edit } from 'lucide-rea
 import { useState } from 'react';
 import { useGetTicketsQuery, useDeleteTicketMutation, useUpdateTicketStatusMutation } from '@/store/api/ticketApi';
 
-const fallbackComplaints = [
-    { id: 'CMP-4821', customer: 'Priya Patel', booking: 'BKG-84915', service: 'AC Repair', partner: 'Amit Kumar', priority: 'High', status: 'Open', created: 'Nov 04, 2023', assignedTo: 'Riya (Manager)' },
-    { id: 'CMP-4820', customer: 'Rahul Sharma', booking: 'BKG-84910', service: 'Deep Cleaning', partner: 'Vikram Singh', priority: 'High', status: 'In Progress', created: 'Nov 03, 2023', assignedTo: 'Sameer' },
-    { id: 'CMP-4819', customer: 'Sneha Gupta', booking: 'BKG-84905', service: 'Plumbing', partner: 'Rajesh K.', priority: 'Normal', status: 'Open', created: 'Nov 02, 2023', assignedTo: 'Preet' },
-    { id: 'CMP-4818', customer: 'Arjun Mehta', booking: 'BKG-84900', service: 'Electrical', partner: 'Sunil Das', priority: 'Low', status: 'Closed', created: 'Nov 01, 2023', assignedTo: 'Riya (Manager)' },
-    { id: 'CMP-4817', customer: 'Kavya Nair', booking: 'BKG-84898', service: 'Pest Control', partner: 'Manoj T.', priority: 'High', status: 'Open', created: 'Oct 30, 2023', assignedTo: 'Unassigned' },
-    { id: 'CMP-4816', customer: 'Rohit Sinha', booking: 'BKG-84892', service: 'Appliance Repair', partner: 'Dev Sharma', priority: 'Normal', status: 'Closed', created: 'Oct 28, 2023', assignedTo: 'Sameer' },
-];
-
 const priorityConfig = {
     high:     'bg-orange-100 text-orange-700 border-orange-200',
     High:     'bg-orange-100 text-orange-700 border-orange-200',
@@ -51,21 +42,19 @@ export default function ComplaintTable({ searchQuery, onRowClick }) {
         ? (sortDir === 'asc' ? <ChevronUp className="w-3.5 h-3.5 text-blue-500" /> : <ChevronDown className="w-3.5 h-3.5 text-blue-500" />)
         : <ChevronDown className="w-3.5 h-3.5 text-slate-300" />;
 
-    const tickets = rawTickets.length > 0
-        ? rawTickets.map(t => ({
-            id: t.ticketNumber || `TCK-${t._id?.slice(-4).toUpperCase()}`,
-            _id: t._id,
-            customer: t.customerId?.name || t.customerName || 'Customer',
-            booking: t.enquiryId?._id ? `ENQ-${t.enquiryId._id.slice(-4).toUpperCase()}` : 'BKG-84915',
-            service: t.enquiryId?.serviceCategory || 'Service Issue',
-            partner: t.assignedPartnerId?.name || 'Unassigned',
-            priority: t.priority || 'normal',
-            status: t.status || 'open',
-            created: t.createdAt ? new Date(t.createdAt).toLocaleDateString() : 'Today',
-            assignedTo: t.assignedPartnerId?.name || 'Support Desk',
-            _raw: t,
-        }))
-        : fallbackComplaints;
+    const tickets = rawTickets.map(t => ({
+        id: t.ticketNumber || `TCK-${t._id?.slice(-4).toUpperCase()}`,
+        _id: t._id,
+        customer: t.customerId?.name || t.customerName || 'Customer',
+        booking: t.enquiryId?._id ? `ENQ-${t.enquiryId._id.slice(-4).toUpperCase()}` : 'N/A',
+        service: t.enquiryId?.serviceCategory || 'Service Issue',
+        partner: t.assignedPartnerId?.name || 'Unassigned',
+        priority: t.priority || 'normal',
+        status: t.status || 'open',
+        created: t.createdAt ? new Date(t.createdAt).toLocaleDateString() : 'Today',
+        assignedTo: t.assignedPartnerId?.name || 'Support Desk',
+        _raw: t,
+    }));
 
     const filtered = tickets.filter(c =>
         !searchQuery ||

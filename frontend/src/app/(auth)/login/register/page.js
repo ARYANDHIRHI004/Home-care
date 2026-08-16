@@ -1,19 +1,30 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { useRouter, useSearchParams } from 'next/navigation';
-import { MapPin, Loader2 } from 'lucide-react';
+import { MapPin, Loader2, Eye, EyeOff, Map as MapIcon } from 'lucide-react';
 import GoogleButton from '@/components/auth/GoogleButton';
+import { authClient } from '@/lib/auth';
+import { useUpdateProfileMutation } from '@/store/api/customerAuthApi';
+import { useAddMyAddressMutation } from '@/store/api/customerApi';
+import LocationPicker from '@/components/common/LocationPicker';
+import { reverseGeocode } from '@/lib/geocode';
 
 export default function RegisterPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const prefillPhone = searchParams.get('phone') || '';
+  const [updateProfile] = useUpdateProfileMutation();
+  const [addMyAddress] = useAddMyAddressMutation();
+  const [mapPickerOpen, setMapPickerOpen] = useState(false);
 
   const [form, setForm] = useState({
     name: '',
     phone: prefillPhone,
     email: '',
+    password: '',
+    confirmPassword: '',
     addressLine: '',
     landmark: '',
     city: 'Bhilai',
@@ -21,6 +32,7 @@ export default function RegisterPage() {
     lat: null,
     lng: null,
   });
+  const [showPassword, setShowPassword] = useState(false);
 
   // locationStatus drives what the little status line next to the button shows:
   // 'idle' | 'locating' | 'resolving' | 'done' | 'coords-only' | 'error'
@@ -30,36 +42,6 @@ export default function RegisterPage() {
 
   function update(field, value) {
     setForm((f) => ({ ...f, [field]: value }));
-  }
-
-  // Turns lat/lng into a street address using Nominatim (OpenStreetMap) — free, no API key.
-  // Has a hard timeout so a slow/blocked request can't leave the UI stuck on "resolving".
-  async function reverseGeocode(lat, lng) {
-    const controller = new AbortController();
-    const timeout = setTimeout(() => controller.abort(), 8000);
-
-    try {
-      const res = await fetch(
-        `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&zoom=18&addressdetails=1`,
-        { headers: { 'Accept-Language': 'en' }, signal: controller.signal }
-      );
-      if (!res.ok) throw new Error(`Nominatim returned ${res.status}`);
-      const data = await res.json();
-      const a = data.address || {};
-
-      const addressLine =
-        [a.house_number, a.road || a.neighbourhood || a.suburb].filter(Boolean).join(', ') ||
-        data.display_name?.split(',')[0] ||
-        '';
-
-      const rawCity = a.city || a.town || a.village || a.county || '';
-      const city = /bhilai/i.test(rawCity) ? 'Bhilai' : /durg/i.test(rawCity) ? 'Durg' : null;
-      const pincode = a.postcode || '';
-
-      return { addressLine, city, pincode };
-    } finally {
-      clearTimeout(timeout);
-    }
   }
 
   function handleUseLocation() {
@@ -113,8 +95,14 @@ export default function RegisterPage() {
   }
 
   function handleGoogleSignup() {
-    // TODO: wire up to your OAuth provider — this should still land back here to collect address
-    window.location.href = '/api/auth/google?next=/login/register';
+    // window.location.origin, not a hardcoded localhost URL — the login
+    // page's Google flow already does this correctly (see lib/sign-in.js);
+    // this was the one signup path still hardcoded to localhost, which
+    // would have sent users to the wrong host in any real deployment.
+    authClient.signIn.social({
+      provider: 'google',
+      callbackURL: `${window.location.origin}/customer/dashboard`,
+    });
   }
 
   async function handleSubmit(e) {
@@ -129,6 +117,18 @@ export default function RegisterPage() {
       setError('Enter a valid 10-digit mobile number');
       return;
     }
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(form.email.trim())) {
+      setError('Enter a valid email address');
+      return;
+    }
+    if (form.password.length < 8) {
+      setError('Password must be at least 8 characters');
+      return;
+    }
+    if (form.password !== form.confirmPassword) {
+      setError('Passwords do not match');
+      return;
+    }
     if (!form.addressLine.trim() || !/^\d{6}$/.test(form.pincode)) {
       setError('Enter your address and a valid 6-digit pincode');
       return;
@@ -136,18 +136,44 @@ export default function RegisterPage() {
 
     setLoading(true);
     try {
-      const res = await fetch('/api/auth/register', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(form),
+      const { error: signUpError } = await authClient.signUp.email({
+        email: form.email.trim().toLowerCase(),
+        password: form.password,
+        name: form.name.trim(),
+        phoneNumber: `+91${form.phone}`,
       });
-      if (!res.ok) throw new Error('Could not create your account. Please try again.');
-
-      if (!prefillPhone) {
-        router.push(`/login/otp?phone=${form.phone}`);
-      } else {
-        router.push('/dashboard');
+      if (signUpError) {
+        throw new Error(
+          signUpError.status === 422 || signUpError.code === 'USER_ALREADY_EXISTS'
+            ? 'An account with this mobile number already exists — try logging in instead.'
+            : signUpError.message || 'Could not create your account. Please try again.'
+        );
       }
+
+      // Best-effort — the account exists and is signed in either way. If this
+      // fails, the onboarding modal on Dashboard will ask for the address again.
+      updateProfile({
+        address: {
+          line: form.addressLine.trim(),
+          city: form.city,
+          landmark: form.landmark.trim(),
+          lat: form.lat,
+          lng: form.lng,
+        },
+      }).catch(() => {});
+
+      // Also written to the canonical Customer.addresses[] (the store
+      // checkout's saved-address picker reads from) — the Better Auth
+      // `user.address` field above is a separate, older store used only for
+      // the onboarding-completion check, and checkout was never wired to it.
+      addMyAddress({
+        label: 'Home',
+        addressText: [form.addressLine.trim(), form.landmark.trim(), form.city].filter(Boolean).join(', '),
+        lat: form.lat,
+        lng: form.lng,
+      }).catch(() => {});
+
+      router.push('/customer/dashboard');
     } catch (err) {
       setError(err.message || 'Something went wrong.');
     } finally {
@@ -210,23 +236,55 @@ export default function RegisterPage() {
               value={form.phone}
               onChange={(e) => update('phone', e.target.value.replace(/\D/g, ''))}
               placeholder="98765 43210"
-              className="flex-1 px-3 py-3 text-sm outline-none disabled:bg-[#F0F4FF]/60"
-              disabled={!!prefillPhone}
+              className="flex-1 px-3 py-3 text-sm outline-none"
               required
             />
           </div>
         </div>
 
         <div>
-          <label className="block text-xs font-medium text-[#0F172A]/70 mb-1.5">
-            Email <span className="text-[#0F172A]/40">(optional)</span>
-          </label>
+          <label className="block text-xs font-medium text-[#0F172A]/70 mb-1.5">Email</label>
           <input
             type="email"
             value={form.email}
             onChange={(e) => update('email', e.target.value)}
-            placeholder="you@email.com"
+            placeholder="priya@example.com"
             className="w-full px-3 py-3 text-sm border border-[#0F172A]/15 rounded-lg outline-none focus:ring-2 focus:ring-[#2554F0]/30 transition-shadow"
+            required
+          />
+        </div>
+
+        <div>
+          <label className="block text-xs font-medium text-[#0F172A]/70 mb-1.5">Password</label>
+          <div className="relative">
+            <input
+              type={showPassword ? 'text' : 'password'}
+              value={form.password}
+              onChange={(e) => update('password', e.target.value)}
+              placeholder="At least 8 characters"
+              className="w-full px-3 py-3 pr-10 text-sm border border-[#0F172A]/15 rounded-lg outline-none focus:ring-2 focus:ring-[#2554F0]/30 transition-shadow"
+              required
+            />
+            <button
+              type="button"
+              onClick={() => setShowPassword((s) => !s)}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-[#0F172A]/40 hover:text-[#0F172A]/70"
+              aria-label={showPassword ? 'Hide password' : 'Show password'}
+            >
+              {showPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+            </button>
+          </div>
+        </div>
+
+        <div>
+          <label className="block text-xs font-medium text-[#0F172A]/70 mb-1.5">Confirm password</label>
+          <input
+            type={showPassword ? 'text' : 'password'}
+            value={form.confirmPassword}
+            onChange={(e) => update('confirmPassword', e.target.value)}
+            placeholder="Re-enter password"
+            className="w-full px-3 py-3 text-sm border border-[#0F172A]/15 rounded-lg outline-none focus:ring-2 focus:ring-[#2554F0]/30 transition-shadow"
+            required
           />
         </div>
 
@@ -236,29 +294,58 @@ export default function RegisterPage() {
             <span className="text-xs font-semibold text-[#0F172A] uppercase tracking-wide">
               Service address
             </span>
-            <button
-              type="button"
-              onClick={handleUseLocation}
-              disabled={locationStatus === 'locating' || locationStatus === 'resolving'}
-              className="flex items-center gap-1.5 text-xs font-medium text-[#2554F0] hover:underline disabled:opacity-60"
-            >
-              {(locationStatus === 'locating' || locationStatus === 'resolving') && (
-                <Loader2 className="w-3.5 h-3.5 animate-spin" />
-              )}
-              {locationStatus === 'idle' || locationStatus === 'error' ? (
-                <>
-                  <MapPin className="w-3.5 h-3.5" />
-                  Use current location
-                </>
-              ) : locationStatus === 'locating' ? (
-                'Getting location…'
-              ) : locationStatus === 'resolving' ? (
-                'Looking up address…'
-              ) : (
-                'Update location'
-              )}
-            </button>
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={() => setMapPickerOpen(true)}
+                className="flex items-center gap-1.5 text-xs font-medium text-[#2554F0] hover:underline"
+              >
+                <MapIcon className="w-3.5 h-3.5" />
+                Choose on map
+              </button>
+              <button
+                type="button"
+                onClick={handleUseLocation}
+                disabled={locationStatus === 'locating' || locationStatus === 'resolving'}
+                className="flex items-center gap-1.5 text-xs font-medium text-[#2554F0] hover:underline disabled:opacity-60"
+              >
+                {(locationStatus === 'locating' || locationStatus === 'resolving') && (
+                  <Loader2 className="w-3.5 h-3.5 animate-spin" />
+                )}
+                {locationStatus === 'idle' || locationStatus === 'error' ? (
+                  <>
+                    <MapPin className="w-3.5 h-3.5" />
+                    Use current location
+                  </>
+                ) : locationStatus === 'locating' ? (
+                  'Getting location…'
+                ) : locationStatus === 'resolving' ? (
+                  'Looking up address…'
+                ) : (
+                  'Update location'
+                )}
+              </button>
+            </div>
           </div>
+
+          <LocationPicker
+            isOpen={mapPickerOpen}
+            onClose={() => setMapPickerOpen(false)}
+            initialLat={form.lat}
+            initialLng={form.lng}
+            onConfirm={(loc) => {
+              setForm((f) => ({
+                ...f,
+                addressLine: loc.addressLine || f.addressLine,
+                city: loc.city || f.city,
+                pincode: loc.pincode || f.pincode,
+                lat: loc.lat,
+                lng: loc.lng,
+              }));
+              setLocationStatus('done');
+              setMapPickerOpen(false);
+            }}
+          />
 
           {statusText && (
             <p
@@ -336,15 +423,15 @@ export default function RegisterPage() {
           disabled={loading}
           className="w-full bg-[#2554F0] text-white py-3 rounded-lg text-sm font-medium hover:bg-[#1D45D1] transition-colors disabled:opacity-60"
         >
-          {loading ? 'Creating account…' : prefillPhone ? 'Finish setting up' : 'Continue'}
+          {loading ? 'Creating account…' : 'Create account'}
         </button>
       </form>
 
       <p className="text-center text-xs text-[#0F172A]/70 mt-6">
         Already have an account?{' '}
-        <a href="/login" className="text-[#2554F0] font-medium hover:underline">
+        <Link href="/login" className="text-[#2554F0] font-medium hover:underline">
           Log in
-        </a>
+        </Link>
       </p>
     </div>
   );

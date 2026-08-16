@@ -5,8 +5,8 @@ export default function PaymentFilters({ searchQuery, onSearchChange }) {
     const [isFiltersOpen, setIsFiltersOpen] = useState(false);
 
     const filterOptions = [
-        { label: 'Payment Status', options: ['All Statuses', 'Paid', 'Pending', 'Partial', 'Failed'] },
-        { label: 'Payment Method', options: ['All Methods', 'UPI', 'Credit/Debit Card', 'Bank Transfer', 'Cash'] },
+        { label: 'Payment Status', options: ['All Statuses', 'Verified', 'Pending', 'Failed'] },
+        { label: 'Payment Method', options: ['All Methods', 'Cash', 'UPI', 'Razorpay'] },
         { label: 'Date Range', options: ['Any Time', 'Today', 'This Week', 'This Month', 'Last Month', 'Custom Range'] },
         { label: 'Collected By', options: ['Anyone', 'Admin', 'Partner', 'Auto-Debit'] },
     ];

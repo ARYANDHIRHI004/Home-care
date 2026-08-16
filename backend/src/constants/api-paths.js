@@ -3,12 +3,14 @@ export const API_PREFIX = "/api";
 export const API_PATHS = Object.freeze({
   CUSTOMERS: "/customers",
   ENQUIRIES: "/enquiries",
+  BOOKINGS: "/bookings",
   WORK_ORDERS: "/work-orders",
   ESTIMATES: "/estimates",
   INVOICES: "/invoices",
   PAYMENTS: "/payments",
   CATEGORIES: "/categories",
   SERVICES: "/services",
+  COUPONS: "/coupons",
   PARTNERS: "/service-partners",
   EMPLOYEES: "/employees",
   CONVERSATIONS: "/conversations",
@@ -17,4 +19,8 @@ export const API_PATHS = Object.freeze({
   SETTINGS: "/settings",
   TERMS: "/terms-and-conditions",
   TICKETS: "/tickets",
+  IMAGEKIT: "/imagekit",
+  EXPENSES: "/expenses",
+  CONFIG: "/config",
+  SERVICE_AREAS: "/service-areas",
 });

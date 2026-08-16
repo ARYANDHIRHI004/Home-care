@@ -2,9 +2,8 @@
 
 import { Sparkles } from 'lucide-react';
 import StatusPill from './StatusPill';
-import { MOCK_PROFILE } from '@/lib/customerData';
 
-export default function EstimateDocument({ estimate }) {
+export default function EstimateDocument({ estimate, profile }) {
   const subtotal = estimate.lineItems.reduce((sum, i) => sum + i.qty * i.price, 0);
   const total = subtotal + (estimate.visitCharge || 0) - (estimate.discount || 0);
 
@@ -30,8 +29,8 @@ export default function EstimateDocument({ estimate }) {
       <div className="grid grid-cols-2 gap-6 mb-8 text-sm">
         <div>
           <p className="text-xs font-bold text-[#0F172A]/40 uppercase tracking-wider mb-1">Prepared For</p>
-          <p className="font-medium text-[#0F172A]">{MOCK_PROFILE.name}</p>
-          <p className="text-[#0F172A]/60">{MOCK_PROFILE.phone}</p>
+          <p className="font-medium text-[#0F172A]">{profile?.name || 'Customer'}</p>
+          <p className="text-[#0F172A]/60">{profile?.phone || '-'}</p>
           <p className="text-[#0F172A]/60">{estimate.booking.address}</p>
         </div>
         <div>

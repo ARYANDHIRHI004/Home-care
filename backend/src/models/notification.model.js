@@ -14,7 +14,7 @@ const notificationSchema = new mongoose.Schema(
     },
     channel: {
       type: String,
-      enum: ["sms", "whatsapp", "email", "push"],
+      enum: ["sms", "whatsapp", "email", "push", "in_app"],
       required: true,
     },
     subject: { type: String, trim: true },
@@ -26,6 +26,10 @@ const notificationSchema = new mongoose.Schema(
       index: true,
     },
     sentAt: { type: Date },
+    // Separate from `status` (delivery outcome) — this is whether the
+    // recipient has actually seen it in the bell dropdown.
+    read: { type: Boolean, default: false, index: true },
+    type: { type: String, trim: true },
   },
   {
     timestamps: true,

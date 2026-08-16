@@ -8,30 +8,26 @@ export default function LiveJobStatus() {
     const { data: workOrders = [], isLoading } = useGetWorkOrdersQuery();
 
     const displayJobs = workOrders.length > 0
-        ? workOrders.slice(0, 5).map(wo => ({
+        ? workOrders.filter(wo => ['New', 'Open', 'Assigned', 'In Progress'].includes(wo.status)).slice(0, 5).map(wo => ({
             id: wo.workOrderNumber || `#WO-${wo._id?.slice(-4).toUpperCase()}`,
             service: wo.enquiryId?.serviceCategory || wo.title || 'Home Care Service',
             customer: wo.customerId?.name || 'Customer',
             partner: wo.assignedPartnerId?.name || 'Unassigned',
             time: wo.createdAt ? new Date(wo.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '10:00 AM',
-            status: wo.status || 'open'
+            status: wo.status || 'Open'
         }))
-        : [
-            { id: '#JB-2021', service: 'AC Deep Cleaning', customer: 'Rahul Sharma', partner: 'Amit Kumar', time: '10:00 AM', status: 'in_progress' },
-            { id: '#JB-2022', service: 'Plumbing Leak Fix', customer: 'Priya Singh', partner: 'Ramesh Patel', time: '11:30 AM', status: 'open' },
-            { id: '#JB-2023', service: 'Electrical Inspection', customer: 'Vikas Verma', partner: 'Sunil Rao', time: '01:00 PM', status: 'completed' },
-            { id: '#JB-2024', service: 'Deep Home Cleaning', customer: 'Ananya Roy', partner: 'Deepak J.', time: '02:30 PM', status: 'in_progress' },
-            { id: '#JB-2025', service: 'Pest Control 2BHK', customer: 'Suresh Menon', partner: 'Karan G.', time: '04:00 PM', status: 'open' },
-        ];
+        : [];
 
     const getStatusBadge = (status) => {
-        switch (status) {
+        const lowerStatus = status.toLowerCase();
+        switch (lowerStatus) {
             case 'completed':
                 return (
                     <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-emerald-50 dark:bg-emerald-900/30 text-emerald-700 dark:text-emerald-400 border border-emerald-100 dark:border-emerald-800">
                         <CheckCircle2 className="w-3 h-3" /> Completed
                     </span>
                 );
+            case 'in progress':
             case 'in_progress':
                 return (
                     <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-medium bg-blue-50 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400 border border-blue-100 dark:border-blue-800">
@@ -41,7 +37,7 @@ export default function LiveJobStatus() {
             default:
                 return (
                     <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-medium bg-amber-50 dark:bg-amber-900/30 text-amber-700 dark:text-amber-400 border border-amber-100 dark:border-amber-800">
-                        <AlertCircle className="w-3 h-3" /> {status.replace('_', ' ')}
+                        <AlertCircle className="w-3 h-3" /> {status}
                     </span>
                 );
         }
@@ -68,16 +64,24 @@ export default function LiveJobStatus() {
                         </tr>
                     </thead>
                     <tbody className="text-sm">
-                        {displayJobs.map((item, idx) => (
-                            <tr key={idx} className="border-b border-slate-50 dark:border-slate-800/50 last:border-0 hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
-                                <td className="py-3 pr-4 font-medium text-slate-900 dark:text-slate-200">{item.id}</td>
-                                <td className="py-3 pr-4 text-slate-600 dark:text-slate-400">{item.service}</td>
-                                <td className="py-3 pr-4 text-slate-600 dark:text-slate-400">{item.customer}</td>
-                                <td className="py-3 pr-4 text-slate-600 dark:text-slate-400">{item.partner}</td>
-                                <td className="py-3 pr-4 text-slate-500 dark:text-slate-500">{item.time}</td>
-                                <td className="py-3">{getStatusBadge(item.status)}</td>
+                        {displayJobs.length > 0 ? (
+                            displayJobs.map((item, idx) => (
+                                <tr key={idx} className="border-b border-slate-50 dark:border-slate-800/50 last:border-0 hover:bg-slate-50/50 dark:hover:bg-slate-800/30 transition-colors">
+                                    <td className="py-3 pr-4 font-medium text-slate-900 dark:text-slate-200">{item.id}</td>
+                                    <td className="py-3 pr-4 text-slate-600 dark:text-slate-400">{item.service}</td>
+                                    <td className="py-3 pr-4 text-slate-600 dark:text-slate-400">{item.customer}</td>
+                                    <td className="py-3 pr-4 text-slate-600 dark:text-slate-400">{item.partner}</td>
+                                    <td className="py-3 pr-4 text-slate-500 dark:text-slate-500">{item.time}</td>
+                                    <td className="py-3">{getStatusBadge(item.status)}</td>
+                                </tr>
+                            ))
+                        ) : (
+                            <tr>
+                                <td colSpan="6" className="py-8 text-center text-slate-500">
+                                    No live jobs found.
+                                </td>
                             </tr>
-                        ))}
+                        )}
                     </tbody>
                 </table>
             </div>

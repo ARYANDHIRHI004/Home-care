@@ -14,6 +14,17 @@ const categorySchema = new mongoose.Schema(
       trim: true,
     },
 
+    slug: {
+      type: String,
+      unique: true,
+      trim: true,
+    },
+
+    imageUrl: {
+      type: String,
+      trim: true,
+    },
+
     active: {
       type: Boolean,
       default: true,

@@ -1,18 +1,64 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
-  ChevronRight, ChevronLeft, MapPin, Calendar, Upload, Check, Pencil, PartyPopper, X,
+  ChevronRight, ChevronLeft, MapPin, Calendar, Check, Pencil, PartyPopper, X, Map as MapIcon,
 } from 'lucide-react';
-import { SERVICE_CATALOG, MOCK_ADDRESSES, TIME_SLOTS, MOCK_TERMS } from '@/lib/customerData';
+import { useCreateEnquiryMutation } from '@/store/api/enquiryApi';
+import { useGetServicesQuery } from '@/store/api/serviceApi';
+import { useGetTermsQuery } from '@/store/api/termsApi';
+import { useGetServiceAreasQuery, useCheckServiceAreaMutation } from '@/store/api/serviceAreaApi';
+import { useGetMyAddressesQuery, useAddMyAddressMutation } from '@/store/api/customerApi';
+import ImageUploader from '@/components/common/ImageUploader';
+import TermsModal from '@/components/common/TermsModal';
+import LocationPicker from '@/components/common/LocationPicker';
+
+const SECTOR_NUMBERS = Array.from({ length: 10 }, (_, i) => i + 1);
 
 const STEP_LABELS = ['Service', 'Address', 'Schedule', 'Details', 'Review'];
+const TIME_SLOTS = ['9 - 11', '11 - 1', '2 - 4', '4 - 6'];
 
 export default function BookServicePage() {
   const params = useSearchParams();
   const router = useRouter();
+  const { data: rawServices = [], isLoading: servicesLoading, isError: servicesError } = useGetServicesQuery('active=true');
+  const { data: rawTerms = [] } = useGetTermsQuery('active=true');
+  const { data: rawServiceAreas = [] } = useGetServiceAreasQuery('active=true');
+  const [createEnquiry, { isLoading: isSubmitting }] = useCreateEnquiryMutation();
+  const [checkServiceArea, { isLoading: isCheckingArea }] = useCheckServiceAreaMutation();
+  const [addMyAddress] = useAddMyAddressMutation();
+  const [areaError, setAreaError] = useState('');
+  const [mapPickerOpen, setMapPickerOpen] = useState(false);
+  const { data: rawAddresses = [], isLoading: addressesLoading } = useGetMyAddressesQuery();
+  const addresses = rawAddresses.map((a) => ({
+    id: a._id,
+    label: a.label || 'Address',
+    line: a.addressText,
+    lat: a.lat,
+    lng: a.lng,
+  }));
+  // "Sector Areas" is a pattern-match category (any "Sector N"), not one
+  // literal locality — offered as its own dropdown option plus a sector
+  // number picker, still a constrained selection rather than free text.
+  const sectorArea = rawServiceAreas.find((a) => a.matchType === 'sector');
+  const namedAreas = rawServiceAreas.filter((a) => a.matchType !== 'sector');
+  const serviceCatalog = rawServices.map((service) => ({
+    id: service._id,
+    categoryId: service.categoryId?._id || service.categoryId,
+    category: service.categoryId?.name || 'General',
+    name: service.name,
+    desc: service.description || 'Professional home care service',
+    priceFrom: service.basePrice || 0,
+    duration: service.duration || '1-2 hrs',
+    _raw: service,
+  }));
+  const termsByCategory = rawTerms.reduce((acc, term) => {
+    const categoryId = term.categoryId?._id || term.categoryId;
+    acc[categoryId] = term;
+    return acc;
+  }, {});
 
   // "Book Again" support — pre-fills service (and skips to address) or, if the
   // address is unchanged too, skips straight to Schedule. Matches the
@@ -20,8 +66,8 @@ export default function BookServicePage() {
   // the same empty form.
   const prefillServiceName = params.get('service');
   const prefillAddressId = params.get('address');
-  const prefillService = SERVICE_CATALOG.find((s) => s.name === prefillServiceName) || null;
-  const prefillAddress = MOCK_ADDRESSES.find((a) => a.id === prefillAddressId) || null;
+  const prefillService = serviceCatalog.find((s) => s.name === prefillServiceName) || null;
+  const prefillAddress = addresses.find((a) => a.id === prefillAddressId) || null;
 
   const initialStep = prefillService ? (prefillAddress ? 3 : 2) : 1;
 
@@ -34,14 +80,15 @@ export default function BookServicePage() {
     category: prefillService?.category || '',
     service: prefillService || null,
     acceptedTerms: prefillService ? null : null,
-    addressId: prefillAddress?.id || (MOCK_ADDRESSES.length ? MOCK_ADDRESSES[0].id : ''),
-    useNewAddress: MOCK_ADDRESSES.length === 0,
-    newAddress: { name: '', phone: '', altPhone: '', line: '', city: 'Bhilai', landmark: '' },
+    addressId: prefillAddress?.id || '',
+    useNewAddress: false,
+    newAddress: { name: '', phone: '', altPhone: '', line: '', city: 'Bhilai', landmark: '', locality: '', sectorNumber: '', lat: null, lng: null },
     saveNewAddress: true,
     date: '',
     slot: '',
     emergency: false,
     description: '',
+    images: [],
     instructions: '',
     agree: false,
   });
@@ -51,13 +98,13 @@ export default function BookServicePage() {
   }
 
   function acceptTermsFor(service) {
-    const terms = MOCK_TERMS[service?.category];
+    const terms = termsByCategory[service?.categoryId];
     if (!terms) return;
     update({
       category: service.category,
       service,
       acceptedTerms: {
-        categoryId: service.category,
+        categoryId: service.categoryId,
         version: terms.version,
         acceptedAt: new Date().toISOString(),
       },
@@ -66,9 +113,9 @@ export default function BookServicePage() {
   }
 
   function selectService(service) {
-    const terms = MOCK_TERMS[service.category];
+    const terms = termsByCategory[service.categoryId];
     const hasAcceptedForCurrent = form.acceptedTerms
-      && form.acceptedTerms.categoryId === service.category
+      && form.acceptedTerms.categoryId === service.categoryId
       && form.acceptedTerms.version === terms?.version;
 
     update({
@@ -89,7 +136,21 @@ export default function BookServicePage() {
     setTermsOpen(false);
   }
 
-  function goNext() {
+  async function goNext() {
+    if (step === 2 && form.useNewAddress) {
+      setAreaError('');
+      try {
+        const result = await checkServiceArea({ locality: computedLocality }).unwrap();
+        if (!result.serviceable) {
+          router.push(`/customer/unavailable?locality=${encodeURIComponent(computedLocality)}`);
+          return;
+        }
+      } catch {
+        // Fail-open here — the backend re-checks the same thing at final
+        // submit and is the real gate; this is just faster UX feedback.
+        setAreaError('Could not verify your area right now — you can still continue, we\'ll confirm at submission.');
+      }
+    }
     setStep((s) => Math.min(s + 1, 5));
   }
   function goBack() {
@@ -99,13 +160,16 @@ export default function BookServicePage() {
     setStep(s);
   }
 
-  const selectedAddress = form.useNewAddress ? null : MOCK_ADDRESSES.find((a) => a.id === form.addressId);
+  const selectedAddress = form.useNewAddress ? null : addresses.find((a) => a.id === form.addressId);
   const addressSummary = form.useNewAddress
     ? [form.newAddress.line, form.newAddress.city].filter(Boolean).join(', ')
     : selectedAddress?.line || '';
-  const selectedTerms = form.service ? MOCK_TERMS[form.service.category] : null;
+  const computedLocality = form.newAddress.locality === sectorArea?.name
+    ? (form.newAddress.sectorNumber ? `Sector ${form.newAddress.sectorNumber}` : '')
+    : form.newAddress.locality;
+  const selectedTerms = form.service ? termsByCategory[form.service.categoryId] : null;
   const termsAccepted = !!form.acceptedTerms
-    && form.acceptedTerms.categoryId === form.service?.category
+    && form.acceptedTerms.categoryId === form.service?.categoryId
     && form.acceptedTerms.version === selectedTerms?.version;
 
   // Same-day emergency toggle only shows if today's date is selected and a
@@ -113,17 +177,105 @@ export default function BookServicePage() {
   // fifth slot, it just flags urgency to the office within the four that exist.
   const isToday = form.date === new Date().toISOString().slice(0, 10);
 
+  // rawServices loads asynchronously (RTK Query), so on a fresh navigation —
+  // exactly what happens right after a login redirect — prefillService is
+  // still null on the very first render. An empty dependency array here
+  // would fire once against that null value and then never run again once
+  // services actually arrive, silently dropping both the service pre-select
+  // and the preAcceptedTerms sessionStorage read. Guard with a ref instead
+  // of an empty array so this can re-fire once the data is actually in.
+  // Same async-arrival problem as prefillService below — addresses load after
+  // the initial render, so the default (saved cards vs. blank new-address
+  // form) has to be decided once real data actually arrives, not baked into
+  // useState's initial value.
+  const appliedAddressDefaultRef = useRef(false);
   useEffect(() => {
-    if (!prefillService) return;
-    selectService(prefillService);
+    if (addressesLoading || appliedAddressDefaultRef.current || prefillAddress || form.addressId) return;
+    appliedAddressDefaultRef.current = true;
+    if (addresses.length > 0) {
+      update({ addressId: addresses[0].id, useNewAddress: false });
+    } else {
+      update({ useNewAddress: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [addressesLoading, addresses.length]);
+
+  const appliedPrefillRef = useRef(false);
+  useEffect(() => {
+    if (!prefillService || appliedPrefillRef.current) return;
+    appliedPrefillRef.current = true;
+
+    // Check if user already accepted terms on the landing page for this category
+    const storedTermsJson = sessionStorage.getItem('preAcceptedTerms');
+    let preAcceptedTerms = null;
+    if (storedTermsJson) {
+      try {
+        const parsed = JSON.parse(storedTermsJson);
+        if (parsed.categoryId === prefillService.categoryId) {
+          preAcceptedTerms = parsed;
+        }
+      } catch (e) {
+        console.error('Failed to parse preAcceptedTerms', e);
+      }
+      sessionStorage.removeItem('preAcceptedTerms');
+    }
+
+    if (preAcceptedTerms) {
+      update({
+        category: prefillService.category,
+        service: prefillService,
+        acceptedTerms: preAcceptedTerms,
+      });
+    } else {
+      selectService(prefillService);
+    }
     setStep(prefillAddress ? 3 : 2);
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [prefillService, prefillAddress]);
 
-  function handleSubmit() {
-    const ref = `ENQ-2026-${Math.floor(1000 + Math.random() * 8999)}`;
-    setRefNumber(ref);
-    setSubmitted(true);
+  async function handleSubmit() {
+    const payload = {
+      serviceId: form.service?.id,
+      serviceName: form.service?.name,
+      categoryId: form.service?.categoryId,
+      serviceCategory: form.category || form.service?.category,
+      preferredDate: form.date,
+      preferredSlot: form.slot,
+      address: addressSummary,
+      locality: computedLocality,
+      description: form.description,
+      images: form.images,
+      instructions: form.instructions,
+      emergency: form.emergency,
+      acceptedTerms: form.acceptedTerms,
+      source: 'customer_portal',
+    };
+    try {
+      const enquiry = await createEnquiry(payload).unwrap();
+
+      // Best-effort — the enquiry already went through either way. Only for
+      // a genuinely new address the customer typed in, not a saved one they
+      // picked, and only if they actually checked the save box.
+      if (form.useNewAddress && form.saveNewAddress) {
+        addMyAddress({
+          label: addresses.length === 0 ? 'Home' : 'Other',
+          addressText: addressSummary,
+          lat: form.newAddress.lat,
+          lng: form.newAddress.lng,
+        }).catch(() => {});
+      }
+
+      setRefNumber(enquiry.enquiryNumber || enquiry._id || 'Submitted');
+      setSubmitted(true);
+    } catch (err) {
+      // Backstop for the Step 2 check — same rejection the server would send
+      // if e.g. an area was deactivated between the check and this submit.
+      if (err?.status === 422 && err?.data?.serviceable === false) {
+        router.push(`/customer/unavailable?locality=${encodeURIComponent(computedLocality)}`);
+        return;
+      }
+      throw err;
+    }
   }
 
   if (submitted) {
@@ -146,6 +298,9 @@ export default function BookServicePage() {
       </div>
     );
   }
+
+  if (servicesLoading) return <div className="py-12 text-center text-sm text-[#0F172A]/50">Loading services...</div>;
+  if (servicesError) return <div className="py-12 text-center text-sm text-rose-600">Unable to load services.</div>;
 
   return (
     <div className="max-w-lg mx-auto space-y-6">
@@ -173,7 +328,7 @@ export default function BookServicePage() {
         <div className="space-y-4">
           <h1 className="text-lg font-bold text-[#0F172A]">Choose a service</h1>
           <div className="space-y-2">
-            {SERVICE_CATALOG.map((s) => (
+            {serviceCatalog.map((s) => (
               <button
                 key={s.name}
                 onClick={() => selectService(s)}
@@ -199,48 +354,22 @@ export default function BookServicePage() {
         </div>
       )}
 
-      {termsOpen && form.service && selectedTerms && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
-          <button aria-label="Close terms overlay" onClick={declineTerms} className="absolute inset-0 bg-slate-900/40" />
-          <div className="relative z-10 w-full max-w-lg overflow-hidden rounded-2xl border border-[#0F172A]/10 bg-white shadow-2xl">
-            <div className="flex items-start justify-between gap-4 border-b border-[#0F172A]/10 p-5">
-              <div>
-                <h2 className="text-lg font-bold text-[#0F172A]">{form.service.category} Terms &amp; Conditions</h2>
-                <p className="mt-1 text-xs text-[#0F172A]/50">Version {selectedTerms.version}</p>
-              </div>
-              <button onClick={declineTerms} className="rounded-lg p-2 text-[#0F172A]/50 hover:bg-slate-50">
-                <X className="h-4 w-4" />
-              </button>
-            </div>
-            <div className="max-h-72 overflow-y-auto p-5">
-              <p className="text-sm leading-6 text-[#0F172A]">{selectedTerms.content}</p>
-            </div>
-            <div className="flex gap-3 p-5 pt-0">
-              <button
-                onClick={declineTerms}
-                className="flex-1 rounded-2xl border border-[#0F172A]/15 px-4 py-3 text-sm font-medium text-[#0F172A] hover:bg-slate-50"
-              >
-                Decline
-              </button>
-              <button
-                onClick={() => acceptTermsFor(form.service)}
-                className="flex-1 rounded-2xl bg-[#2554F0] px-4 py-3 text-sm font-medium text-white hover:bg-[#1D45D1]"
-              >
-                I Agree &amp; Continue
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
+      <TermsModal
+        isOpen={termsOpen && form.service && selectedTerms}
+        categoryName={form.service?.category}
+        terms={selectedTerms}
+        onAccept={() => acceptTermsFor(form.service)}
+        onDecline={declineTerms}
+      />
 
       {/* STEP 2 — Address */}
       {step === 2 && (
         <div className="space-y-4">
           <h1 className="text-lg font-bold text-[#0F172A]">Where should we come?</h1>
 
-          {MOCK_ADDRESSES.length > 0 && (
+          {addresses.length > 0 && (
             <div className="space-y-2">
-              {MOCK_ADDRESSES.map((a) => (
+              {addresses.map((a) => (
                 <button
                   key={a.id}
                   onClick={() => update({ addressId: a.id, useNewAddress: false })}
@@ -288,6 +417,16 @@ export default function BookServicePage() {
                 onChange={(e) => update({ newAddress: { ...form.newAddress, altPhone: e.target.value.replace(/\D/g, '') } })}
                 className="w-full px-3 py-2.5 border border-[#0F172A]/15 rounded-lg text-sm outline-none focus:ring-2 focus:ring-[#2554F0]/20"
               />
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-medium text-[#0F172A]/70">Full address</span>
+                <button
+                  type="button"
+                  onClick={() => setMapPickerOpen(true)}
+                  className="flex items-center gap-1.5 text-xs font-medium text-[#2554F0] hover:underline"
+                >
+                  <MapIcon className="w-3.5 h-3.5" /> Choose on map
+                </button>
+              </div>
               <textarea
                 placeholder="Full address"
                 rows={2}
@@ -311,6 +450,42 @@ export default function BookServicePage() {
                   className="px-3 py-2.5 border border-[#0F172A]/15 rounded-lg text-sm outline-none focus:ring-2 focus:ring-[#2554F0]/20"
                 />
               </div>
+
+              {/* Area/Locality — a constrained selection from the real
+                  serviceable list, not free text. Free text is exactly how
+                  "Smruti Nagar" vs "Smriti Nagar" typo-mismatches happen. */}
+              <div className={form.newAddress.locality === sectorArea?.name ? 'grid grid-cols-2 gap-3' : ''}>
+                <div>
+                  <label className="block text-xs font-medium text-[#0F172A]/70 mb-1.5">Area / Locality</label>
+                  <select
+                    value={form.newAddress.locality}
+                    onChange={(e) => update({ newAddress: { ...form.newAddress, locality: e.target.value, sectorNumber: '' } })}
+                    className="w-full px-3 py-2.5 border border-[#0F172A]/15 rounded-lg text-sm outline-none focus:ring-2 focus:ring-[#2554F0]/20 bg-white"
+                  >
+                    <option value="">Select your area</option>
+                    {namedAreas.map((a) => (
+                      <option key={a._id} value={a.name}>{a.name}</option>
+                    ))}
+                    {sectorArea && <option value={sectorArea.name}>{sectorArea.name}</option>}
+                  </select>
+                </div>
+                {form.newAddress.locality === sectorArea?.name && (
+                  <div>
+                    <label className="block text-xs font-medium text-[#0F172A]/70 mb-1.5">Sector number</label>
+                    <select
+                      value={form.newAddress.sectorNumber}
+                      onChange={(e) => update({ newAddress: { ...form.newAddress, sectorNumber: e.target.value } })}
+                      className="w-full px-3 py-2.5 border border-[#0F172A]/15 rounded-lg text-sm outline-none focus:ring-2 focus:ring-[#2554F0]/20 bg-white"
+                    >
+                      <option value="">Select sector</option>
+                      {SECTOR_NUMBERS.map((n) => (
+                        <option key={n} value={n}>Sector {n}</option>
+                      ))}
+                    </select>
+                  </div>
+                )}
+              </div>
+
               <label className="flex items-center gap-2 text-xs text-[#0F172A]/60">
                 <input type="checkbox" checked={form.saveNewAddress} onChange={(e) => update({ saveNewAddress: e.target.checked })} className="rounded" />
                 Save this address for next time
@@ -318,16 +493,42 @@ export default function BookServicePage() {
             </div>
           )}
 
+          <LocationPicker
+            isOpen={mapPickerOpen}
+            onClose={() => setMapPickerOpen(false)}
+            initialLat={form.newAddress.lat}
+            initialLng={form.newAddress.lng}
+            onConfirm={(loc) => {
+              update({
+                newAddress: {
+                  ...form.newAddress,
+                  line: loc.addressLine || form.newAddress.line,
+                  city: loc.city || form.newAddress.city,
+                  lat: loc.lat,
+                  lng: loc.lng,
+                },
+              });
+              setMapPickerOpen(false);
+            }}
+          />
+
+          {areaError && <p className="text-xs text-red-600">{areaError}</p>}
+
           <div className="flex gap-3">
             <button onClick={goBack} className="flex items-center gap-2 px-4 py-3 bg-white border border-[#0F172A]/15 text-[#0F172A] rounded-xl text-sm font-medium hover:bg-slate-50">
               <ChevronLeft className="w-4 h-4" /> Back
             </button>
             <button
               onClick={goNext}
-              disabled={form.useNewAddress ? !form.newAddress.line || !form.newAddress.phone : !form.addressId}
+              disabled={
+                isCheckingArea ||
+                (form.useNewAddress
+                  ? !form.newAddress.line || !form.newAddress.phone || !computedLocality
+                  : !form.addressId)
+              }
               className="flex-1 flex items-center justify-center gap-2 py-3 bg-[#2554F0] text-white rounded-xl text-sm font-medium hover:bg-[#1D45D1] disabled:opacity-40"
             >
-              Next <ChevronRight className="w-4 h-4" />
+              {isCheckingArea ? 'Checking area…' : 'Next'} <ChevronRight className="w-4 h-4" />
             </button>
           </div>
         </div>
@@ -402,9 +603,17 @@ export default function BookServicePage() {
             onChange={(e) => update({ description: e.target.value })}
             className="w-full px-3 py-2.5 border border-[#0F172A]/15 rounded-lg text-sm outline-none focus:ring-2 focus:ring-[#2554F0]/20 resize-none"
           />
-          <button className="w-full flex items-center justify-center gap-2 py-8 border-2 border-dashed border-[#0F172A]/15 rounded-xl text-sm text-[#0F172A]/40 hover:bg-slate-50 transition-colors">
-            <Upload className="w-4 h-4" /> Upload images (optional)
-          </button>
+          <div>
+            <label className="block text-xs font-bold text-[#0F172A]/50 uppercase tracking-wider mb-2">Photos (optional)</label>
+            <ImageUploader
+              value={form.images}
+              onChange={(images) => update({ images })}
+              folder="enquiries"
+              maxFiles={4}
+              label="Upload photos of the job"
+              helpText="Helps our team size the job before calling — up to 4 photos, 5MB each."
+            />
+          </div>
           <textarea
             placeholder="Any special instructions for our team?"
             rows={2}
@@ -449,7 +658,7 @@ export default function BookServicePage() {
             </button>
             <button
               onClick={handleSubmit}
-              disabled={!form.agree}
+              disabled={!form.agree || isSubmitting}
               className="flex-1 py-3 bg-[#2554F0] text-white rounded-xl text-sm font-medium hover:bg-[#1D45D1] disabled:opacity-40"
             >
               Submit Request

@@ -6,10 +6,14 @@ import { PERMISSIONS as P } from "../constants/permissions.js";
 
 const router = Router();
 router.use(requireAuth);
+router.get("/me", controller.getMyEstimates);
+router.get("/me/:id", controller.getMyEstimateById);
+router.patch("/me/:id/approval", controller.respondToMyEstimate);
 router.post("/", requirePermission(P.ESTIMATE_CREATE), controller.createEstimate);
 router.get("/", requirePermission(P.ESTIMATE_READ), controller.getEstimates);
 router.get("/:id", requirePermission(P.ESTIMATE_READ), controller.getEstimateById);
 router.patch("/:id", requirePermission(P.ESTIMATE_UPDATE), controller.updateEstimate);
 router.patch("/:id/approval", requirePermission(P.ESTIMATE_UPDATE), controller.updateApprovalStatus);
+router.post("/:id/convert", requirePermission(P.ESTIMATE_UPDATE), controller.convertToBooking);
 router.delete("/:id", requirePermission(P.ESTIMATE_DELETE), controller.deleteEstimate);
 export default router;

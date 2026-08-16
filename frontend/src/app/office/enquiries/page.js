@@ -36,6 +36,8 @@ export default function EnquiriesPage() {
         email: enq.customerId?.email || 'N/A',
         phone: enq.customerId?.phone || 'N/A',
         service: enq.serviceCategory || 'N/A',
+        address: enq.address || 'N/A',
+        locality: enq.locality || '',
         source: enq.source || 'Website',
         priority: enq.priority || 'Medium',
         assignedTo: enq.assignedTo?.name || 'Unassigned',
@@ -105,9 +107,7 @@ export default function EnquiriesPage() {
                 />
                 
                 {/* Pagination */}
-                {/* Was hardcoded to 124 regardless of how many rows actually existed
-                    in `enquiries` (5) — pager would claim a nonexistent 13 pages.
-                    Driven off the real array length until a backend total plugs in. */}
+                {/* Pagination */}
                 <Pagination 
                     totalItems={enquiries.length}
                     itemsPerPage={itemsPerPage}
@@ -141,14 +141,7 @@ export default function EnquiriesPage() {
                 enquiry={enquiryToDelete} 
             />
 
-            {/* Estimate builder — reused from the Estimates module rather than
-                duplicated here. `enquiry={selectedRow}` locks the estimate to
-                this enquiry instead of making the admin pick it again. Note:
-                this mock data isn't wired to actually flip the enquiry's own
-                status to reflect an estimate now existing (that needs a shared
-                data source across the Enquiries/Estimates pages — the Redux
-                store set up earlier in this project is exactly the right place
-                for that once these pages are hooked to a real API). */}
+            {/* Estimate builder — reused from the Estimates module */}
             <CreateEstimateModal
                 isOpen={isCreateEstimateModalOpen}
                 onClose={() => setIsCreateEstimateModalOpen(false)}

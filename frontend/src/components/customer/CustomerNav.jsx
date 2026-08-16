@@ -4,6 +4,11 @@ import { useState, useRef, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { LayoutDashboard, Wrench, FileCheck, Receipt, User, Bell, Sparkles } from 'lucide-react';
+import {
+  useGetMyNotificationsQuery,
+  useMarkNotificationReadMutation,
+  useMarkAllNotificationsReadMutation,
+} from '@/store/api/notificationApi';
 
 const NAV_ITEMS = [
   { label: 'Dashboard', href: '/customer/dashboard', icon: LayoutDashboard },
@@ -13,19 +18,26 @@ const NAV_ITEMS = [
   { label: 'Profile', href: '/customer/profile', icon: User },
 ];
 
-// Same four WhatsApp-triggered events called out in the blueprint — mirrored
-// here so a customer already in the app sees them without switching to
-// WhatsApp. Mock data; swap for a real notifications API.
-const MOCK_NOTIFICATIONS = [
-  { id: 1, text: 'Amit Kumar is on the way for your Deep Home Cleaning', time: '10 min ago', unread: true },
-  { id: 2, text: 'Partner assigned for BK-8491 — AC Repair & Service', time: '2 hrs ago', unread: true },
-  { id: 3, text: 'Estimate EST-4093 sent — ₹15,000, expires in 2 days', time: 'Yesterday', unread: false },
-];
+function timeAgo(dateString) {
+  const diffMs = Date.now() - new Date(dateString).getTime();
+  const mins = Math.floor(diffMs / 60000);
+  if (mins < 1) return 'Just now';
+  if (mins < 60) return `${mins} min ago`;
+  const hrs = Math.floor(mins / 60);
+  if (hrs < 24) return `${hrs} hr${hrs > 1 ? 's' : ''} ago`;
+  const days = Math.floor(hrs / 24);
+  if (days === 1) return 'Yesterday';
+  if (days < 7) return `${days} days ago`;
+  return new Date(dateString).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' });
+}
 
 function NotificationBell() {
   const [open, setOpen] = useState(false);
   const ref = useRef(null);
-  const unreadCount = MOCK_NOTIFICATIONS.filter((n) => n.unread).length;
+  const { data: notifications = [] } = useGetMyNotificationsQuery();
+  const [markRead] = useMarkNotificationReadMutation();
+  const [markAllRead] = useMarkAllNotificationsReadMutation();
+  const unreadCount = notifications.filter((n) => !n.read).length;
 
   useEffect(() => {
     const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
@@ -33,10 +45,16 @@ function NotificationBell() {
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
+  function handleOpen() {
+    const next = !open;
+    setOpen(next);
+    if (next && unreadCount > 0) markAllRead();
+  }
+
   return (
     <div className="relative" ref={ref}>
       <button
-        onClick={() => setOpen((o) => !o)}
+        onClick={handleOpen}
         className="relative p-2 rounded-full text-[#0F172A]/60 hover:bg-[#F0F4FF] hover:text-[#2554F0] transition-colors"
       >
         <Bell className="w-5 h-5" />
@@ -50,12 +68,20 @@ function NotificationBell() {
             <p className="text-sm font-bold text-[#0F172A]">Notifications</p>
           </div>
           <div className="max-h-80 overflow-y-auto">
-            {MOCK_NOTIFICATIONS.map((n) => (
-              <div key={n.id} className={`px-4 py-3 border-b border-[#0F172A]/5 last:border-0 ${n.unread ? 'bg-[#F0F4FF]/50' : ''}`}>
-                <p className="text-xs text-[#0F172A] leading-relaxed">{n.text}</p>
-                <p className="text-[11px] text-[#0F172A]/40 mt-1">{n.time}</p>
-              </div>
-            ))}
+            {notifications.length === 0 ? (
+              <p className="px-4 py-6 text-center text-xs text-[#0F172A]/40">No notifications yet</p>
+            ) : (
+              notifications.map((n) => (
+                <button
+                  key={n._id}
+                  onClick={() => !n.read && markRead(n._id)}
+                  className={`w-full text-left px-4 py-3 border-b border-[#0F172A]/5 last:border-0 ${!n.read ? 'bg-[#F0F4FF]/50' : ''}`}
+                >
+                  <p className="text-xs text-[#0F172A] leading-relaxed">{n.message}</p>
+                  <p className="text-[11px] text-[#0F172A]/40 mt-1">{timeAgo(n.createdAt)}</p>
+                </button>
+              ))
+            )}
           </div>
         </div>
       )}
@@ -72,8 +98,8 @@ export default function CustomerNav({ children }) {
       <header className="hidden md:block sticky top-0 z-40 bg-white/90 backdrop-blur border-b border-[#0F172A]/10">
         <div className="max-w-6xl mx-auto px-6 h-16 flex items-center justify-between">
           <Link href="/customer/dashboard" className="flex items-center gap-2.5">
-            <div className="w-8 h-8 rounded-lg bg-[#2554F0] text-white flex items-center justify-center">
-              <Sparkles className="w-4 h-4" />
+            <div className="w-10 h-10 rounded-lg  text-white flex items-center justify-center">
+              <img src='/logo.png' className='w-full h-full object-cover' alt="Brand Logo" />
             </div>
             <span className="font-bold text-[#0F172A]" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>
               HomeCare

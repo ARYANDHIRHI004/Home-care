@@ -1,3 +1,5 @@
+'use client';
+
 import PageHeader from '@/components/office/PageHeader';
 import { Plus, Download, RefreshCw } from 'lucide-react';
 import Link from 'next/link';

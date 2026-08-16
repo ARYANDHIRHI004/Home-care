@@ -5,7 +5,7 @@ export default function InvoiceFilters({ searchQuery, onSearchChange }) {
     const [isFiltersOpen, setIsFiltersOpen] = useState(false);
 
     const filterOptions = [
-        { label: 'Status', options: ['All Statuses', 'Draft', 'Sent', 'Paid', 'Overdue', 'Cancelled'] },
+        { label: 'Status', options: ['All Statuses', 'Unpaid', 'Partial', 'Paid'] },
         { label: 'Date Range', options: ['Any Time', 'This Month', 'Last Month', 'This Quarter', 'This Year'] },
         { label: 'Amount', options: ['Any Amount', 'Under ₹1,000', '₹1,000 - ₹5,000', 'Over ₹5,000'] },
     ];

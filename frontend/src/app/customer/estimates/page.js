@@ -6,14 +6,19 @@ import { ChevronRight, FileCheck, Download } from 'lucide-react';
 import StatusPill from '@/components/customer/StatusPill';
 import EmptyState from '@/components/customer/EmptyState';
 import EstimateDocument from '@/components/customer/EstimateDocument';
-import { MOCK_ESTIMATES } from '@/lib/customerData';
+import { useGetCustomerEstimatesQuery } from '@/store/api/estimateApi';
+import { mapCustomerEstimate } from '@/lib/customerApiMappers';
 
-const FILTERS = ['All', 'Pending', 'Approved', 'Rejected', 'Expired'];
+// No 'Expired' — the backend's approvalStatus enum is only
+// pending/approved/rejected, and nothing computes an expiry from validUntil,
+// so an 'Expired' tab could never match a real estimate.
+const FILTERS = ['All', 'Pending', 'Approved', 'Rejected'];
 
 export default function EstimatesPage() {
   const [filter, setFilter] = useState('All');
   const docRefs = useRef({});
-  const estimates = MOCK_ESTIMATES;
+  const { data: rawEstimates = [], isLoading, isError } = useGetCustomerEstimatesQuery();
+  const estimates = useMemo(() => rawEstimates.map((estimate) => mapCustomerEstimate(estimate)), [rawEstimates]);
 
   const filtered = useMemo(
     () => (filter === 'All' ? estimates : estimates.filter((e) => e.status === filter)),
@@ -57,7 +62,11 @@ export default function EstimatesPage() {
         ))}
       </div>
 
-      {filtered.length === 0 ? (
+      {isLoading ? (
+        <div className="py-12 text-center text-sm text-[#0F172A]/50">Loading estimates...</div>
+      ) : isError ? (
+        <div className="py-12 text-center text-sm text-rose-600">Unable to load estimates.</div>
+      ) : filtered.length === 0 ? (
         <div className="bg-white border border-[#0F172A]/10 rounded-2xl">
           <EmptyState
             icon={FileCheck}
@@ -103,10 +112,14 @@ export default function EstimatesPage() {
                   <EstimateDocument
                     estimate={{
                       ...estimate,
+                      // Real address isn't populated by this list endpoint
+                      // (getMyEstimates doesn't select it) — leave it for
+                      // EstimateDocument to render its own "on file" fallback
+                      // rather than show a fabricated address as if real.
                       booking: {
                         id: estimate.bookingId,
                         service: estimate.service,
-                        address: 'B-204, Shanti Apartments, Sector 6, Bhilai',
+                        address: estimate.booking?.address || null,
                       },
                     }}
                   />

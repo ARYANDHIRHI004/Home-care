@@ -4,10 +4,24 @@ export const enquiryApi = apiSlice.injectEndpoints({
     endpoints: (builder) => ({
         getEnquiries: builder.query({
             query: (queryStr = '') => `/api/enquiries${queryStr ? `?${queryStr}` : ''}`,
-            providesTags: (result) => 
-                result?.data
+            // The controller returns a bare array (no { data } envelope) and Mongo
+            // documents key off `_id` — the previous `result?.data` / `id` shape
+            // never matched, so per-enquiry tags were silently never provided and
+            // invalidating a single enquiry id did nothing.
+            providesTags: (result) =>
+                Array.isArray(result)
                     ? [
-                          ...result.data.map(({ id }) => ({ type: 'Enquiry', id })),
+                          ...result.map(({ _id }) => ({ type: 'Enquiry', id: _id })),
+                          { type: 'Enquiry', id: 'LIST' },
+                      ]
+                    : [{ type: 'Enquiry', id: 'LIST' }],
+        }),
+        getMyEnquiries: builder.query({
+            query: () => `/api/enquiries/me`,
+            providesTags: (result) =>
+                Array.isArray(result)
+                    ? [
+                          ...result.map(({ _id }) => ({ type: 'Enquiry', id: _id })),
                           { type: 'Enquiry', id: 'LIST' },
                       ]
                     : [{ type: 'Enquiry', id: 'LIST' }],
@@ -58,6 +72,7 @@ export const enquiryApi = apiSlice.injectEndpoints({
 
 export const {
     useGetEnquiriesQuery,
+    useGetMyEnquiriesQuery,
     useGetEnquiryByIdQuery,
     useCreateEnquiryMutation,
     useUpdateEnquiryMutation,

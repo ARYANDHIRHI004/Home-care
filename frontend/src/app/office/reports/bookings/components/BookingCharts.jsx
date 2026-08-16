@@ -5,10 +5,7 @@ import {
     PieChart, Pie, Cell,
     XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
 } from 'recharts';
-import {
-    dailyBookingData, bookingByCategoryData,
-    bookingStatusData, bookingBySourceData, partnerWorkloadData
-} from '../data/bookingData';
+import { useGetWorkOrdersQuery } from '@/store/api/workOrderApi';
 
 const RADIAN = Math.PI / 180;
 const renderPctLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent }) => {
@@ -35,10 +32,35 @@ function ChartCard({ title, subtitle, children, className = '' }) {
 }
 
 export function DailyBookingTrendChart() {
+    const { data: rawWorkOrders = [] } = useGetWorkOrdersQuery();
+
+    const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+    const currentDay = new Date().getDay();
+    const last7Days = [];
+    for (let i = 6; i >= 0; i--) {
+        const d = new Date();
+        d.setDate(d.getDate() - i);
+        last7Days.push(days[d.getDay()]);
+    }
+
+    const dataMap = last7Days.reduce((acc, d) => ({ ...acc, [d]: { day: d, bookings: 0, completed: 0, cancelled: 0 } }), {});
+
+    rawWorkOrders.forEach(wo => {
+        if (!wo.createdAt) return;
+        const d = days[new Date(wo.createdAt).getDay()];
+        if (dataMap[d]) {
+            dataMap[d].bookings += 1;
+            if (wo.status === 'Completed') dataMap[d].completed += 1;
+            if (wo.status === 'Cancelled') dataMap[d].cancelled += 1;
+        }
+    });
+
+    const chartData = Object.values(dataMap);
+
     return (
-        <ChartCard title="Daily Booking Trend" subtitle="Bookings, completions and cancellations by day of week">
+        <ChartCard title="Daily Booking Trend" subtitle="Bookings, completions and cancellations by day">
             <ResponsiveContainer width="100%" height={230}>
-                <LineChart data={dailyBookingData} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
+                <LineChart data={chartData} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
                     <XAxis dataKey="day" tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
                     <YAxis tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} width={36} />
@@ -54,22 +76,36 @@ export function DailyBookingTrendChart() {
 }
 
 export function BookingByCategoryChart() {
+    const { data: rawWorkOrders = [] } = useGetWorkOrdersQuery();
+
+    const colors = ['#2563EB', '#10B981', '#F59E0B', '#8B5CF6', '#EC4899', '#14B8A6'];
+    const catMap = rawWorkOrders.reduce((acc, wo) => {
+        const cat = wo.enquiryId?.serviceCategory || wo.title || 'Other';
+        acc[cat] = (acc[cat] || 0) + 1;
+        return acc;
+    }, {});
+
+    const chartData = Object.entries(catMap)
+        .map(([name, value], i) => ({ name, value, color: colors[i % colors.length] }))
+        .sort((a, b) => b.value - a.value)
+        .slice(0, 5);
+
     return (
         <ChartCard title="Bookings by Service Category" subtitle="Volume distribution across service types">
             <div className="flex items-center gap-5">
                 <ResponsiveContainer width="50%" height={210}>
                     <PieChart>
-                        <Pie data={bookingByCategoryData} cx="50%" cy="50%" outerRadius={88}
+                        <Pie data={chartData} cx="50%" cy="50%" outerRadius={88}
                             dataKey="value" labelLine={false} label={renderPctLabel}>
-                            {bookingByCategoryData.map((e, i) => <Cell key={i} fill={e.color} />)}
+                            {chartData.map((e, i) => <Cell key={i} fill={e.color} />)}
                         </Pie>
                         <Tooltip formatter={(v) => `${v} bookings`} contentStyle={{ borderRadius: 12, border: '1px solid #e2e8f0', fontSize: 12 }} />
                     </PieChart>
                 </ResponsiveContainer>
                 <div className="flex-1 space-y-2.5 min-w-0">
-                    {bookingByCategoryData.map((item) => {
-                        const total = bookingByCategoryData.reduce((s, i) => s + i.value, 0);
-                        const pct = ((item.value / total) * 100).toFixed(1);
+                    {chartData.map((item) => {
+                        const total = chartData.reduce((s, i) => s + i.value, 0);
+                        const pct = total > 0 ? ((item.value / total) * 100).toFixed(1) : 0;
                         return (
                             <div key={item.name}>
                                 <div className="flex items-center justify-between mb-1">
@@ -92,20 +128,46 @@ export function BookingByCategoryChart() {
 }
 
 export function BookingStatusChart() {
+    const { data: rawWorkOrders = [] } = useGetWorkOrdersQuery();
+
+    const colors = {
+        'Completed': '#10B981',
+        'In Progress': '#2563EB',
+        'Assigned': '#3B82F6',
+        'New': '#6366F1',
+        'Open': '#8B5CF6',
+        'Cancelled': '#F43F5E'
+    };
+
+    const statusMap = rawWorkOrders.reduce((acc, wo) => {
+        const status = wo.status || 'New';
+        acc[status] = (acc[status] || 0) + 1;
+        return acc;
+    }, {});
+
+    const total = rawWorkOrders.length;
+    const chartData = Object.entries(statusMap)
+        .map(([name, count]) => ({
+            name,
+            value: total > 0 ? Number(((count / total) * 100).toFixed(1)) : 0,
+            color: colors[name] || '#94A3B8'
+        }))
+        .sort((a, b) => b.value - a.value);
+
     return (
         <ChartCard title="Booking Status Distribution" subtitle="Current status breakdown of all bookings">
             <div className="flex items-center gap-5">
                 <ResponsiveContainer width="50%" height={210}>
                     <PieChart>
-                        <Pie data={bookingStatusData} cx="50%" cy="50%" innerRadius={52} outerRadius={88}
+                        <Pie data={chartData} cx="50%" cy="50%" innerRadius={52} outerRadius={88}
                             dataKey="value" labelLine={false} label={renderPctLabel}>
-                            {bookingStatusData.map((e, i) => <Cell key={i} fill={e.color} />)}
+                            {chartData.map((e, i) => <Cell key={i} fill={e.color} />)}
                         </Pie>
                         <Tooltip formatter={(v) => `${v}%`} contentStyle={{ borderRadius: 12, border: '1px solid #e2e8f0', fontSize: 12 }} />
                     </PieChart>
                 </ResponsiveContainer>
                 <div className="flex-1 space-y-3 min-w-0">
-                    {bookingStatusData.map((item) => (
+                    {chartData.map((item) => (
                         <div key={item.name} className="flex items-center gap-3">
                             <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: item.color }} />
                             <div className="flex-1 min-w-0">
@@ -126,16 +188,34 @@ export function BookingStatusChart() {
 }
 
 export function BookingBySourceChart() {
+    const { data: rawWorkOrders = [] } = useGetWorkOrdersQuery();
+
+    const colors = ['#2563EB', '#10B981', '#F59E0B', '#8B5CF6'];
+    const sourceMap = rawWorkOrders.reduce((acc, wo) => {
+        const source = wo.enquiryId?.source || 'App'; // Default to App if not found
+        acc[source] = (acc[source] || 0) + 1;
+        return acc;
+    }, {});
+
+    const chartData = Object.entries(sourceMap)
+        .map(([source, bookings], i) => ({
+            source,
+            bookings,
+            color: colors[i % colors.length]
+        }))
+        .sort((a, b) => b.bookings - a.bookings)
+        .slice(0, 5);
+
     return (
         <ChartCard title="Bookings by Source" subtitle="Which channels drive the most bookings">
             <ResponsiveContainer width="100%" height={210}>
-                <BarChart data={bookingBySourceData} layout="vertical" margin={{ top: 0, right: 16, left: 0, bottom: 0 }} barCategoryGap="30%">
+                <BarChart data={chartData} layout="vertical" margin={{ top: 0, right: 16, left: 0, bottom: 0 }} barCategoryGap="30%">
                     <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" horizontal={false} />
                     <XAxis type="number" tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
                     <YAxis type="category" dataKey="source" tick={{ fontSize: 11, fill: '#64748b', fontWeight: 600 }} axisLine={false} tickLine={false} width={72} />
                     <Tooltip contentStyle={{ borderRadius: 12, border: '1px solid #e2e8f0', fontSize: 12 }} />
                     <Bar dataKey="bookings" name="Bookings" radius={[0, 4, 4, 0]}>
-                        {bookingBySourceData.map((entry, i) => <Cell key={i} fill={entry.color} />)}
+                        {chartData.map((entry, i) => <Cell key={i} fill={entry.color} />)}
                     </Bar>
                 </BarChart>
             </ResponsiveContainer>
@@ -144,10 +224,25 @@ export function BookingBySourceChart() {
 }
 
 export function PartnerWorkloadChart() {
+    const { data: rawWorkOrders = [] } = useGetWorkOrdersQuery();
+
+    const partnerMap = rawWorkOrders.reduce((acc, wo) => {
+        if (!wo.assignedPartnerId) return acc;
+        const name = wo.assignedPartnerId.name || 'Unknown';
+        if (!acc[name]) acc[name] = { partner: name, assigned: 0, completed: 0 };
+        acc[name].assigned += 1;
+        if (wo.status === 'Completed') acc[name].completed += 1;
+        return acc;
+    }, {});
+
+    const chartData = Object.values(partnerMap)
+        .sort((a, b) => b.assigned - a.assigned)
+        .slice(0, 6);
+
     return (
         <ChartCard title="Partner Workload" subtitle="Assigned vs completed jobs per partner">
             <ResponsiveContainer width="100%" height={210}>
-                <BarChart data={partnerWorkloadData} margin={{ top: 4, right: 8, left: 0, bottom: 0 }} barCategoryGap="30%">
+                <BarChart data={chartData} margin={{ top: 4, right: 8, left: 0, bottom: 0 }} barCategoryGap="30%">
                     <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
                     <XAxis dataKey="partner" tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
                     <YAxis tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} width={32} />

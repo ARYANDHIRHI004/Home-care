@@ -179,7 +179,7 @@ export default function CustomerTable({ onCustomerClick }) {
                 <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
                     <div>
                         <p className="text-sm text-slate-700">
-                            Showing <span className="font-medium">1</span> to <span className="font-medium">5</span> of <span className="font-medium">4,892</span> results
+                            Showing <span className="font-medium">1</span> to <span className="font-medium">{customers.length}</span> of <span className="font-medium">{customers.length}</span> results
                         </p>
                     </div>
                     <div>

@@ -1,35 +1,104 @@
 'use client';
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import Dialog from '@/components/office/ui/Dialog';
+import { useGetBookingsQuery } from '@/store/api/bookingApi';
+import { useGetPartnersQuery } from '@/store/api/partnerApi';
+import { useCreateWorkOrderMutation, useAssignWorkOrderPartnerMutation } from '@/store/api/workOrderApi';
+import { shortDate } from '@/lib/officeApiMappers';
+import { useGetEnumsQuery } from '@/store/api/configApi';
 
-// Previously the auto-populated fields below always showed the same hardcoded
-// "Priya Patel" values no matter which booking was actually selected in the
-// dropdown — this map makes the two bookings in the select actually resolve to
-// their own real data, standing in for a real bookingId -> booking lookup.
-const MOCK_BOOKINGS = {
-    'BKG-8492': { customer: 'Priya Patel', phone: '+91 98765 43210', category: 'Cleaning', address: '123, Palm Grove, Bandra West, Mumbai', service: 'Deep Home Cleaning', date: 'Oct 25, 2023', time: '10:00 AM', estimate: '₹3,500' },
-    'BKG-8493': { customer: 'Rahul Sharma', phone: '+91 87654 32109', category: 'AC & Appliance', address: '45, Sector 6, Bhilai', service: 'AC Repair & Service', date: 'Oct 26, 2023', time: '2:00 PM', estimate: '₹1,800' },
+const formatEnum = (str) => {
+    if (!str) return '';
+    return str.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
 };
-
-// Decision support for partner assignment — a bare name dropdown gives the admin
-// no way to actually choose well between a dozen partners. Surfacing rating,
-// current same-day load, and distance from the job (all things Section 5.5 of the
-// blueprint calls out explicitly) turns this into an actual decision instead of a
-// guess. Sorted nearest-first as a reasonable default.
-const MOCK_PARTNERS = [
-    { name: 'Amit Kumar', rating: 4.8, jobsToday: 3, distanceKm: 2.1 },
-    { name: 'Sunil Das', rating: 4.5, jobsToday: 1, distanceKm: 4.0 },
-    { name: 'Anil Deshmukh', rating: 4.9, jobsToday: 5, distanceKm: 1.5 },
-];
 
 export default function CreateWorkOrderModal({ isOpen, onClose }) {
     const [bookingId, setBookingId] = useState('');
-    const selectedBooking = MOCK_BOOKINGS[bookingId];
+    const [partnerId, setPartnerId] = useState('');
+    const [priority, setPriority] = useState('normal');
+    const [createWorkOrder, { isLoading: isCreating, error: createError }] = useCreateWorkOrderMutation();
+    const [assignPartner] = useAssignWorkOrderPartnerMutation();
+
+    // Only confirmed / pending-assignment bookings can receive a work order —
+    // completed and cancelled ones have nothing left to dispatch.
+    const { data: bookingData, isLoading: bookingsLoading } = useGetBookingsQuery(undefined, { skip: !isOpen });
+    const { data: partnerData, isLoading: partnersLoading } = useGetPartnersQuery(undefined, { skip: !isOpen });
+    const { data: enums = {} } = useGetEnumsQuery(undefined, { skip: !isOpen });
+
+    const bookings = useMemo(
+        () =>
+            (Array.isArray(bookingData) ? bookingData : []).filter((b) =>
+                ['confirmed', 'pending_assignment', 'upcoming'].includes(b.status)
+            ),
+        [bookingData]
+    );
+
+    // Decision support for partner assignment — a bare name dropdown gives the
+    // admin no way to choose well between a dozen partners. Surfacing rating and
+    // distance turns this into an actual decision instead of a guess. Sorted
+    // nearest-first; `toSorted` avoids mutating the RTK Query cache array, which
+    // an in-place `.sort()` during render would otherwise do.
+    const partners = useMemo(
+        () =>
+            (Array.isArray(partnerData) ? partnerData : [])
+                .filter((p) => p.isActive !== false)
+                .map((p) => ({
+                    id: p._id,
+                    name: p.name,
+                    rating: Number(p.rating || 0),
+                    jobsToday: Number(p.jobsToday || 0),
+                    distanceKm: p.distanceKm != null ? Number(p.distanceKm) : null,
+                }))
+                .toSorted((a, b) => (a.distanceKm ?? Infinity) - (b.distanceKm ?? Infinity)),
+        [partnerData]
+    );
+
+    const raw = bookings.find((b) => b._id === bookingId);
+    const selectedBooking = raw && {
+        customer: raw.customerId?.name || raw.customerName,
+        phone: raw.customerId?.phone || raw.phone,
+        category: raw.category,
+        address: raw.address,
+        service: raw.serviceName,
+        date: shortDate(raw.scheduledDate),
+        time: raw.scheduledTime,
+        estimate: `₹${Number(raw.amount || 0).toLocaleString('en-IN')}`,
+    };
+    // A WorkOrder requires enquiryId + customerId (see work-order.model.js) —
+    // both only resolve if the booking's estimate is populated with its
+    // source enquiry. If either is missing, this booking genuinely can't
+    // become a work order yet rather than silently create a broken one.
+    const derivedEnquiryId = raw?.estimateId?.enquiryId;
+    const derivedCustomerId = raw?.customerId?._id || raw?.customerId;
+    const canSubmit = !!(bookingId && derivedEnquiryId && derivedCustomerId);
+
+    async function handleSubmit(e) {
+        e.preventDefault();
+        if (!canSubmit) return;
+        try {
+            const workOrder = await createWorkOrder({
+                enquiryId: derivedEnquiryId,
+                customerId: derivedCustomerId,
+                customerName: selectedBooking?.customer,
+                customerPhone: selectedBooking?.phone,
+                priority,
+            }).unwrap();
+            if (partnerId) {
+                await assignPartner({ id: workOrder._id, assignedPartnerId: partnerId }).unwrap();
+            }
+            setBookingId('');
+            setPartnerId('');
+            setPriority('normal');
+            onClose();
+        } catch {
+            // createError below the form already surfaces this
+        }
+    }
 
     return (
         <Dialog isOpen={isOpen} onClose={onClose} title="Generate Work Order" maxWidth="max-w-4xl">
             <div className="p-6">
-                <form className="space-y-8">
+                <form className="space-y-8" onSubmit={handleSubmit}>
                     {/* SECTION 1: Booking Selection */}
                     <div className="space-y-4">
                         <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 uppercase tracking-wider border-b border-slate-100 dark:border-slate-800 pb-2">1. Booking Selection</h3>
@@ -41,11 +110,25 @@ export default function CreateWorkOrderModal({ isOpen, onClose }) {
                                     value={bookingId}
                                     onChange={(e) => setBookingId(e.target.value)}
                                 >
-                                    <option value="">Select Confirmed Booking</option>
-                                    <option value="BKG-8492">BKG-8492 - Priya Patel</option>
-                                    <option value="BKG-8493">BKG-8493 - Rahul Sharma</option>
+                                    <option value="">
+                                        {bookingsLoading
+                                            ? 'Loading bookings…'
+                                            : bookings.length
+                                              ? 'Select Confirmed Booking'
+                                              : 'No bookings awaiting a work order'}
+                                    </option>
+                                    {bookings.map((b) => (
+                                        <option key={b._id} value={b._id}>
+                                            {b.bookingNumber} - {b.customerName}
+                                        </option>
+                                    ))}
                                 </select>
                                 <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Select a booking to auto-populate details.</p>
+                                {bookingId && !canSubmit && (
+                                    <p className="text-xs text-rose-600 dark:text-rose-400 mt-1">
+                                        This booking has no linked enquiry — a work order can&apos;t be generated from it yet.
+                                    </p>
+                                )}
                             </div>
                         </div>
 
@@ -86,66 +169,49 @@ export default function CreateWorkOrderModal({ isOpen, onClose }) {
                         </div>
                     </div>
 
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                        {/* SECTION 2: Assignment */}
-                        <div className="space-y-4">
-                            <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 uppercase tracking-wider border-b border-slate-100 dark:border-slate-800 pb-2">2. Assignment</h3>
-                            <div className="space-y-1">
-                                <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Assign Partner *</label>
-                                <select className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors">
-                                    <option value="">Select Field Professional</option>
-                                    {MOCK_PARTNERS.sort((a, b) => a.distanceKm - b.distanceKm).map((p) => (
-                                        <option key={p.name} value={p.name}>
-                                            {p.name} — ★{p.rating} · {p.jobsToday} jobs today · {p.distanceKm}km away
-                                        </option>
-                                    ))}
-                                </select>
-                                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Sorted by distance — rating and today&apos;s job count shown so a busy or lower-rated partner isn&apos;t picked blind.</p>
-                            </div>
-                            <div className="space-y-1">
-                                <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Priority</label>
-                                <select className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors">
-                                    <option value="Normal">Normal</option>
-                                    <option value="High">High</option>
-                                    <option value="Emergency">Emergency</option>
-                                </select>
-                            </div>
-                            <div className="grid grid-cols-2 gap-4">
-                                <div className="space-y-1">
-                                    <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Schedule Date</label>
-                                    <input type="date" className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors" />
-                                </div>
-                                <div className="space-y-1">
-                                    <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Schedule Time</label>
-                                    <input type="time" className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors" />
-                                </div>
-                            </div>
-                            <div className="space-y-1">
-                                <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Estimated Duration</label>
-                                <select className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors">
-                                    <option value="1 Hour">1 Hour</option>
-                                    <option value="2 Hours">2 Hours</option>
-                                    <option value="4 Hours">4 Hours</option>
-                                    <option value="Full Day">Full Day</option>
-                                </select>
-                            </div>
+                    {/* SECTION 2: Assignment — Schedule Date/Time, Estimated
+                        Duration, Required Materials, Special Instructions and
+                        Internal Notes were removed: the WorkOrder model has
+                        no fields for any of them, so they were collected and
+                        silently discarded on every save. Internal notes can
+                        still be added after creation via the work order's own
+                        Add Note action, which is properly wired to the model. */}
+                    <div className="space-y-4">
+                        <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 uppercase tracking-wider border-b border-slate-100 dark:border-slate-800 pb-2">2. Assignment</h3>
+                        <div className="space-y-1">
+                            <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Assign Partner</label>
+                            <select
+                                value={partnerId}
+                                onChange={(e) => setPartnerId(e.target.value)}
+                                className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
+                            >
+                                <option value="">
+                                    {partnersLoading
+                                        ? 'Loading partners…'
+                                        : partners.length
+                                          ? 'Unassigned (assign later)'
+                                          : 'No active partners available'}
+                                </option>
+                                {partners.map((p) => (
+                                    <option key={p.id} value={p.id}>
+                                        {p.name} — ★{p.rating || '—'} · {p.jobsToday} jobs today
+                                        {p.distanceKm != null ? ` · ${p.distanceKm}km away` : ''}
+                                    </option>
+                                ))}
+                            </select>
+                            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Sorted by distance — rating and today&apos;s job count shown so a busy or lower-rated partner isn&apos;t picked blind.</p>
                         </div>
-
-                        {/* SECTION 3: Execution Details */}
-                        <div className="space-y-4">
-                            <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 uppercase tracking-wider border-b border-slate-100 dark:border-slate-800 pb-2">3. Execution Details</h3>
-                            <div className="space-y-1">
-                                <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Required Materials</label>
-                                <input type="text" placeholder="e.g. Deep cleaning liquid, Vacuum" className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors" />
-                            </div>
-                            <div className="space-y-1">
-                                <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Special Instructions (For Partner)</label>
-                                <textarea rows={2} className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors resize-none" placeholder="Customer instructions..."></textarea>
-                            </div>
-                            <div className="space-y-1">
-                                <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Internal Notes (Office Only)</label>
-                                <textarea rows={2} className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors resize-none" placeholder="Private admin notes..."></textarea>
-                            </div>
+                        <div className="space-y-1">
+                            <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Priority</label>
+                            <select
+                                value={priority}
+                                onChange={(e) => setPriority(e.target.value)}
+                                className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors"
+                            >
+                                {(enums.workOrder?.priority || ['low', 'normal', 'high']).map(p => (
+                                    <option key={p} value={p}>{formatEnum(p)}</option>
+                                ))}
+                            </select>
                         </div>
                     </div>
 
@@ -156,19 +222,19 @@ export default function CreateWorkOrderModal({ isOpen, onClose }) {
                             <div className="grid grid-cols-2 md:grid-cols-4 w-full gap-4 md:gap-8 text-center md:text-left">
                                 <div>
                                     <div className="text-xs font-medium text-slate-500 dark:text-slate-400">Estimate</div>
-                                    <div className="text-sm font-semibold text-slate-900 dark:text-slate-100 mt-1">₹3,500</div>
+                                    <div className="text-sm font-semibold text-slate-900 dark:text-slate-100 mt-1">{selectedBooking?.estimate || '--'}</div>
                                 </div>
                                 <div>
                                     <div className="text-xs font-medium text-slate-500 dark:text-slate-400">Discount</div>
-                                    <div className="text-sm font-semibold text-rose-600 dark:text-rose-400 mt-1">- ₹500</div>
+                                    <div className="text-sm font-semibold text-rose-600 dark:text-rose-400 mt-1">- ₹0</div>
                                 </div>
                                 <div>
                                     <div className="text-xs font-medium text-slate-500 dark:text-slate-400">Coupon</div>
-                                    <div className="text-sm font-semibold text-slate-900 dark:text-slate-100 mt-1">WELCOME50</div>
+                                    <div className="text-sm font-semibold text-slate-900 dark:text-slate-100 mt-1">--</div>
                                 </div>
                                 <div className="border-t md:border-t-0 md:border-l border-slate-200 dark:border-slate-700 pt-3 md:pt-0 md:pl-8">
                                     <div className="text-xs font-medium text-slate-500 dark:text-slate-400">Final Amount</div>
-                                    <div className="text-xl font-bold text-blue-700 dark:text-blue-400 mt-1">₹3,000</div>
+                                    <div className="text-xl font-bold text-blue-700 dark:text-blue-400 mt-1">{selectedBooking?.estimate || '--'}</div>
                                 </div>
                             </div>
                         </div>
@@ -177,13 +243,20 @@ export default function CreateWorkOrderModal({ isOpen, onClose }) {
                     {/* SECTION 5: Footer */}
                     <div className="flex justify-end items-center gap-4 pt-6 border-t border-slate-100 dark:border-slate-800 transition-colors">
                         <div className="flex items-center gap-2 mr-auto text-sm text-slate-500 dark:text-slate-400">
-                            Status will default to <span className="font-semibold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded">Assigned</span>
+                            Status will default to <span className="font-semibold text-slate-700 dark:text-slate-300 bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded">{partnerId ? 'Assigned' : 'Open'}</span>
                         </div>
+                        {createError && (
+                            <p className="text-xs text-rose-600 dark:text-rose-400">{createError.data?.message || 'Could not create the work order.'}</p>
+                        )}
                         <button type="button" onClick={onClose} className="px-5 py-2.5 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors">
                             Cancel
                         </button>
-                        <button type="button" onClick={onClose} className="px-5 py-2.5 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-xl transition-colors shadow-sm shadow-blue-200 dark:shadow-none">
-                            Generate Work Order
+                        <button
+                            type="submit"
+                            disabled={!canSubmit || isCreating}
+                            className="px-5 py-2.5 text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 rounded-xl transition-colors shadow-sm shadow-blue-200 dark:shadow-none disabled:opacity-50 disabled:cursor-not-allowed"
+                        >
+                            {isCreating ? 'Creating…' : 'Generate Work Order'}
                         </button>
                     </div>
                 </form>

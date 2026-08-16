@@ -181,7 +181,7 @@ export default function AboutUsPage() {
         {/* ==========================================
             2. OUR STORY SECTION
         ========================================== */}
-        <section className="py-20 bg-white border-y border-[#E5E7EB]">
+        <section id="story" className="py-20 bg-white border-y border-[#E5E7EB]">
           <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
             <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 items-center">
               {/* Image Grid */}
@@ -231,6 +231,17 @@ export default function AboutUsPage() {
                 </div>
               </div>
             </div>
+
+            {/* Journey timeline */}
+            <div className="mt-16 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+              {COMPANY_JOURNEY.map((milestone) => (
+                <div key={milestone.year} className="border-t-2 border-[#2563EB] pt-4">
+                  <p className="font-['Poppins',sans-serif] font-bold text-sm text-[#2563EB] mb-1">{milestone.year}</p>
+                  <h4 className="font-['Poppins',sans-serif] font-bold text-base text-[#111827] mb-2">{milestone.title}</h4>
+                  <p className="text-xs text-gray-500 leading-relaxed">{milestone.desc}</p>
+                </div>
+              ))}
+            </div>
           </div>
         </section>
 
@@ -245,8 +256,8 @@ export default function AboutUsPage() {
                 <div className="lg:col-span-4 flex justify-center">
                   <div className="relative w-48 h-48 sm:w-56 sm:h-56 rounded-2xl overflow-hidden border-2 border-[#2563EB]/20 shadow-md">
                     <img
-                      src="https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&q=80&w=400"
-                      alt="Dhamendra Kumar Sahu - Founder"
+                      src="https://ik.imagekit.io/bs0ovnamh/homecare/homecare/WhatsApp%20Image%202026-08-09%20at%207.38.40%20PM.jpeg"
+                      alt=" Founder"
                       className="w-full h-full object-cover"
                     />
                   </div>
@@ -268,51 +279,8 @@ export default function AboutUsPage() {
                   </p>
 
                   <div className="pt-2">
-                    <h4 className="font-['Poppins',sans-serif] font-bold text-base text-[#111827]">Dhamendra Kumar Sahu</h4>
-                    <p className="text-xs text-[#2563EB] font-semibold">Founder & CEO, HomeCare Platform</p>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-        </section>
-
-        {/* ==========================================
-            4. COO'S MESSAGE
-        ========================================== */}
-        <section className="py-20 bg-white">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="bg-[#F8FAFC] rounded-3xl p-8 lg:p-12 border border-[#E5E7EB] shadow-sm">
-              <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
-                {/* Message Content */}
-                <div className="lg:col-span-8 space-y-4 text-left order-2 lg:order-1">
-                  <div className="flex items-center gap-2 text-[#F97316]">
-                    <Quote className="w-8 h-8 opacity-40" />
-                    <span className="text-xs font-bold uppercase tracking-widest text-[#F97316]">COO's Message</span>
-                  </div>
-
-                  <h3 className="font-['Poppins',sans-serif] text-2xl sm:text-3xl font-bold text-[#111827]">
-                    "Operational discipline is the backbone of long-term customer trust."
-                  </h3>
-
-                  <p className="text-xs sm:text-sm text-gray-600 leading-relaxed font-normal italic">
-                    "Our office operations hub monitors every lead in real-time. Whether an enquiry originates from our website, WhatsApp, or Instagram, our staff verifies requirements, issues standard estimates, and ensures technicians arrive on schedule with standardized toolkits."
-                  </p>
-
-                  <div className="pt-2">
-                    <h4 className="font-['Poppins',sans-serif] font-bold text-base text-[#111827]">Operations Leadership Team</h4>
-                    <p className="text-xs text-[#F97316] font-semibold">Chief Operating Officer, HomeCare</p>
-                  </div>
-                </div>
-
-                {/* Portrait Placeholder */}
-                <div className="lg:col-span-4 flex justify-center order-1 lg:order-2">
-                  <div className="relative w-48 h-48 sm:w-56 sm:h-56 rounded-2xl overflow-hidden border-2 border-[#F97316]/20 shadow-md">
-                    <img
-                      src="https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&q=80&w=400"
-                      alt="COO - Leadership Team"
-                      className="w-full h-full object-cover"
-                    />
+                    <h4 className="font-['Poppins',sans-serif] font-bold text-base text-[#111827]">Mahendra Kumar Sahu</h4>
+                    <p className="text-xs text-[#2563EB] font-semibold">Founder, HomeCare Platform</p>
                   </div>
                 </div>
               </div>
@@ -483,7 +451,7 @@ export default function AboutUsPage() {
                 Book Service Now
               </Link>
               <a
-                href="tel:+919876543210"
+                href="tel:+919111466642"
                 className="w-full sm:w-auto bg-white/10 hover:bg-white/20 border border-white/30 text-white font-bold text-base px-8 py-4 rounded-xl transition-all flex items-center justify-center gap-2"
               >
                 <PhoneCall className="w-5 h-5" />
@@ -493,76 +461,6 @@ export default function AboutUsPage() {
           </div>
         </section>
       </main>
-
-      {/* ==========================================
-          FOOTER
-      ========================================== */}
-      <footer className="bg-[#111827] text-white pt-16 pb-12 border-t border-gray-800">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-5 gap-10 pb-12 border-b border-gray-800">
-            {/* Col 1 */}
-            <div className="lg:col-span-2 space-y-4">
-              <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-xl bg-[#2563EB] flex items-center justify-center text-white font-bold text-lg">
-                  HC
-                </div>
-                <span className="font-['Poppins',sans-serif] font-bold text-xl text-white">
-                  HomeCare<span className="text-[#2563EB]">.</span>
-                </span>
-              </div>
-              <p className="text-xs text-gray-400 max-w-sm leading-relaxed">
-                Centralized Home Care Management Platform enabling seamless service booking, verified technicians, and digital invoicing across regional India.
-              </p>
-              <div className="pt-2">
-                <p className="text-xs font-bold text-gray-300">GST Registration No:</p>
-                <p className="text-xs font-mono text-gray-400">22AAAAA0000A1Z5</p>
-              </div>
-            </div>
-
-            {/* Col 2 */}
-            <div className="space-y-3">
-              <h4 className="font-['Poppins',sans-serif] font-bold text-sm text-white uppercase tracking-wider">Company</h4>
-              <ul className="space-y-2 text-xs text-gray-400 font-medium">
-                <li><Link href="/about" className="hover:text-white transition-colors">About Us</Link></li>
-                <li><Link href="/#how" className="hover:text-white transition-colors">How It Works</Link></li>
-                <li><Link href="#" className="hover:text-white transition-colors">Partner With Us</Link></li>
-                <li><Link href="#" className="hover:text-white transition-colors">Careers</Link></li>
-              </ul>
-            </div>
-
-            {/* Col 3 */}
-            <div className="space-y-3">
-              <h4 className="font-['Poppins',sans-serif] font-bold text-sm text-white uppercase tracking-wider">Services</h4>
-              <ul className="space-y-2 text-xs text-gray-400 font-medium">
-                <li><Link href="/#services" className="hover:text-white transition-colors">Home Deep Cleaning</Link></li>
-                <li><Link href="/#services" className="hover:text-white transition-colors">AC Repair & Jet Clean</Link></li>
-                <li><Link href="/#services" className="hover:text-white transition-colors">Electrical Services</Link></li>
-                <li><Link href="/#services" className="hover:text-white transition-colors">Plumbing Solutions</Link></li>
-                <li><Link href="/#services" className="hover:text-white transition-colors">House Painting</Link></li>
-              </ul>
-            </div>
-
-            {/* Col 4 */}
-            <div className="space-y-3">
-              <h4 className="font-['Poppins',sans-serif] font-bold text-sm text-white uppercase tracking-wider">Contact Us</h4>
-              <div className="space-y-2 text-xs text-gray-400">
-                <p className="flex items-center gap-2"><MapPin className="w-4 h-4 text-[#2563EB]" /> Civic Centre, Bhilai, CG - 490006</p>
-                <p className="flex items-center gap-2"><PhoneCall className="w-4 h-4 text-[#2563EB]" /> +91 98765 43210</p>
-                <p className="flex items-center gap-2"><Headphones className="w-4 h-4 text-[#2563EB]" /> support@homecare.in</p>
-              </div>
-            </div>
-          </div>
-
-          <div className="pt-8 flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-gray-500">
-            <p>© 2026 Home Care Management Platform. All rights reserved.</p>
-            <div className="flex gap-6">
-              <Link href="#" className="hover:text-gray-300">Privacy Policy</Link>
-              <Link href="#" className="hover:text-gray-300">Terms of Service</Link>
-              <Link href="#" className="hover:text-gray-300">Refund Policy</Link>
-            </div>
-          </div>
-        </div>
-      </footer>
     </div>
   );
 }

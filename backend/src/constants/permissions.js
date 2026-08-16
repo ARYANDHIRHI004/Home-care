@@ -9,6 +9,11 @@ export const PERMISSIONS = Object.freeze({
   ENQUIRY_UPDATE: "enquiry:update",
   ENQUIRY_DELETE: "enquiry:delete",
 
+  BOOKING_CREATE: "booking:create",
+  BOOKING_READ: "booking:read",
+  BOOKING_UPDATE: "booking:update",
+  BOOKING_DELETE: "booking:delete",
+
   WORK_ORDER_CREATE: "work_order:create",
   WORK_ORDER_READ: "work_order:read",
   WORK_ORDER_UPDATE: "work_order:update",
@@ -31,6 +36,7 @@ export const PERMISSIONS = Object.freeze({
 
   CATEGORY_MANAGE: "category:manage",
   SERVICE_MANAGE: "service:manage",
+  COUPON_MANAGE: "coupon:manage",
   PARTNER_MANAGE: "partner:manage",
   EMPLOYEE_MANAGE: "employee:manage",
   CONVERSATION_MANAGE: "conversation:manage",
@@ -44,4 +50,6 @@ export const PERMISSIONS = Object.freeze({
   TICKET_UPDATE: "ticket:update",
   TICKET_DELETE: "ticket:delete",
   TICKET_MANAGE: "ticket:manage",
+
+  SERVICE_AREA_MANAGE: "service_area:manage",
 });

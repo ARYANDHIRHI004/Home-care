@@ -149,8 +149,8 @@ export default function Sidebar({ isOpen }) {
         >
             <div className="h-[72px] flex items-center px-6 border-b border-slate-200 dark:border-slate-800">
                 <div className="flex items-center gap-3 w-full">
-                    <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center flex-shrink-0 text-white font-bold">
-                        H
+                    <div className="w-8 h-8 bg-white rounded-lg flex items-center justify-center flex-shrink-0 text-white font-bold">
+                        <img src="/logo.png" className='w-full h-full object-cover' alt="Brand Logo" />
                     </div>
                     {isOpen && (
                         <motion.div

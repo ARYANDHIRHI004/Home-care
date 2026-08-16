@@ -1,5 +1,5 @@
 'use client';
-import React, { useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import PageHeader from '@/components/office/PageHeader';
 import {
     Plus, Download, RefreshCw, Filter, Search, Clock, 
@@ -12,6 +12,13 @@ import {
 } from 'lucide-react';
 import CreateEstimateModal from '@/components/office/estimates/CreateEstimateModal';
 import SendEstimateModal from '@/components/office/estimates/SendEstimateModal';
+import {
+    useGetEstimatesQuery,
+    useUpdateEstimateMutation,
+    useUpdateEstimateApprovalMutation,
+    useConvertEstimateToBookingMutation,
+} from '@/store/api/estimateApi';
+import { mapOfficeEstimate } from '@/lib/officeApiMappers';
 
 const StatCard = ({ title, value, icon: Icon, trend, trendValue, subtitle, accentColor }) => {
     const accentColors = {
@@ -69,37 +76,74 @@ const StatusBadge = ({ status }) => {
 };
 
 export default function EstimatesPage() {
-    const [selectedRow, setSelectedRow] = useState(null);
+    // Only the *id* is held locally — the drawer's row is derived from the live
+    // query below. Holding the row object itself would leave the drawer showing a
+    // pre-mutation snapshot after an approve/convert invalidates the list.
+    const [selectedId, setSelectedId] = useState(null);
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
     const [activeTab, setActiveTab] = useState('details'); // details, pdf, versions
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [isSendModalOpen, setIsSendModalOpen] = useState(false);
 
-    // Mock Data — lifted into state (was a plain const before) because the
-    // estimate builder and send flow below need to actually be able to add a
-    // new row / flip a status, not just read a frozen array.
-    const [estimates, setEstimates] = useState([
-        { id: 'EST-4091', customer: 'Anand Mahindra', phone: '+91 98765 43210', service: 'Full Home Renovation', amount: '₹1,25,000', discount: '₹5,000', finalAmount: '₹1,20,000', validity: '3 Days Left', createdBy: 'Amit Kumar', status: 'Approved', date: 'Oct 25, 2023', initial: 'A' },
-        { id: 'EST-4092', customer: 'Priya Reddy', phone: '+91 87654 32109', service: 'Office Deep Cleaning', amount: '₹15,000', discount: '₹0', finalAmount: '₹15,000', validity: '5 Days Left', createdBy: 'Neha Singh', status: 'Sent', date: 'Oct 25, 2023', initial: 'P' },
-        { id: 'EST-4093', customer: 'Ratan Tata', phone: '+91 76543 21098', service: 'Annual Maintenance', amount: '₹85,000', discount: '₹10,000', finalAmount: '₹75,000', validity: 'Valid', createdBy: 'System', status: 'Converted', date: 'Oct 24, 2023', initial: 'R' },
-        { id: 'EST-4094', customer: 'Sunita Sharma', phone: '+91 65432 10987', service: 'Kitchen Remodeling', amount: '₹45,000', discount: '₹2,000', finalAmount: '₹43,000', validity: 'Expired', createdBy: 'Rahul Admin', status: 'Expired', date: 'Oct 15, 2023', initial: 'S' },
-        { id: 'EST-4095', customer: 'Vikram Singh', phone: '+91 54321 09876', service: 'Plumbing Contract', amount: '₹25,000', discount: '₹1,500', finalAmount: '₹23,500', validity: 'Requires Approval', createdBy: 'Priya Support', status: 'Pending Approval', date: 'Oct 26, 2023', initial: 'V' },
-        { id: 'EST-4096', customer: 'Deepak Chopra', phone: '+91 43210 98765', service: 'AC Servicing (5 Units)', amount: '₹6,000', discount: '₹500', finalAmount: '₹5,500', validity: '1 Day Left', createdBy: 'Amit Kumar', status: 'Viewed', date: 'Oct 22, 2023', initial: 'D' },
-    ]);
+    const { data, isLoading, isError, error, refetch, isFetching } = useGetEstimatesQuery();
+    const [updateEstimate] = useUpdateEstimateMutation();
+    const [updateApproval, { isLoading: isApproving }] = useUpdateEstimateApprovalMutation();
+    const [convertToBooking, { isLoading: isConverting }] = useConvertEstimateToBookingMutation();
+
+    const estimates = useMemo(
+        () => (Array.isArray(data) ? data.map(mapOfficeEstimate) : []),
+        [data]
+    );
+
+    const selectedRow = useMemo(
+        () => estimates.find((e) => e.id === selectedId) || null,
+        [estimates, selectedId]
+    );
+
+    const pendingApproval = useMemo(
+        () => estimates.filter((e) => e.status === 'Pending Approval'),
+        [estimates]
+    );
+    const expiringSoon = useMemo(
+        () => estimates.filter((e) => /Day|Today/.test(e.validity)),
+        [estimates]
+    );
+
+    const stats = useMemo(() => {
+        const by = (s) => estimates.filter((e) => e.status === s).length;
+        const converted = by('Converted');
+        return {
+            total: estimates.length,
+            pending: by('Pending Approval'),
+            approved: by('Approved'),
+            rejected: by('Rejected'),
+            converted,
+            rate: estimates.length ? `${Math.round((converted / estimates.length) * 100)}%` : '0%',
+            pipeline: estimates
+                .filter((e) => !['Converted', 'Rejected', 'Cancelled', 'Expired'].includes(e.status))
+                .reduce((sum, e) => sum + Number(e._raw?.total || 0), 0),
+        };
+    }, [estimates]);
 
     const openDrawer = (est) => {
-        setSelectedRow(est);
+        setSelectedId(est.id);
         setIsDrawerOpen(true);
         setActiveTab('details');
     };
 
-    const handleEstimateSaved = (newEstimate) => {
-        setEstimates((prev) => [newEstimate, ...prev]);
+    const handleSendConfirmed = async () => {
+        if (!selectedRow) return;
+        await updateEstimate({ id: selectedRow.id, status: 'Sent' }).unwrap().catch(() => {});
     };
 
-    const handleSendConfirmed = (channel) => {
-        setEstimates((prev) => prev.map((e) => (e.id === selectedRow?.id ? { ...e, status: 'Sent' } : e)));
-        setSelectedRow((prev) => (prev ? { ...prev, status: 'Sent' } : prev));
+    const handleApprove = async () => {
+        if (!selectedRow) return;
+        await updateApproval({ id: selectedRow.id, approvalStatus: 'approved' }).unwrap().catch(() => {});
+    };
+
+    const handleConvert = async () => {
+        if (!selectedRow) return;
+        await convertToBooking(selectedRow.id).unwrap().catch(() => {});
     };
 
     return (
@@ -110,8 +154,12 @@ export default function EstimatesPage() {
                 description="Create, manage and track customer quotations before converting them into confirmed bookings."
                 actions={
                     <>
-                        <button className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 text-slate-700 rounded-xl text-sm font-medium hover:bg-slate-50 transition-colors shadow-sm">
-                            <RefreshCw className="w-4 h-4" />
+                        <button
+                            onClick={() => refetch()}
+                            disabled={isFetching}
+                            className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 text-slate-700 rounded-xl text-sm font-medium hover:bg-slate-50 transition-colors shadow-sm disabled:opacity-50"
+                        >
+                            <RefreshCw className={`w-4 h-4 ${isFetching ? 'animate-spin' : ''}`} />
                             Refresh
                         </button>
                         <button className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 text-slate-700 rounded-xl text-sm font-medium hover:bg-slate-50 transition-colors shadow-sm">
@@ -131,12 +179,12 @@ export default function EstimatesPage() {
 
             {/* KPI Cards */}
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 sm:gap-6 mb-8">
-                <StatCard title="Today's Estimates" value="18" icon={FileText} trend="up" trendValue="12%" subtitle="vs yesterday" accentColor="default" />
-                <StatCard title="Pending Approval" value="5" icon={Clock} subtitle="Requires manager review" accentColor="yellow" />
-                <StatCard title="Approved Estimates" value="12" icon={ThumbsUp} trend="up" trendValue="5%" subtitle="Awaiting conversion" accentColor="green" />
-                <StatCard title="Rejected Estimates" value="2" icon={ThumbsDown} subtitle="This week" accentColor="red" />
-                <StatCard title="Converted to Booking" value="42" icon={CheckCircle2} trend="up" trendValue="15%" subtitle="Conversion rate: 68%" accentColor="indigo" />
-                <StatCard title="Estimated Revenue" value="₹4.2L" icon={PieChart} subtitle="Pipeline value" accentColor="purple" />
+                <StatCard title="Total Estimates" value={isLoading ? '—' : stats.total} icon={FileText} subtitle="All time" accentColor="default" />
+                <StatCard title="Pending Approval" value={isLoading ? '—' : stats.pending} icon={Clock} subtitle="Requires manager review" accentColor="yellow" />
+                <StatCard title="Approved Estimates" value={isLoading ? '—' : stats.approved} icon={ThumbsUp} subtitle="Awaiting conversion" accentColor="green" />
+                <StatCard title="Rejected Estimates" value={isLoading ? '—' : stats.rejected} icon={ThumbsDown} subtitle="Declined by customer" accentColor="red" />
+                <StatCard title="Converted to Booking" value={isLoading ? '—' : stats.converted} icon={CheckCircle2} subtitle={`Conversion rate: ${stats.rate}`} accentColor="indigo" />
+                <StatCard title="Estimated Revenue" value={isLoading ? '—' : `₹${stats.pipeline.toLocaleString('en-IN')}`} icon={PieChart} subtitle="Open pipeline value" accentColor="purple" />
             </div>
 
             <div className="grid grid-cols-1 xl:grid-cols-4 gap-6 mb-8">
@@ -182,10 +230,36 @@ export default function EstimatesPage() {
                                     </tr>
                                 </thead>
                                 <tbody className="text-sm">
-                                    {estimates.length > 0 ? estimates.map((est) => (
+                                    {isLoading ? (
+                                        [...Array(5)].map((_, i) => (
+                                            <tr key={i} className="border-b border-slate-50 last:border-0">
+                                                <td className="p-4"><div className="w-4 h-4 bg-slate-100 rounded animate-pulse" /></td>
+                                                <td colSpan="8" className="p-4">
+                                                    <div className="h-4 bg-slate-100 rounded animate-pulse" style={{ width: `${90 - i * 8}%` }} />
+                                                </td>
+                                            </tr>
+                                        ))
+                                    ) : isError ? (
+                                        <tr>
+                                            <td colSpan="9" className="p-12 text-center">
+                                                <div className="flex flex-col items-center justify-center">
+                                                    <div className="w-16 h-16 bg-rose-50 rounded-full flex items-center justify-center mb-4">
+                                                        <AlertCircle className="w-8 h-8 text-rose-400" />
+                                                    </div>
+                                                    <h3 className="text-lg font-semibold text-slate-900 mb-1">Couldn&apos;t load estimates</h3>
+                                                    <p className="text-slate-500 text-sm max-w-sm mb-6">
+                                                        {error?.data?.message || error?.error || 'The server did not respond. Check your connection and try again.'}
+                                                    </p>
+                                                    <button onClick={() => refetch()} className="px-4 py-2 bg-blue-600 text-white rounded-xl text-sm font-medium hover:bg-blue-700 transition-colors shadow-sm">
+                                                        Retry
+                                                    </button>
+                                                </div>
+                                            </td>
+                                        </tr>
+                                    ) : estimates.length > 0 ? estimates.map((est) => (
                                         <tr key={est.id} onClick={() => openDrawer(est)} className="border-b border-slate-50 last:border-0 hover:bg-slate-50/80 transition-colors cursor-pointer group">
                                             <td className="p-4" onClick={(e) => e.stopPropagation()}><input type="checkbox" className="rounded border-slate-300 text-blue-600 focus:ring-blue-500" /></td>
-                                            <td className="p-4 font-medium text-slate-900">{est.id}</td>
+                                            <td className="p-4 font-medium text-slate-900">{est.displayId}</td>
                                             <td className="p-4">
                                                 <div className="flex items-center gap-3">
                                                     <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-700 flex items-center justify-center font-bold text-xs">
@@ -250,7 +324,7 @@ export default function EstimatesPage() {
                                                     </div>
                                                     <h3 className="text-lg font-semibold text-slate-900 mb-1">No estimates available</h3>
                                                     <p className="text-slate-500 text-sm max-w-sm mb-6">Create your first professional quotation for a customer.</p>
-                                                    <button className="px-4 py-2 bg-blue-600 text-white rounded-xl text-sm font-medium hover:bg-blue-700 transition-colors shadow-sm">
+                                                    <button onClick={() => setIsCreateModalOpen(true)} className="px-4 py-2 bg-blue-600 text-white rounded-xl text-sm font-medium hover:bg-blue-700 transition-colors shadow-sm">
                                                         Create Estimate
                                                     </button>
                                                 </div>
@@ -270,7 +344,9 @@ export default function EstimatesPage() {
                                 </select>
                             </div>
                             <div className="flex items-center gap-2">
-                                <span className="text-sm text-slate-500 mr-4">1-6 of 24</span>
+                                <span className="text-sm text-slate-500 mr-4">
+                                    {estimates.length > 0 ? `1-${estimates.length} of ${estimates.length}` : '0 of 0'}
+                                </span>
                                 <button className="p-1.5 rounded-lg border border-slate-200 text-slate-400 hover:bg-slate-50 hover:text-slate-700 disabled:opacity-50 transition-colors">
                                     <ChevronLeft className="w-4 h-4" />
                                 </button>
@@ -288,7 +364,7 @@ export default function EstimatesPage() {
                     <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
                         <h3 className="text-base font-semibold text-slate-900 mb-4">Quick Actions</h3>
                         <div className="grid grid-cols-2 gap-3">
-                            <button className="flex flex-col items-center justify-center p-3 bg-slate-50 border border-slate-100 rounded-xl hover:border-blue-300 hover:bg-blue-50 transition-colors group">
+                            <button onClick={() => setIsCreateModalOpen(true)} className="flex flex-col items-center justify-center p-3 bg-slate-50 border border-slate-100 rounded-xl hover:border-blue-300 hover:bg-blue-50 transition-colors group">
                                 <Plus className="w-5 h-5 text-slate-500 group-hover:text-blue-600 mb-1.5" />
                                 <span className="text-xs font-medium text-slate-700 group-hover:text-blue-700">New Estimate</span>
                             </button>
@@ -314,17 +390,33 @@ export default function EstimatesPage() {
                             Pending Approvals
                         </h3>
                         <div className="space-y-3">
-                            <div className="p-3 bg-white rounded-xl border border-amber-100 shadow-sm">
-                                <div className="flex justify-between items-start mb-1">
-                                    <span className="text-sm font-bold text-slate-900">EST-4095</span>
-                                    <span className="text-xs font-medium text-amber-600">₹23,500</span>
+                            {pendingApproval.length === 0 ? (
+                                <p className="text-xs text-amber-700/70">Nothing waiting on a manager right now.</p>
+                            ) : pendingApproval.map((est) => (
+                                <div key={est.id} className="p-3 bg-white rounded-xl border border-amber-100 shadow-sm">
+                                    <div className="flex justify-between items-start mb-1">
+                                        <span className="text-sm font-bold text-slate-900">{est.displayId}</span>
+                                        <span className="text-xs font-medium text-amber-600">{est.finalAmount}</span>
+                                    </div>
+                                    <div className="text-xs text-slate-500 mb-2">{est.customer} • {est.service}</div>
+                                    <div className="flex gap-2">
+                                        <button
+                                            onClick={() => updateApproval({ id: est.id, approvalStatus: 'approved' })}
+                                            disabled={isApproving}
+                                            className="flex-1 py-1.5 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-md text-xs font-medium hover:bg-emerald-100 transition-colors disabled:opacity-50"
+                                        >
+                                            Approve
+                                        </button>
+                                        <button
+                                            onClick={() => updateApproval({ id: est.id, approvalStatus: 'rejected' })}
+                                            disabled={isApproving}
+                                            className="flex-1 py-1.5 bg-rose-50 text-rose-700 border border-rose-200 rounded-md text-xs font-medium hover:bg-rose-100 transition-colors disabled:opacity-50"
+                                        >
+                                            Reject
+                                        </button>
+                                    </div>
                                 </div>
-                                <div className="text-xs text-slate-500 mb-2">Requires 10% discount approval</div>
-                                <div className="flex gap-2">
-                                    <button className="flex-1 py-1.5 bg-emerald-50 text-emerald-700 border border-emerald-200 rounded-md text-xs font-medium hover:bg-emerald-100 transition-colors">Approve</button>
-                                    <button className="flex-1 py-1.5 bg-rose-50 text-rose-700 border border-rose-200 rounded-md text-xs font-medium hover:bg-rose-100 transition-colors">Reject</button>
-                                </div>
-                            </div>
+                            ))}
                         </div>
                     </div>
 
@@ -335,15 +427,22 @@ export default function EstimatesPage() {
                             Upcoming Expiry
                         </h3>
                         <div className="space-y-3">
-                            <div className="flex justify-between items-center p-3 bg-slate-50 rounded-xl border border-slate-100">
-                                <div>
-                                    <span className="block text-sm font-bold text-slate-900">Deepak Chopra</span>
-                                    <span className="block text-xs text-slate-500">EST-4096 • Expires Tomorrow</span>
+                            {expiringSoon.length === 0 ? (
+                                <p className="text-xs text-slate-400">No estimates expiring in the next week.</p>
+                            ) : expiringSoon.map((est) => (
+                                <div key={est.id} className="flex justify-between items-center p-3 bg-slate-50 rounded-xl border border-slate-100">
+                                    <div>
+                                        <span className="block text-sm font-bold text-slate-900">{est.customer}</span>
+                                        <span className="block text-xs text-slate-500">{est.displayId} • {est.validity}</span>
+                                    </div>
+                                    <a
+                                        href={`tel:${est.phone}`}
+                                        className="p-2 bg-white rounded-lg border border-slate-200 text-slate-600 hover:text-blue-600 hover:border-blue-200"
+                                    >
+                                        <Phone className="w-3 h-3" />
+                                    </a>
                                 </div>
-                                <button className="p-2 bg-white rounded-lg border border-slate-200 text-slate-600 hover:text-blue-600 hover:border-blue-200">
-                                    <Phone className="w-3 h-3" />
-                                </button>
-                            </div>
+                            ))}
                         </div>
                     </div>
                 </div>
@@ -357,7 +456,7 @@ export default function EstimatesPage() {
                         {/* Drawer Header */}
                         <div className="px-6 py-4 border-b border-slate-100 flex items-center justify-between bg-white z-10 sticky top-0">
                             <div>
-                                <div className="text-sm font-medium text-slate-500 mb-1">{selectedRow?.id}</div>
+                                <div className="text-sm font-medium text-slate-500 mb-1">{selectedRow?.displayId}</div>
                                 <h2 className="text-xl font-bold text-slate-900">Estimate Details</h2>
                             </div>
                             <div className="flex items-center gap-3">
@@ -426,22 +525,35 @@ export default function EstimatesPage() {
                                                     </tr>
                                                 </thead>
                                                 <tbody className="text-slate-700">
-                                                    <tr className="border-b border-slate-50">
-                                                        <td className="py-3 font-medium text-slate-900">{selectedRow?.service}</td>
-                                                        <td className="py-3 text-center">1</td>
-                                                        <td className="py-3 text-right">{selectedRow?.amount}</td>
-                                                        <td className="py-3 text-right text-emerald-600">{selectedRow?.discount}</td>
-                                                        <td className="py-3 text-right">18%</td>
-                                                        <td className="py-3 text-right font-medium">{selectedRow?.finalAmount}</td>
-                                                    </tr>
-                                                    <tr>
-                                                        <td className="py-3 font-medium text-slate-900">Material Procurement Charge</td>
-                                                        <td className="py-3 text-center">1</td>
-                                                        <td className="py-3 text-right">₹1,500</td>
-                                                        <td className="py-3 text-right text-emerald-600">₹0</td>
-                                                        <td className="py-3 text-right">18%</td>
-                                                        <td className="py-3 text-right font-medium">₹1,500</td>
-                                                    </tr>
+                                                    {(selectedRow?.lineItems || []).map((item, idx) => (
+                                                        <tr key={idx} className="border-b border-slate-50 last:border-0">
+                                                            <td className="py-3 font-medium text-slate-900">{item.name}</td>
+                                                            <td className="py-3 text-center">{item.qty}</td>
+                                                            <td className="py-3 text-right">₹{Number(item.price || 0).toLocaleString('en-IN')}</td>
+                                                            <td className="py-3 text-right text-emerald-600">—</td>
+                                                            <td className="py-3 text-right">18%</td>
+                                                            <td className="py-3 text-right font-medium">
+                                                                ₹{(Number(item.qty || 0) * Number(item.price || 0)).toLocaleString('en-IN')}
+                                                            </td>
+                                                        </tr>
+                                                    ))}
+                                                    {selectedRow?.visitCharges > 0 && (
+                                                        <tr className="border-b border-slate-50 last:border-0">
+                                                            <td className="py-3 font-medium text-slate-900">Visit Charge</td>
+                                                            <td className="py-3 text-center">1</td>
+                                                            <td className="py-3 text-right">₹{selectedRow.visitCharges.toLocaleString('en-IN')}</td>
+                                                            <td className="py-3 text-right text-emerald-600">—</td>
+                                                            <td className="py-3 text-right">18%</td>
+                                                            <td className="py-3 text-right font-medium">₹{selectedRow.visitCharges.toLocaleString('en-IN')}</td>
+                                                        </tr>
+                                                    )}
+                                                    {!(selectedRow?.lineItems || []).length && !selectedRow?.visitCharges && (
+                                                        <tr>
+                                                            <td colSpan="6" className="py-6 text-center text-sm text-slate-400">
+                                                                No line items on this estimate.
+                                                            </td>
+                                                        </tr>
+                                                    )}
                                                 </tbody>
                                             </table>
                                         </div>
@@ -460,7 +572,9 @@ export default function EstimatesPage() {
                                             </div>
                                             <div className="flex justify-between text-sm">
                                                 <span className="text-slate-500">GST (18%)</span>
-                                                <span className="font-medium text-slate-900">₹4,500</span>
+                                                <span className="font-medium text-slate-900">
+                                                    ₹{Math.round(Number(selectedRow?._raw?.total || 0) * 0.18).toLocaleString('en-IN')}
+                                                </span>
                                             </div>
                                             <div className="border-t border-slate-200 pt-3 flex justify-between items-center">
                                                 <span className="font-bold text-slate-900">Grand Total</span>
@@ -575,13 +689,21 @@ export default function EstimatesPage() {
                             </button>
 
                             {selectedRow?.status === 'Approved' && (
-                                <button className="flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-medium hover:bg-blue-700 transition-colors shadow-sm">
-                                    <ArrowRightLeft className="w-4 h-4" /> Convert to Booking
+                                <button
+                                    onClick={handleConvert}
+                                    disabled={isConverting}
+                                    className="flex items-center justify-center gap-2 px-4 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-medium hover:bg-blue-700 transition-colors shadow-sm disabled:opacity-50"
+                                >
+                                    <ArrowRightLeft className="w-4 h-4" /> {isConverting ? 'Converting…' : 'Convert to Booking'}
                                 </button>
                             )}
                             {(selectedRow?.status === 'Sent' || selectedRow?.status === 'Viewed' || selectedRow?.status === 'Negotiation' || selectedRow?.status === 'Pending Approval') && (
-                                <button className="flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-600 text-white rounded-xl text-sm font-medium hover:bg-emerald-700 transition-colors shadow-sm">
-                                    <CheckSquare className="w-4 h-4" /> Mark Approved
+                                <button
+                                    onClick={handleApprove}
+                                    disabled={isApproving}
+                                    className="flex items-center justify-center gap-2 px-4 py-2.5 bg-emerald-600 text-white rounded-xl text-sm font-medium hover:bg-emerald-700 transition-colors shadow-sm disabled:opacity-50"
+                                >
+                                    <CheckSquare className="w-4 h-4" /> {isApproving ? 'Saving…' : 'Mark Approved'}
                                 </button>
                             )}
                             {selectedRow?.status === 'Draft' && (
@@ -611,7 +733,6 @@ export default function EstimatesPage() {
                 isOpen={isCreateModalOpen}
                 onClose={() => setIsCreateModalOpen(false)}
                 enquiry={null}
-                onSave={handleEstimateSaved}
             />
             <SendEstimateModal
                 isOpen={isSendModalOpen}

@@ -42,12 +42,16 @@ export default function PaymentTable({ searchQuery, onRowClick, onReceivePayment
         p.id.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
+    // Matches Payment.status's real enum (pending/verified/failed — see
+    // payment.model.js). 'Paid'/'Partial' aren't Payment statuses at all
+    // (those belong to Invoice.paymentStatus), and the capitalized keys
+    // here never matched the real lowercase values, so every real payment
+    // fell through to the plain default badge before this fix.
     const getStatusBadge = (status) => {
         switch (status) {
-            case 'Paid': return <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wide bg-emerald-50 text-emerald-700 border border-emerald-200"><CheckCircle2 className="w-3 h-3" /> Paid</span>;
-            case 'Pending': return <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wide bg-amber-50 text-amber-700 border border-amber-200"><Clock className="w-3 h-3" /> Pending</span>;
-            case 'Partial': return <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wide bg-blue-50 text-blue-700 border border-blue-200"><AlertCircle className="w-3 h-3" /> Partial</span>;
-            case 'Failed': return <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wide bg-rose-50 text-rose-700 border border-rose-200"><AlertTriangle className="w-3 h-3" /> Failed</span>;
+            case 'verified': return <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wide bg-emerald-50 text-emerald-700 border border-emerald-200"><CheckCircle2 className="w-3 h-3" /> Verified</span>;
+            case 'pending': return <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wide bg-amber-50 text-amber-700 border border-amber-200"><Clock className="w-3 h-3" /> Pending</span>;
+            case 'failed': return <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wide bg-rose-50 text-rose-700 border border-rose-200"><AlertTriangle className="w-3 h-3" /> Failed</span>;
             default: return <span className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md text-[10px] font-bold uppercase tracking-wide bg-slate-100 text-slate-700 border border-slate-200">{status}</span>;
         }
     };
@@ -140,7 +144,7 @@ export default function PaymentTable({ searchQuery, onRowClick, onReceivePayment
                                         {openMenuId === p.id && (
                                             <div className="absolute right-0 top-8 w-48 bg-white rounded-lg shadow-xl border border-slate-200 z-20 py-1">
                                                 <button onClick={() => onRowClick(p)} className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">View Details</button>
-                                                {(p.status === 'Pending' || p.status === 'Partial' || p.status === 'Failed') && (
+                                                {(p.status === 'pending' || p.status === 'failed') && (
                                                     <button onClick={() => onReceivePayment(p)} className="w-full text-left px-4 py-2 text-sm text-blue-600 font-medium hover:bg-blue-50">Receive Payment</button>
                                                 )}
                                                 <button className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">Download Receipt</button>

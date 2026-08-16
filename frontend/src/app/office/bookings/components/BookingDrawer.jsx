@@ -1,22 +1,21 @@
 'use client';
 import { X, MapPin, Calendar as CalendarIcon, ShieldAlert, FileDigit, CheckCircle2, Plus, Wrench } from 'lucide-react';
 import { StatusBadge, PaymentBadge } from '@/components/office/ui/Badge';
-
-// A booking can spawn more than one work order (e.g. a measurement visit followed by
-// a separate installation visit) — this mock stands in for that until a real bookingId
-// -> workOrders lookup is wired to the backend. Every real work order still lives on
-// its own page/drawer; this is just the "which ones belong to this booking" summary.
-const MOCK_WORK_ORDERS_BY_BOOKING = {
-    'BKG-8492': [
-        { id: 'WO-10592', label: 'Deep cleaning visit', status: 'In Progress', assignedTo: 'Amit Kumar', date: 'Oct 25, 10:00 AM' },
-    ],
-    'BKG-8490': [
-        { id: 'WO-10601', label: 'Measurement visit', status: 'Completed', assignedTo: 'Vikram Singh', date: 'Oct 20, 9:00 AM' },
-        { id: 'WO-10602', label: 'Installation visit', status: 'Assigned', assignedTo: 'Vikram Singh', date: 'Oct 25, 9:00 AM' },
-    ],
-};
+import { useGetWorkOrdersQuery } from '@/store/api/workOrderApi';
+import { mapOfficeWorkOrder } from '@/lib/officeApiMappers';
 
 export default function BookingDrawer({ isOpen, onClose, selectedRow }) {
+    // A booking can spawn more than one work order (e.g. a measurement visit
+    // followed by a separate installation visit), so this is a filtered list
+    // rather than a single lookup. Skipped while the drawer is closed or before
+    // a row is selected.
+    const { data, isLoading, isError } = useGetWorkOrdersQuery(
+        selectedRow?.id ? `bookingId=${selectedRow.id}` : '',
+        { skip: !isOpen || !selectedRow?.id }
+    );
+
+    const workOrders = Array.isArray(data) ? data.map(mapOfficeWorkOrder) : [];
+
     if (!isOpen) return null;
 
     return (
@@ -81,9 +80,20 @@ export default function BookingDrawer({ isOpen, onClose, selectedRow }) {
                         Booking 1-N Work Orders relationship. */}
                     <div className="bg-white dark:bg-slate-800/50 rounded-2xl border border-slate-200 dark:border-slate-700 p-5 shadow-sm transition-colors">
                         <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100 mb-4 uppercase tracking-wider">Work Orders</h4>
-                        {(MOCK_WORK_ORDERS_BY_BOOKING[selectedRow?.id] || []).length > 0 ? (
+                        {isLoading ? (
                             <div className="space-y-2 mb-3">
-                                {MOCK_WORK_ORDERS_BY_BOOKING[selectedRow?.id].map((wo) => (
+                                {[...Array(2)].map((_, i) => (
+                                    <div key={i} className="h-16 rounded-xl bg-slate-100 dark:bg-slate-800 animate-pulse" />
+                                ))}
+                            </div>
+                        ) : isError ? (
+                            <div className="text-center p-4 border border-dashed border-rose-300 dark:border-rose-800 bg-rose-50 dark:bg-rose-900/20 rounded-xl transition-colors mb-3">
+                                <ShieldAlert className="w-8 h-8 text-rose-400 dark:text-rose-500 mx-auto mb-2" />
+                                <div className="text-sm font-semibold text-rose-800 dark:text-rose-400">Couldn&apos;t load work orders</div>
+                            </div>
+                        ) : workOrders.length > 0 ? (
+                            <div className="space-y-2 mb-3">
+                                {workOrders.map((wo) => (
                                     <div key={wo.id} className="flex items-center justify-between p-3 border border-slate-100 dark:border-slate-700 rounded-xl bg-slate-50 dark:bg-slate-900/50 transition-colors">
                                         <div className="flex items-center gap-3">
                                             <div className="w-9 h-9 rounded-lg bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 flex items-center justify-center">
@@ -91,7 +101,7 @@ export default function BookingDrawer({ isOpen, onClose, selectedRow }) {
                                             </div>
                                             <div>
                                                 <div className="text-sm font-bold text-slate-900 dark:text-slate-100">{wo.label}</div>
-                                                <div className="text-xs text-slate-500 dark:text-slate-400">{wo.id} • {wo.assignedTo} • {wo.date}</div>
+                                                <div className="text-xs text-slate-500 dark:text-slate-400">{wo.displayId} • {wo.assignedTo} • {wo.date}</div>
                                             </div>
                                         </div>
                                         <StatusBadge status={wo.status} />

@@ -85,6 +85,17 @@ const invoiceSchema = new mongoose.Schema(
       type: Boolean,
       default: false,
     },
+
+    emailSentAt: {
+      type: Date,
+      default: null,
+    },
+
+    emailSendError: {
+      type: String,
+      trim: true,
+      default: null,
+    },
   },
   {
     timestamps: true,

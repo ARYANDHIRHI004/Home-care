@@ -5,7 +5,8 @@ import {
     PieChart, Pie, Cell,
     XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
 } from 'recharts';
-import { monthlyRevenueData, categoryRevenueData, paymentMethodData } from '../data/revenueData';
+import { useGetPaymentsQuery } from '@/store/api/paymentApi';
+import { useGetWorkOrdersQuery } from '@/store/api/workOrderApi';
 
 const formatK = (v) => v >= 100000 ? `₹${(v / 100000).toFixed(1)}L` : `₹${(v / 1000).toFixed(0)}K`;
 
@@ -34,10 +35,35 @@ function ChartCard({ title, subtitle, children }) {
 }
 
 export function MonthlyRevenueTrendChart() {
+    const { data: payments = [] } = useGetPaymentsQuery();
+
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const currentMonthIndex = new Date().getMonth();
+    const last6Months = [];
+    for (let i = 5; i >= 0; i--) {
+        const d = new Date();
+        d.setMonth(currentMonthIndex - i);
+        last6Months.push(months[d.getMonth()]);
+    }
+
+    const dataMap = last6Months.reduce((acc, m) => ({ ...acc, [m]: { month: m, revenue: 0, collections: 0 } }), {});
+    
+    payments.forEach(p => {
+        const m = months[new Date(p.createdAt).getMonth()];
+        if (dataMap[m]) {
+            dataMap[m].revenue += (p.amount || 0);
+            if (p.status === 'Paid' || p.status === 'verified') {
+                dataMap[m].collections += (p.amountPaid || p.amount || 0);
+            }
+        }
+    });
+
+    const chartData = Object.values(dataMap);
+
     return (
-        <ChartCard title="Monthly Revenue Trend" subtitle="Full year revenue and collection overview">
+        <ChartCard title="Monthly Revenue Trend" subtitle="Recent revenue and collection overview">
             <ResponsiveContainer width="100%" height={240}>
-                <LineChart data={monthlyRevenueData} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
+                <LineChart data={chartData} margin={{ top: 4, right: 8, left: 0, bottom: 0 }}>
                     <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
                     <XAxis dataKey="month" tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
                     <YAxis tickFormatter={formatK} tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} width={52} />
@@ -52,10 +78,33 @@ export function MonthlyRevenueTrendChart() {
 }
 
 export function RevenueVsExpensesChart() {
+    const { data: payments = [] } = useGetPaymentsQuery();
+
+    const months = ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'];
+    const currentMonthIndex = new Date().getMonth();
+    const last6Months = [];
+    for (let i = 5; i >= 0; i--) {
+        const d = new Date();
+        d.setMonth(currentMonthIndex - i);
+        last6Months.push(months[d.getMonth()]);
+    }
+
+    const dataMap = last6Months.reduce((acc, m) => ({ ...acc, [m]: { month: m, revenue: 0, expenses: 0 } }), {});
+    
+    payments.forEach(p => {
+        const m = months[new Date(p.createdAt).getMonth()];
+        if (dataMap[m]) {
+            dataMap[m].revenue += (p.amount || 0);
+            dataMap[m].expenses += (p.amount || 0) * 0.25; // Estimate expenses as 25% of revenue for now
+        }
+    });
+
+    const chartData = Object.values(dataMap);
+
     return (
         <ChartCard title="Revenue vs Expenses" subtitle="Monthly comparison of income and spending">
             <ResponsiveContainer width="100%" height={240}>
-                <BarChart data={monthlyRevenueData} margin={{ top: 4, right: 8, left: 0, bottom: 0 }} barCategoryGap="30%">
+                <BarChart data={chartData} margin={{ top: 4, right: 8, left: 0, bottom: 0 }} barCategoryGap="30%">
                     <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
                     <XAxis dataKey="month" tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
                     <YAxis tickFormatter={formatK} tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} width={52} />
@@ -70,13 +119,28 @@ export function RevenueVsExpensesChart() {
 }
 
 export function RevenueByCategoryChart() {
+    const { data: rawWorkOrders = [] } = useGetWorkOrdersQuery();
+
+    const colors = ['#2563EB', '#10B981', '#F59E0B', '#8B5CF6', '#EC4899', '#14B8A6'];
+    
+    const catMap = rawWorkOrders.reduce((acc, wo) => {
+        const cat = wo.enquiryId?.serviceCategory || wo.title || 'Other';
+        acc[cat] = (acc[cat] || 0) + (wo.price || 0);
+        return acc;
+    }, {});
+
+    const chartData = Object.entries(catMap)
+        .map(([name, value], i) => ({ name, value, color: colors[i % colors.length] }))
+        .sort((a, b) => b.value - a.value)
+        .slice(0, 5); // top 5 categories
+
     return (
         <ChartCard title="Revenue by Service Category" subtitle="Contribution of each service to total revenue">
             <div className="flex items-center gap-6">
                 <ResponsiveContainer width="55%" height={220}>
                     <PieChart>
                         <Pie
-                            data={categoryRevenueData}
+                            data={chartData}
                             cx="50%"
                             cy="50%"
                             outerRadius={95}
@@ -84,7 +148,7 @@ export function RevenueByCategoryChart() {
                             labelLine={false}
                             label={renderCustomizedLabel}
                         >
-                            {categoryRevenueData.map((entry, i) => (
+                            {chartData.map((entry, i) => (
                                 <Cell key={`cell-${i}`} fill={entry.color} />
                             ))}
                         </Pie>
@@ -92,9 +156,9 @@ export function RevenueByCategoryChart() {
                     </PieChart>
                 </ResponsiveContainer>
                 <div className="flex-1 space-y-2.5 min-w-0">
-                    {categoryRevenueData.map((item) => {
-                        const total = categoryRevenueData.reduce((s, i) => s + i.value, 0);
-                        const pct = ((item.value / total) * 100).toFixed(1);
+                    {chartData.map((item) => {
+                        const total = chartData.reduce((s, i) => s + i.value, 0);
+                        const pct = total > 0 ? ((item.value / total) * 100).toFixed(1) : 0;
                         return (
                             <div key={item.name}>
                                 <div className="flex items-center justify-between mb-1">
@@ -117,13 +181,31 @@ export function RevenueByCategoryChart() {
 }
 
 export function RevenueByPaymentMethodChart() {
+    const { data: payments = [] } = useGetPaymentsQuery();
+
+    const colors = ['#2563EB', '#10B981', '#F59E0B', '#8B5CF6'];
+    const methodMap = payments.reduce((acc, p) => {
+        const method = p.paymentMethod || 'Other';
+        acc[method] = (acc[method] || 0) + 1;
+        return acc;
+    }, {});
+
+    const total = Object.values(methodMap).reduce((a, b) => a + b, 0);
+    const chartData = Object.entries(methodMap)
+        .map(([name, value], i) => ({ 
+            name, 
+            value: total > 0 ? Number(((value / total) * 100).toFixed(1)) : 0, 
+            color: colors[i % colors.length] 
+        }))
+        .sort((a, b) => b.value - a.value);
+
     return (
         <ChartCard title="Revenue by Payment Method" subtitle="How customers prefer to pay">
             <div className="flex items-center gap-6">
                 <ResponsiveContainer width="50%" height={220}>
                     <PieChart>
                         <Pie
-                            data={paymentMethodData}
+                            data={chartData}
                             cx="50%"
                             cy="50%"
                             innerRadius={55}
@@ -132,7 +214,7 @@ export function RevenueByPaymentMethodChart() {
                             labelLine={false}
                             label={renderCustomizedLabel}
                         >
-                            {paymentMethodData.map((entry, i) => (
+                            {chartData.map((entry, i) => (
                                 <Cell key={`cell-${i}`} fill={entry.color} />
                             ))}
                         </Pie>
@@ -140,7 +222,7 @@ export function RevenueByPaymentMethodChart() {
                     </PieChart>
                 </ResponsiveContainer>
                 <div className="flex-1 space-y-3 min-w-0">
-                    {paymentMethodData.map((item) => (
+                    {chartData.map((item) => (
                         <div key={item.name} className="flex items-center gap-3">
                             <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: item.color }}></div>
                             <div className="flex-1 min-w-0">

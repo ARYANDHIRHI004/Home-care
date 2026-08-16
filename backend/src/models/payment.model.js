@@ -38,6 +38,17 @@ const paymentSchema = new mongoose.Schema(
       ref: "Employee",
       default: null,
     },
+
+    emailSentAt: {
+      type: Date,
+      default: null,
+    },
+
+    emailSendError: {
+      type: String,
+      trim: true,
+      default: null,
+    },
   },
   {
     timestamps: true,

@@ -17,30 +17,27 @@ import {
   FileText,
   ArrowRight
 } from 'lucide-react';
-import {
-  FaFacebookF,
-  FaInstagram,
-  FaWhatsapp,
-  FaLinkedinIn
-} from 'react-icons/fa6';
+import { FaWhatsapp } from 'react-icons/fa6';
 
 const FOOTER_LINKS = {
   company: [
     { name: 'About Us', href: '/about' },
     { name: 'Our Story', href: '/about#story' },
-    { name: 'Careers', href: '/careers' },
-    { name: 'Blog', href: '/blog' },
     { name: 'Contact', href: '/contact' },
   ],
+  // These route to /services with a search query rather than a static
+  // anchor — the services page has no per-category section ids (categories
+  // are loaded dynamically from the backend), so a fragment link would
+  // always land at the top of the page regardless of which one was clicked.
   services: [
-    { name: 'Cleaning', href: '/services#cleaning' },
-    { name: 'Electrical', href: '/services#electrical' },
-    { name: 'Plumbing', href: '/services#plumbing' },
-    { name: 'Painting', href: '/services#painting' },
-    { name: 'Carpentry', href: '/services#carpentry' },
-    { name: 'Appliance Repair', href: '/services#appliance' },
-    { name: 'Pest Control', href: '/services#pest-control' },
-    { name: 'Water Tank Cleaning', href: '/services#water-tank' },
+    { name: 'Cleaning', href: '/services?q=cleaning' },
+    { name: 'Electrical', href: '/services?q=electrical' },
+    { name: 'Plumbing', href: '/services?q=plumbing' },
+    { name: 'Painting', href: '/services?q=painting' },
+    { name: 'Carpentry', href: '/services?q=carpentry' },
+    { name: 'Appliance Repair', href: '/services?q=appliance' },
+    { name: 'Pest Control', href: '/services?q=pest control' },
+    { name: 'Water Tank Cleaning', href: '/services?q=water tank' },
   ],
   support: [
     { name: 'Help Center', href: '/faq' },
@@ -61,11 +58,12 @@ const TRUST_BADGES = [
   { icon: FileText, label: 'Invoice Available' },
 ];
 
+// Only WhatsApp has a real, working destination (the business phone number
+// used elsewhere on the site) — Facebook/Instagram/LinkedIn were all
+// href="#" with no real account behind them, so they're left out rather
+// than link to nowhere.
 const SOCIAL_LINKS = [
-  { icon: FaFacebookF, href: '#', label: 'Facebook' },
-  { icon: FaInstagram, href: '#', label: 'Instagram' },
-  { icon: FaWhatsapp, href: '#', label: 'WhatsApp' },
-  { icon: FaLinkedinIn, href: '#', label: 'LinkedIn' },
+  { icon: FaWhatsapp, href: 'https://wa.me/919111466642', label: 'WhatsApp' },
 ];
 
 const fadeIn = {
@@ -115,24 +113,19 @@ export default function Footer() {
             </div>
           </div>
 
-          {/* Newsletter */}
+          {/* Get in touch — was a newsletter signup form with no backend to
+              receive it (pure preventDefault(), discarded every submission).
+              Pointed at the real Contact page instead of pretending to
+              collect an email address that goes nowhere. */}
           <div className="w-full lg:w-1/2 lg:pl-12 lg:border-l border-slate-800">
-            <h3 className="text-2xl font-bold text-white mb-2">Subscribe to our Newsletter</h3>
-            <p className="text-sm text-slate-400 mb-6">Stay updated with our latest offers, home maintenance tips, and new services.</p>
-            <form className="flex gap-2 relative group" onSubmit={(e) => e.preventDefault()}>
-              <input
-                type="email"
-                placeholder="Enter your email address"
-                className="w-full px-5 py-4 bg-slate-950/50 border border-slate-700 rounded-full text-sm text-white placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-shadow"
-                required
-              />
-              <button
-                type="submit"
-                className="absolute right-2 top-2 bottom-2 px-6 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-full transition-colors flex items-center gap-2 group-hover:pr-5 duration-300"
-              >
-                Subscribe <ArrowRight className="w-4 h-4 opacity-0 -ml-4 group-hover:opacity-100 group-hover:ml-0 transition-all duration-300" />
-              </button>
-            </form>
+            <h3 className="text-2xl font-bold text-white mb-2">Questions about a service?</h3>
+            <p className="text-sm text-slate-400 mb-6">Reach out and our team will get back to you — usually within a few hours.</p>
+            <Link
+              href="/contact"
+              className="inline-flex items-center gap-2 px-6 py-4 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-full transition-colors group"
+            >
+              Contact Us <ArrowRight className="w-4 h-4 group-hover:translate-x-1 transition-transform duration-300" />
+            </Link>
           </div>
         </motion.div>
 
@@ -242,6 +235,8 @@ export default function Footer() {
               <a
                 key={social.label}
                 href={social.href}
+                target="_blank"
+                rel="noreferrer"
                 aria-label={social.label}
                 className="w-10 h-10 flex items-center justify-center rounded-full bg-slate-800 text-slate-300 hover:bg-blue-600 hover:text-white hover:-translate-y-1 transition-all duration-300 shadow-sm"
               >
@@ -258,7 +253,6 @@ export default function Footer() {
           <div className="flex gap-4 text-sm font-medium text-slate-400">
             <Link href="/privacy-policy" className="hover:text-white transition-colors">Privacy Policy</Link>
             <Link href="/terms-and-conditions" className="hover:text-white transition-colors">Terms</Link>
-            <Link href="#" className="hover:text-white transition-colors">Cookies</Link>
           </div>
 
         </div>

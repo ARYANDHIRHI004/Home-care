@@ -58,18 +58,36 @@ const customerSchema = new mongoose.Schema(
       trim: true,
     },
 
+    // Not required — a Google-only signup has no phone number to key on yet
+    // (see the databaseHooks Google-sync fix in utils/auth.js, which upserts
+    // by email instead when this is absent). `sparse` so multiple such
+    // phone-less documents don't collide on the unique index the way two
+    // literal nulls would.
     phone: {
       type: String,
-      required: true,
       unique: true,
+      sparse: true,
       index: true,
       trim: true,
     },
 
+    // Also not required for the same reason, but unique+sparse so a Google
+    // signup's real email can be the alternate key without colliding with
+    // the many pre-existing customers that have no email at all.
     email: {
       type: String,
+      unique: true,
+      sparse: true,
       lowercase: true,
       trim: true,
+    },
+
+    // Google OAuth's profile picture URL — absent for OTP-only customers,
+    // who fall back to an initial-letter avatar on the frontend instead.
+    avatarUrl: {
+      type: String,
+      trim: true,
+      default: null,
     },
 
     otpVerified: {

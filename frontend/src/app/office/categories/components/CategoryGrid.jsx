@@ -1,38 +1,29 @@
 'use client';
 
 import { MoreHorizontal, CheckCircle2, XCircle, Trash2, Edit } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useGetCategoriesQuery, useDeleteCategoryMutation } from '@/store/api/categoryApi';
-
-const fallbackCategories = [
-    { id: 1, name: 'Deep Cleaning', slug: 'deep-cleaning', description: 'Intense and thorough cleaning for entire homes or specific rooms.', services: 12, status: 'Active', active: true, color: 'bg-blue-500' },
-    { id: 2, name: 'Plumbing Services', slug: 'plumbing', description: 'Professional plumbing repairs, installations and general maintenance.', services: 8, status: 'Active', active: true, color: 'bg-indigo-500' },
-    { id: 3, name: 'Electrical Repair', slug: 'electrical', description: 'Expert electricians for wiring, appliance repair and fixing faults.', services: 15, status: 'Active', active: true, color: 'bg-amber-500' },
-    { id: 4, name: 'AC & Appliance Repair', slug: 'ac-appliance', description: 'Servicing and repair for Air Conditioners, Refrigerators and TVs.', services: 9, status: 'Active', active: true, color: 'bg-sky-500' },
-    { id: 5, name: 'Pest Control', slug: 'pest-control', description: 'Safe and effective pest control for termites, bed bugs and cockroaches.', services: 4, status: 'Active', active: true, color: 'bg-emerald-500' },
-    { id: 6, name: 'Home Painting', slug: 'painting', description: 'Interior and exterior painting services with premium materials.', services: 6, status: 'Inactive', active: false, color: 'bg-rose-500' },
-];
 
 const colors = ['bg-blue-500', 'bg-indigo-500', 'bg-amber-500', 'bg-sky-500', 'bg-emerald-500', 'bg-purple-500', 'bg-rose-500'];
 
 export default function CategoryGrid({ searchQuery, onCategoryClick }) {
-    const { data: rawCategories = [], isLoading } = useGetCategoriesQuery();
+    const { data: rawCategories = [], isLoading, isError } = useGetCategoriesQuery();
     const [deleteCategory] = useDeleteCategoryMutation();
     const [openMenuId, setOpenMenuId] = useState(null);
 
-    const categories = rawCategories.length > 0
-        ? rawCategories.map((c, idx) => ({
-            id: c._id,
-            _id: c._id,
-            name: c.name,
-            slug: c.name.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
-            description: c.description || 'Professional home care services for your household needs.',
-            status: c.active !== false ? 'Active' : 'Inactive',
-            active: c.active !== false,
-            color: colors[idx % colors.length],
-            _raw: c,
-        }))
-        : fallbackCategories;
+    const categories = rawCategories.map((c, idx) => ({
+        id: c._id,
+        _id: c._id,
+        name: c.name,
+        slug: c.slug || c.name.toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+        description: c.description || 'Professional home care services for your household needs.',
+        imageUrl: c.imageUrl,
+        terms: c.terms,
+        status: c.active !== false ? 'Active' : 'Inactive',
+        active: c.active !== false,
+        color: colors[idx % colors.length],
+        _raw: c,
+    }));
 
     const filtered = categories.filter(c =>
         !searchQuery ||
@@ -52,6 +43,9 @@ export default function CategoryGrid({ searchQuery, onCategoryClick }) {
         }
     };
 
+    if (isLoading) return <div className="py-16 text-center text-sm text-slate-500">Loading categories...</div>;
+    if (isError) return <div className="py-16 text-center text-sm text-rose-600">Unable to load categories.</div>;
+
     return (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
             {filtered.map(category => (
@@ -60,12 +54,22 @@ export default function CategoryGrid({ searchQuery, onCategoryClick }) {
                     onClick={() => onCategoryClick(category)}
                     className="bg-white rounded-xl border border-slate-200 shadow-sm hover:shadow-lg hover:border-blue-300 transition-all cursor-pointer group flex flex-col overflow-hidden"
                 >
-                    {/* Banner Image Placeholder */}
+                    {/* Banner Image or Placeholder */}
                     <div className="h-32 bg-slate-100 relative overflow-hidden flex-shrink-0">
-                        <div className={`absolute inset-0 opacity-20 ${category.color} bg-gradient-to-tr from-black/20 to-transparent`}></div>
-                        <div className="absolute inset-0 flex items-center justify-center">
-                            <span className="text-slate-400 text-xs font-medium">{category.name}</span>
-                        </div>
+                        {category.imageUrl ? (
+                            <img 
+                                src={category.imageUrl} 
+                                alt={category.name} 
+                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                            />
+                        ) : (
+                            <>
+                                <div className={`absolute inset-0 opacity-20 ${category.color} bg-gradient-to-tr from-black/20 to-transparent`}></div>
+                                <div className="absolute inset-0 flex items-center justify-center">
+                                    <span className="text-slate-400 text-xs font-medium">{category.name}</span>
+                                </div>
+                            </>
+                        )}
                     </div>
 
                     <div className="p-5 flex-1 flex flex-col relative">
@@ -78,7 +82,14 @@ export default function CategoryGrid({ searchQuery, onCategoryClick }) {
                         <div className="flex justify-between items-start mt-4 mb-2">
                             <div>
                                 <h3 className="text-lg font-bold text-slate-900 group-hover:text-blue-600 transition-colors">{category.name}</h3>
-                                <p className="text-xs text-slate-400 font-mono mt-0.5">/{category.slug}</p>
+                                <div className="flex items-center gap-2 mt-0.5">
+                                    <p className="text-xs text-slate-400 font-mono">/{category.slug}</p>
+                                    {category.terms?.version && (
+                                        <span className="text-[10px] bg-blue-50 text-blue-600 font-bold px-1.5 py-0.5 rounded border border-blue-100">
+                                            v{category.terms.version}
+                                        </span>
+                                    )}
+                                </div>
                             </div>
                             <div className="relative" onClick={e => e.stopPropagation()}>
                                 <button
@@ -93,7 +104,7 @@ export default function CategoryGrid({ searchQuery, onCategoryClick }) {
                                             <Edit className="w-3.5 h-3.5" /> Edit Category
                                         </button>
                                         <div className="border-t border-slate-100 my-1"></div>
-                                        <button onClick={(e) => category._raw ? handleDelete(category._id, e) : null} className="w-full text-left px-4 py-2 text-sm text-rose-600 hover:bg-rose-50 flex items-center gap-2">
+                                        <button onClick={(e) => handleDelete(category._id, e)} className="w-full text-left px-4 py-2 text-sm text-rose-600 hover:bg-rose-50 flex items-center gap-2">
                                             <Trash2 className="w-3.5 h-3.5" /> Delete
                                         </button>
                                     </div>
@@ -122,6 +133,11 @@ export default function CategoryGrid({ searchQuery, onCategoryClick }) {
                     </div>
                 </div>
             ))}
+            {filtered.length === 0 && (
+                <div className="md:col-span-2 xl:col-span-3 py-16 text-center text-sm text-slate-500">
+                    No categories found.
+                </div>
+            )}
         </div>
     );
 }

@@ -6,6 +6,7 @@ import { PERMISSIONS as P } from "../constants/permissions.js";
 
 const router = Router();
 router.use(requireAuth);
+router.get("/me", controller.getMyEnquiries);
 router.post("/", requirePermission(P.ENQUIRY_CREATE), controller.createEnquiry);
 router.get("/", requirePermission(P.ENQUIRY_READ), controller.getEnquiries);
 router.get("/:id", requirePermission(P.ENQUIRY_READ), controller.getEnquiryById);

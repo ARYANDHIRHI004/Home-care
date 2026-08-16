@@ -416,7 +416,7 @@ export default function RefundPolicy() {
                           </div>
                           <div>
                             <p className="text-[10px] text-blue-200 font-bold uppercase tracking-wider mb-1">Phone</p>
-                            <p className="font-semibold text-white text-sm">+91 80000 80000</p>
+                            <p className="font-semibold text-white text-sm">+91 91114 66642</p>
                           </div>
                         </div>
                         
@@ -426,7 +426,7 @@ export default function RefundPolicy() {
                           </div>
                           <div>
                             <p className="text-[10px] text-blue-200 font-bold uppercase tracking-wider mb-1">Email</p>
-                            <p className="font-semibold text-white text-sm">support@homecare.in</p>
+                            <p className="font-semibold text-white text-sm">homecarre2405@gmail.com</p>
                           </div>
                         </div>
                         
@@ -452,10 +452,10 @@ export default function RefundPolicy() {
                       </div>
                       
                       <div className="flex flex-wrap gap-4">
-                        <a href="tel:+918000080000" className="px-6 py-3 bg-[#2563EB] hover:bg-blue-600 text-white font-bold rounded-xl shadow-lg shadow-blue-500/20 transition-all text-sm flex items-center gap-2 border border-blue-500/50">
+                        <a href="tel:+919111466642" className="px-6 py-3 bg-[#2563EB] hover:bg-blue-600 text-white font-bold rounded-xl shadow-lg shadow-blue-500/20 transition-all text-sm flex items-center gap-2 border border-blue-500/50">
                           <Phone className="w-4 h-4" /> Call Support
                         </a>
-                        <a href="https://wa.me/918000080000" className="px-6 py-3 bg-[#10B981] hover:bg-emerald-600 text-white font-bold rounded-xl shadow-lg shadow-emerald-500/20 transition-all text-sm flex items-center gap-2 border border-emerald-500/50">
+                        <a href="https://wa.me/919111466642" className="px-6 py-3 bg-[#10B981] hover:bg-emerald-600 text-white font-bold rounded-xl shadow-lg shadow-emerald-500/20 transition-all text-sm flex items-center gap-2 border border-emerald-500/50">
                           <MessageCircle className="w-4 h-4" /> WhatsApp Support
                         </a>
                       </div>

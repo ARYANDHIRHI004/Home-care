@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect, useCallback } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   Search,
@@ -13,13 +14,6 @@ import {
   Calendar,
   Sparkles,
 } from 'lucide-react';
-import {
-  FaFacebookF as Facebook,
-  FaInstagram as Instagram,
-  FaTwitter as Twitter,
-  FaLinkedinIn as Linkedin,
-} from 'react-icons/fa6';
-
 /* ─────────────────────────────────────────────
    NAV LINKS
 ───────────────────────────────────────────── */
@@ -35,9 +29,11 @@ const NAV_LINKS = [
    NAVBAR COMPONENT
 ───────────────────────────────────────────── */
 export default function Navbar() {
+  const router = useRouter();
   const [isScrolled, setIsScrolled]         = useState(false);
   const [isSearchOpen, setIsSearchOpen]     = useState(false);
   const [searchQuery, setSearchQuery]       = useState('');
+  const [mobileSearchQuery, setMobileSearchQuery] = useState('');
   const [menuOpen, setMenuOpen]             = useState(false);
 
   /* scroll detection */
@@ -55,6 +51,12 @@ export default function Navbar() {
 
   const openMenu  = useCallback(() => setMenuOpen(true),  []);
   const closeMenu = useCallback(() => setMenuOpen(false), []);
+
+  const runSearch = useCallback((query) => {
+    const q = query.trim();
+    if (!q) return;
+    router.push(`/services?q=${encodeURIComponent(q)}`);
+  }, [router]);
 
   /* ── JSX ── */
   return (
@@ -119,6 +121,7 @@ export default function Navbar() {
                     type="text"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
+                    onKeyDown={(e) => { if (e.key === 'Enter') runSearch(searchQuery); }}
                     placeholder="Search services…"
                     autoFocus
                     className="pl-3 pr-2 py-2 text-xs text-slate-800 bg-slate-100 border border-slate-200 rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500/20"
@@ -136,7 +139,7 @@ export default function Navbar() {
             </div>
 
             <a
-              href="tel:+18005550199"
+              href="tel:+919111466642"
               className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full border border-slate-200 text-slate-700 hover:text-blue-600 hover:border-blue-200 hover:bg-blue-50/50 text-xs font-semibold transition-all duration-200"
             >
               <PhoneCall className="w-3.5 h-3.5 text-blue-600" />
@@ -151,15 +154,16 @@ export default function Navbar() {
               Login
             </Link>
 
-            <motion.a
+            <motion.button
+              type="button"
               whileHover={{ scale: 1.03 }}
               whileTap={{ scale: 0.97 }}
-              href="#book"
+              onClick={() => router.push('/customer/book')}
               className="inline-flex items-center gap-2 bg-blue-600 hover:bg-blue-700 text-white text-xs font-bold px-5 py-2.5 rounded-full shadow-md shadow-blue-500/20 transition-all duration-200"
             >
               <Calendar className="w-3.5 h-3.5" />
               Book Service
-            </motion.a>
+            </motion.button>
           </div>
 
           {/* MOBILE HAMBURGER — only visible below lg */}
@@ -238,6 +242,9 @@ export default function Navbar() {
                 <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
                 <input
                   type="text"
+                  value={mobileSearchQuery}
+                  onChange={(e) => setMobileSearchQuery(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter') { closeMenu(); runSearch(mobileSearchQuery); } }}
                   placeholder="Search home services…"
                   className="w-full pl-9 pr-4 py-2.5 bg-slate-100 border border-slate-200 rounded-xl text-xs font-medium text-slate-800 placeholder:text-slate-400 focus:outline-none focus:ring-2 focus:ring-blue-400/30"
                 />
@@ -262,11 +269,11 @@ export default function Navbar() {
             {/* CTA Buttons */}
             <div className="px-5 py-4 border-t border-slate-100 space-y-2.5 shrink-0">
               <a
-                href="tel:+18005550199"
+                href="tel:+919111466642"
                 className="w-full flex items-center justify-center gap-2 px-4 py-3 rounded-xl border border-slate-200 text-slate-800 text-xs font-bold hover:bg-slate-50 active:bg-slate-100 transition-colors"
               >
                 <PhoneCall className="w-4 h-4 text-blue-600" />
-                Call Support: 1-800-555-0199
+                Call Support: +91 91114 66642
               </a>
               <Link
                 href="/login"
@@ -276,32 +283,33 @@ export default function Navbar() {
                 <User className="w-4 h-4" />
                 Account Login
               </Link>
-              <a
-                href="#book"
-                onClick={closeMenu}
+              <button
+                type="button"
+                onClick={() => {
+                  closeMenu();
+                  router.push('/customer/book');
+                }}
                 className="w-full flex items-center justify-center gap-2 px-4 py-3.5 rounded-xl bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white text-xs font-bold shadow-md shadow-blue-500/20 transition-colors"
               >
                 <Calendar className="w-4 h-4" />
                 Book Service Now
-              </a>
+              </button>
             </div>
 
             {/* Footer */}
             <div className="px-5 py-4 border-t border-slate-100 shrink-0">
-              <div className="flex items-center justify-center gap-5 text-slate-400 mb-3">
-                {[
-                  { Icon: Facebook, href: '#' },
-                  { Icon: Instagram, href: '#' },
-                  { Icon: Twitter, href: '#' },
-                  { Icon: Linkedin, href: '#' },
-                ].map(({ Icon, href }, i) => (
-                  <a key={i} href={href} className="hover:text-blue-600 transition-colors">
-                    <Icon className="w-4 h-4" />
-                  </a>
-                ))}
+              <div className="flex items-center justify-center mb-3">
+                <a
+                  href="https://wa.me/919111466642"
+                  target="_blank"
+                  rel="noreferrer"
+                  className="flex items-center gap-2 text-xs font-semibold text-slate-500 hover:text-blue-600 transition-colors"
+                >
+                  Chat with us on WhatsApp
+                </a>
               </div>
               <p className="text-[10px] text-center text-slate-400">
-                © 2026 HomeCare Platform Inc.
+                © {new Date().getFullYear()} HomeCare Platform.
               </p>
             </div>
           </motion.div>
@@ -320,13 +328,14 @@ export default function Navbar() {
           >
             <PhoneCall className="w-5 h-5 text-blue-600" />
           </a>
-          <a
-            href="#book"
+          <button
+            type="button"
+            onClick={() => router.push('/customer/book')}
             className="flex-1 flex items-center justify-center gap-2 bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-bold text-xs uppercase tracking-wide py-3.5 rounded-xl shadow-md shadow-blue-500/20 transition-colors"
           >
             <Calendar className="w-4 h-4" />
             Book Service Now
-          </a>
+          </button>
         </div>
       </div>
     </>

@@ -91,6 +91,21 @@ export default function EnquiryDrawer({ isOpen, onClose, selectedRow, onCreateEs
                         )}
                     </div>
 
+                    {/* Address */}
+                    {(selectedRow?.address && selectedRow.address !== 'N/A') || selectedRow?.locality ? (
+                        <div className="bg-white dark:bg-slate-800/50 rounded-2xl border border-slate-200 dark:border-slate-700 p-5 shadow-sm transition-colors">
+                            <h4 className="text-sm font-bold text-slate-900 dark:text-slate-100 mb-3 uppercase tracking-wider flex items-center gap-1.5">
+                                <MapPin className="w-3.5 h-3.5" /> Address
+                            </h4>
+                            {selectedRow?.address && selectedRow.address !== 'N/A' && (
+                                <p className="text-sm text-slate-700 dark:text-slate-300">{selectedRow.address}</p>
+                            )}
+                            {selectedRow?.locality && (
+                                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">{selectedRow.locality}</p>
+                            )}
+                        </div>
+                    ) : null}
+
                     {/* Follow-up Card */}
                     <div className="bg-amber-50 dark:bg-amber-900/20 rounded-2xl border border-amber-200 dark:border-amber-800/50 p-5 transition-colors">
                         <div className="flex items-center gap-2 mb-3 text-amber-800 dark:text-amber-500">
@@ -153,11 +168,18 @@ export default function EnquiryDrawer({ isOpen, onClose, selectedRow, onCreateEs
                         <MessageCircle className="w-4 h-4" /> WhatsApp
                     </button>
 
-                    {selectedRow?.status === 'Disqualified' ? (
+                    {/* Enquiry.status is lowercase per the backend enum
+                        (new/contacted/qualified/converted/dropped) — this
+                        used to compare against 'Qualified'/'Disqualified',
+                        which never matched, so this gate never activated and
+                        a "Mark Disqualified" click would have 400'd (that
+                        value isn't in the enum at all; 'dropped' is the real
+                        equivalent). */}
+                    {selectedRow?.status === 'dropped' ? (
                         <div className="col-span-2 flex items-center justify-center gap-2 px-4 py-3 bg-slate-50 dark:bg-slate-800/50 text-slate-400 dark:text-slate-500 rounded-xl text-sm font-medium">
-                            No further action — enquiry disqualified
+                            No further action — enquiry dropped
                         </div>
-                    ) : selectedRow?.status === 'Qualified' ? (
+                    ) : selectedRow?.status === 'qualified' ? (
                         <button
                             onClick={onCreateEstimate}
                             className="col-span-2 flex items-center justify-center gap-2 px-4 py-3 bg-blue-600 text-white rounded-xl text-sm font-medium hover:bg-blue-700 transition-colors shadow-sm"
@@ -166,7 +188,7 @@ export default function EnquiryDrawer({ isOpen, onClose, selectedRow, onCreateEs
                         </button>
                     ) : (
                         <button
-                            onClick={() => handleStatusUpdate('Qualified')}
+                            onClick={() => handleStatusUpdate('qualified')}
                             disabled={isUpdating}
                             className="col-span-2 flex items-center justify-center gap-2 px-4 py-3 bg-emerald-600 text-white rounded-xl text-sm font-medium hover:bg-emerald-700 disabled:opacity-60 transition-colors shadow-sm"
                         >
@@ -174,13 +196,13 @@ export default function EnquiryDrawer({ isOpen, onClose, selectedRow, onCreateEs
                         </button>
                     )}
 
-                    {selectedRow?.status !== 'Disqualified' && (
+                    {selectedRow?.status !== 'dropped' && (
                         <button
-                            onClick={() => handleStatusUpdate('Disqualified')}
+                            onClick={() => handleStatusUpdate('dropped')}
                             disabled={isUpdating}
                             className="col-span-2 flex items-center justify-center gap-2 px-4 py-2 text-rose-600 dark:text-rose-400 rounded-xl text-xs font-medium hover:bg-rose-50 dark:hover:bg-rose-900/20 disabled:opacity-40 transition-colors"
                         >
-                            <XOctagon className="w-3.5 h-3.5" /> Mark Disqualified
+                            <XOctagon className="w-3.5 h-3.5" /> Mark Dropped
                         </button>
                     )}
                 </div>

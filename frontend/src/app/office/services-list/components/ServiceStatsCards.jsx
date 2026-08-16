@@ -8,10 +8,10 @@ export default function ServiceStatsCards() {
     const { data: services = [] } = useGetServicesQuery();
     const { data: categories = [] } = useGetCategoriesQuery();
 
-    const totalServices = services.length > 0 ? services.length : 142;
-    const activeServices = services.length > 0 ? services.filter(s => s.active !== false).length : 134;
-    const inactiveServices = services.length > 0 ? services.filter(s => s.active === false).length : 8;
-    const totalCategories = categories.length > 0 ? categories.length : 12;
+    const totalServices = services.length;
+    const activeServices = services.filter(s => s.active !== false).length;
+    const inactiveServices = services.filter(s => s.active === false).length;
+    const totalCategories = categories.length;
 
     const stats = [
         {

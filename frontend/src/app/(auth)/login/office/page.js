@@ -1,6 +1,7 @@
 'use client';
 
 import { useEffect } from 'react';
+import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/hooks/useAuth';
 
@@ -67,12 +68,12 @@ export default function OfficeLoginPage() {
             <label className="block text-xs font-medium text-[#0F172A]/70">
               Password
             </label>
-            <a
+            <Link
               href="/forgot-password"
               className="text-xs text-[#2554F0] font-medium hover:underline"
             >
               Forgot password?
-            </a>
+            </Link>
           </div>
           <input
             id="office-password"

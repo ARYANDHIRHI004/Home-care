@@ -8,9 +8,15 @@ export default function CustomerStatsCards() {
     
     const now = new Date();
     const thirtyDaysAgo = new Date(now.getTime() - (30 * 24 * 60 * 60 * 1000));
+    const sixtyDaysAgo = new Date(now.getTime() - (60 * 24 * 60 * 60 * 1000));
     const ninetyDaysAgo = new Date(now.getTime() - (90 * 24 * 60 * 60 * 1000));
 
     const newThisMonth = rawCustomers.filter(c => new Date(c.createdAt) >= thirtyDaysAgo).length;
+    const newPrevMonth = rawCustomers.filter(c => {
+        const d = new Date(c.createdAt);
+        return d >= sixtyDaysAgo && d < thirtyDaysAgo;
+    }).length;
+
     const activeCustomers = rawCustomers.filter(c => c.lastBookingDate && new Date(c.lastBookingDate) >= ninetyDaysAgo).length;
     const repeatCustomers = rawCustomers.filter(c => (c.totalBookings || 0) > 1).length;
     
@@ -21,12 +27,24 @@ export default function CustomerStatsCards() {
     const totalRating = customersWithRating.reduce((acc, c) => acc + c.rating, 0);
     const avgRating = customersWithRating.length ? (totalRating / customersWithRating.length).toFixed(1) : 'N/A';
 
+    // Compute growth labels from real data
+    const newGrowthPct = newPrevMonth > 0
+        ? ((newThisMonth - newPrevMonth) / newPrevMonth * 100).toFixed(0)
+        : null;
+    const newGrowthLabel = newGrowthPct !== null
+        ? `${newGrowthPct >= 0 ? '+' : ''}${newGrowthPct}%`
+        : newThisMonth > 0 ? `+${newThisMonth} new` : '—';
+
+    const repeatPct = totalCustomers > 0
+        ? ((repeatCustomers / totalCustomers) * 100).toFixed(0)
+        : 0;
+
     const stats = [
         {
             title: 'Total Customers',
             value: totalCustomers.toLocaleString(),
-            growth: '+12%',
-            trend: 'up',
+            growth: totalCustomers > 0 ? `${totalCustomers} registered` : '—',
+            trend: 'neutral',
             icon: Users,
             description: 'Total registered accounts',
             color: 'bg-blue-50 text-blue-600',
@@ -34,8 +52,8 @@ export default function CustomerStatsCards() {
         {
             title: 'New This Month',
             value: newThisMonth.toString(),
-            growth: '+8%',
-            trend: 'up',
+            growth: newGrowthLabel,
+            trend: newGrowthPct === null ? 'neutral' : newGrowthPct >= 0 ? 'up' : 'down',
             icon: UserPlus,
             description: 'New signups in 30 days',
             color: 'bg-indigo-50 text-indigo-600',
@@ -43,8 +61,8 @@ export default function CustomerStatsCards() {
         {
             title: 'Active Customers',
             value: activeCustomers.toString(),
-            growth: '+4%',
-            trend: 'up',
+            growth: totalCustomers > 0 ? `${((activeCustomers / totalCustomers) * 100).toFixed(0)}% active` : '—',
+            trend: 'neutral',
             icon: UserCheck,
             description: 'Booked in last 90 days',
             color: 'bg-emerald-50 text-emerald-600',
@@ -52,8 +70,8 @@ export default function CustomerStatsCards() {
         {
             title: 'Repeat Customers',
             value: repeatCustomers.toString(),
-            growth: '+15%',
-            trend: 'up',
+            growth: totalCustomers > 0 ? `${repeatPct}% retention` : '—',
+            trend: 'neutral',
             icon: Repeat,
             description: 'More than 1 booking',
             color: 'bg-violet-50 text-violet-600',
@@ -61,8 +79,8 @@ export default function CustomerStatsCards() {
         {
             title: 'Customer LTV',
             value: `₹${Number(avgLtv).toLocaleString()}`,
-            growth: '+5%',
-            trend: 'up',
+            growth: totalCustomers > 0 ? `₹${Number(totalSpend).toLocaleString()} total` : '—',
+            trend: 'neutral',
             icon: TrendingUp,
             description: 'Average lifetime spend',
             color: 'bg-amber-50 text-amber-600',
@@ -70,8 +88,8 @@ export default function CustomerStatsCards() {
         {
             title: 'Average Rating',
             value: avgRating.toString(),
-            growth: '+0.2',
-            trend: 'up',
+            growth: customersWithRating.length > 0 ? `${customersWithRating.length} reviews` : '—',
+            trend: 'neutral',
             icon: Star,
             description: `From ${customersWithRating.length} reviews`,
             color: 'bg-yellow-50 text-yellow-600',
@@ -93,7 +111,9 @@ export default function CustomerStatsCards() {
                                 <Icon className="w-5 h-5" />
                             </div>
                             <span className={`text-xs font-semibold px-2 py-1 rounded-full ${
-                                stat.trend === 'up' ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'
+                                stat.trend === 'up' ? 'bg-emerald-50 text-emerald-600' :
+                                stat.trend === 'down' ? 'bg-rose-50 text-rose-600' :
+                                'bg-slate-50 text-slate-500'
                             }`}>
                                 {stat.growth}
                             </span>

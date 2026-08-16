@@ -6,6 +6,8 @@ import { PERMISSIONS as P } from "../constants/permissions.js";
 
 const router = Router();
 router.use(requireAuth);
+router.get("/me", controller.getMyInvoices);
+router.get("/me/:id", controller.getMyInvoiceById);
 router.post("/", requirePermission(P.INVOICE_CREATE), controller.createInvoice);
 router.get("/", requirePermission(P.INVOICE_READ), controller.getInvoices);
 router.get("/:id", requirePermission(P.INVOICE_READ), controller.getInvoiceById);

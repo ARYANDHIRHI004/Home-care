@@ -6,12 +6,12 @@ import { useGetFeedbackQuery } from '@/store/api/feedbackApi';
 export default function ReviewStatsCards() {
     const { data: feedback = [] } = useGetFeedbackQuery();
 
-    const totalReviews = feedback.length > 0 ? feedback.length : 1248;
+    const totalReviews = feedback.length;
     const avgRating = feedback.length > 0
         ? (feedback.reduce((sum, f) => sum + (f.rating || 5), 0) / feedback.length).toFixed(1)
-        : '4.8';
-    const fiveStarCount = feedback.length > 0 ? feedback.filter(f => f.rating === 5).length : 980;
-    const lowRatingCount = feedback.length > 0 ? feedback.filter(f => f.rating <= 2).length : 14;
+        : '0.0';
+    const fiveStarCount = feedback.filter(f => f.rating === 5).length;
+    const lowRatingCount = feedback.filter(f => f.rating <= 2).length;
 
     const stats = [
         {

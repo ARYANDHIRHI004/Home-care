@@ -1,4 +1,5 @@
 import { UserPlus, Crown, Clock, Star, TrendingUp, ChevronRight } from 'lucide-react';
+import { useGetCustomersQuery } from '@/store/api/customerApi';
 
 const WidgetCard = ({ title, icon: Icon, children, viewAllLink }) => (
     <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4 mb-4">
@@ -20,14 +21,56 @@ const WidgetCard = ({ title, icon: Icon, children, viewAllLink }) => (
 );
 
 export default function CustomerRightSidebar() {
+    const { data: rawCustomers = [] } = useGetCustomersQuery();
+
+    const now = new Date();
+    const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+
+    const todayNewCustomers = rawCustomers
+        .filter(c => new Date(c.createdAt) >= todayStart)
+        .slice(0, 3)
+        .map(c => ({
+            name: c.name || 'Unknown',
+            service: c.lastServiceCategory || 'New Customer',
+            time: (() => {
+                const diffMs = now - new Date(c.createdAt);
+                const mins = Math.floor(diffMs / 60000);
+                if (mins < 60) return `${mins} min${mins !== 1 ? 's' : ''} ago`;
+                const hrs = Math.floor(mins / 60);
+                return `${hrs} hour${hrs !== 1 ? 's' : ''} ago`;
+            })(),
+        }));
+
+    const followUpCustomers = rawCustomers
+        .filter(c => c.nextFollowUp && new Date(c.nextFollowUp) >= todayStart)
+        .slice(0, 3)
+        .map(c => {
+            const followUpDate = new Date(c.nextFollowUp);
+            const tomorrow = new Date(todayStart);
+            tomorrow.setDate(tomorrow.getDate() + 1);
+            const isToday = followUpDate < tomorrow;
+            return {
+                name: c.name || 'Unknown',
+                task: c.followUpNote || 'Follow-up required',
+                due: isToday ? 'Today' : 'Tomorrow',
+            };
+        });
+
+    const topSpenders = [...rawCustomers]
+        .sort((a, b) => (b.lifetimeSpend || 0) - (a.lifetimeSpend || 0))
+        .slice(0, 3)
+        .map(c => ({
+            name: c.name || 'Unknown',
+            spend: c.lifetimeSpend >= 100000
+                ? `₹${(c.lifetimeSpend / 100000).toFixed(1)}L`
+                : `₹${(c.lifetimeSpend || 0).toLocaleString()}`,
+            bookings: c.totalBookings || 0,
+        }));
+
     return (
         <div className="w-full lg:w-80 flex-shrink-0 flex flex-col gap-4">
             <WidgetCard title="Today's New Customers" icon={UserPlus} viewAllLink>
-                {[
-                    { name: 'Kiran Reddy', time: '10 mins ago', service: 'Plumbing' },
-                    { name: 'Suresh Menon', time: '1 hour ago', service: 'Deep Cleaning' },
-                    { name: 'Anita Desai', time: '3 hours ago', service: 'AC Repair' },
-                ].map((user, i) => (
+                {todayNewCustomers.length > 0 ? todayNewCustomers.map((user, i) => (
                     <div key={i} className="flex items-center gap-3">
                         <div className="w-8 h-8 rounded-full bg-slate-100 flex items-center justify-center text-xs font-semibold text-slate-600">
                             {user.name.charAt(0)}
@@ -38,14 +81,13 @@ export default function CustomerRightSidebar() {
                         </div>
                         <div className="text-xs text-slate-400">{user.time}</div>
                     </div>
-                ))}
+                )) : (
+                    <p className="text-xs text-slate-400 text-center py-2">No new customers today.</p>
+                )}
             </WidgetCard>
 
             <WidgetCard title="Customers Awaiting Follow-up" icon={Clock} viewAllLink>
-                {[
-                    { name: 'Rahul Sharma', task: 'Send estimate', due: 'Today' },
-                    { name: 'Priya Patel', task: 'Post-service call', due: 'Tomorrow' },
-                ].map((user, i) => (
+                {followUpCustomers.length > 0 ? followUpCustomers.map((user, i) => (
                     <div key={i} className="flex items-start gap-3 p-2 hover:bg-slate-50 rounded-lg transition-colors cursor-pointer border border-transparent hover:border-slate-100">
                         <div className="mt-0.5">
                             <div className={`w-2 h-2 rounded-full ${user.due === 'Today' ? 'bg-rose-500' : 'bg-amber-500'}`}></div>
@@ -56,15 +98,13 @@ export default function CustomerRightSidebar() {
                         </div>
                         <div className="text-xs font-medium text-slate-500">{user.due}</div>
                     </div>
-                ))}
+                )) : (
+                    <p className="text-xs text-slate-400 text-center py-2">No pending follow-ups.</p>
+                )}
             </WidgetCard>
 
             <WidgetCard title="Top Spending Customers" icon={Crown}>
-                {[
-                    { name: 'Neha Kapoor', spend: '₹1.2L', bookings: 24 },
-                    { name: 'Rajesh Khanna', spend: '₹95K', bookings: 18 },
-                    { name: 'Sneha Gupta', spend: '₹82K', bookings: 15 },
-                ].map((user, i) => (
+                {topSpenders.length > 0 ? topSpenders.map((user, i) => (
                     <div key={i} className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
                             <div className="w-8 h-8 rounded-full bg-amber-50 flex items-center justify-center text-amber-600 text-xs font-bold border border-amber-100">
@@ -79,7 +119,9 @@ export default function CustomerRightSidebar() {
                             {user.spend}
                         </div>
                     </div>
-                ))}
+                )) : (
+                    <p className="text-xs text-slate-400 text-center py-2">No spending data yet.</p>
+                )}
             </WidgetCard>
         </div>
     );

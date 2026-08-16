@@ -4,53 +4,6 @@ import { Star, MoreHorizontal, ShieldCheck, Trash2 } from 'lucide-react';
 import { useState } from 'react';
 import { useGetFeedbackQuery, useDeleteFeedbackMutation } from '@/store/api/feedbackApi';
 
-const fallbackReviews = [
-    {
-        id: 'REV-10492',
-        _id: '1',
-        bookingId: 'BKG-84920',
-        customerName: 'Rahul Sharma',
-        customerAvatar: 'RS',
-        partnerName: 'Vikram Singh',
-        serviceName: 'Deep Home Cleaning',
-        rating: 5,
-        title: 'Excellent and thorough cleaning!',
-        description: 'The team was very professional and did an amazing job with the deep cleaning. Highly recommend!',
-        reviewDate: 'Oct 25, 2023',
-        status: 'Published',
-        tags: ['Punctuality', 'Quality']
-    },
-    {
-        id: 'REV-10491',
-        _id: '2',
-        bookingId: 'BKG-84915',
-        customerName: 'Priya Patel',
-        customerAvatar: 'PP',
-        partnerName: 'Amit Kumar',
-        serviceName: 'AC Repair & Service',
-        rating: 4,
-        title: 'Great and fast resolution',
-        description: 'Fixed the AC cooling issue quickly. Polite and clean workmanship.',
-        reviewDate: 'Nov 04, 2023',
-        status: 'Published',
-        tags: ['Quality', 'Communication']
-    },
-    {
-        id: 'REV-10490',
-        _id: '3',
-        bookingId: 'BKG-84910',
-        customerName: 'Sneha Gupta',
-        customerAvatar: 'SG',
-        partnerName: 'Rajesh Khanna',
-        serviceName: 'Bathroom Cleaning',
-        rating: 4,
-        title: 'Good job, satisfied with service',
-        description: 'The cleaning was thorough and neat. Satisfied with the service quality.',
-        reviewDate: 'Aug 16, 2023',
-        status: 'Published',
-        tags: ['Quality']
-    },
-];
 
 const RatingStars = ({ rating }) => {
     return (
@@ -74,24 +27,22 @@ export default function ReviewList({ searchQuery, onReviewClick }) {
     const [deleteFeedback] = useDeleteFeedbackMutation();
     const [openMenuId, setOpenMenuId] = useState(null);
 
-    const reviews = rawFeedback.length > 0
-        ? rawFeedback.map(f => ({
-            id: `REV-${f._id?.slice(-5).toUpperCase()}`,
-            _id: f._id,
-            bookingId: f.workOrderId ? `WO-${f.workOrderId.toString().slice(-4).toUpperCase()}` : 'WO-RECENT',
-            customerName: f.customerId?.name || 'Customer',
-            customerAvatar: (f.customerId?.name || 'CU').slice(0, 2).toUpperCase(),
-            partnerName: 'Service Team',
-            serviceName: 'HomeCare Service',
-            rating: f.rating || 5,
-            title: f.comment ? (f.comment.slice(0, 40) + '...') : 'Service Feedback',
-            description: f.comment || 'Satisfied with the service provided.',
-            reviewDate: f.createdAt ? new Date(f.createdAt).toLocaleDateString() : 'Recent',
-            status: 'Published',
-            tags: ['Verified Customer'],
-            _raw: f,
-        }))
-        : fallbackReviews;
+    const reviews = rawFeedback.map(f => ({
+        id: `REV-${f._id?.slice(-5).toUpperCase()}`,
+        _id: f._id,
+        bookingId: f.workOrderId ? `WO-${f.workOrderId.toString().slice(-4).toUpperCase()}` : 'WO-RECENT',
+        customerName: f.customerId?.name || 'Customer',
+        customerAvatar: (f.customerId?.name || 'CU').slice(0, 2).toUpperCase(),
+        partnerName: f.workOrderId?.assignedPartnerId?.name || 'Service Team',
+        serviceName: f.workOrderId?.serviceCategory || 'HomeCare Service',
+        rating: f.rating || 5,
+        title: f.comments ? (f.comments.slice(0, 40) + (f.comments.length > 40 ? '...' : '')) : 'Service Feedback',
+        description: f.comments || 'Satisfied with the service provided.',
+        reviewDate: f.createdAt ? new Date(f.createdAt).toLocaleDateString() : 'Recent',
+        status: 'Published',
+        tags: ['Verified Customer'],
+        _raw: f,
+    }));
 
     const filtered = reviews.filter(r =>
         !searchQuery ||

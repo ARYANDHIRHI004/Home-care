@@ -4,13 +4,6 @@ import { MoreHorizontal, ChevronUp, ChevronDown, CheckCircle2, Clock, XCircle, A
 import { useState } from 'react';
 import { useGetPartnersQuery, useTogglePartnerMutation, useDeletePartnerMutation } from '@/store/api/partnerApi';
 
-const fallbackPartners = [
-    { id: 'HC-P-001', _id: '1', name: 'Rajesh Kumar', phone: '+91 98765 43210', skill: 'Expert Plumber', skills: ['Plumbing'], experience: '5 Years', jobs: 245, rating: 4.8, availability: 'Available', verification: 'Verified', status: 'Active', active: true },
-    { id: 'HC-P-002', _id: '2', name: 'Suresh Singh', phone: '+91 98765 43211', skill: 'AC Technician', skills: ['AC Repair'], experience: '3 Years', jobs: 120, rating: 4.5, availability: 'On Job', verification: 'Verified', status: 'Active', active: true },
-    { id: 'HC-P-003', _id: '3', name: 'Amit Sharma', phone: '+91 98765 43212', skill: 'Electrician', skills: ['Electrical'], experience: '1 Year', jobs: 45, rating: 4.2, availability: 'Available', verification: 'Pending', status: 'Active', active: true },
-    { id: 'HC-P-004', _id: '4', name: 'Priya Patel', phone: '+91 98765 43213', skill: 'Deep Cleaning', skills: ['Deep Cleaning'], experience: '2 Years', jobs: 310, rating: 4.9, availability: 'Offline', verification: 'Verified', status: 'On Leave', active: false },
-    { id: 'HC-P-005', _id: '5', name: 'Vikram Das', phone: '+91 98765 43214', skill: 'Pest Control', skills: ['Pest Control'], experience: '4 Years', jobs: 180, rating: 3.8, availability: 'Offline', verification: 'Rejected', status: 'Suspended', active: false },
-];
 
 export default function PartnerTable({ searchQuery, onRowClick }) {
     const { data: rawPartners = [], isLoading } = useGetPartnersQuery();
@@ -30,24 +23,22 @@ export default function PartnerTable({ searchQuery, onRowClick }) {
         ? (sortDir === 'asc' ? <ChevronUp className="w-3.5 h-3.5 text-blue-500" /> : <ChevronDown className="w-3.5 h-3.5 text-blue-500" />)
         : <ChevronDown className="w-3.5 h-3.5 text-slate-300" />;
 
-    const partners = rawPartners.length > 0
-        ? rawPartners.map(p => ({
-            id: `HC-P-${p._id?.slice(-4).toUpperCase()}`,
-            _id: p._id,
-            name: p.name,
-            phone: p.phone,
-            skill: Array.isArray(p.skills) && p.skills.length > 0 ? p.skills.join(', ') : 'General Care',
-            skills: p.skills || [],
-            experience: p.experience || '2+ Years',
-            jobs: (p.jobHistory || []).length || 24,
-            rating: p.avgRating || 4.8,
-            availability: p.active ? 'Available' : 'Offline',
-            verification: 'Verified',
-            status: p.active !== false ? 'Active' : 'Inactive',
-            active: p.active !== false,
-            _raw: p,
-        }))
-        : fallbackPartners;
+    const partners = rawPartners.map(p => ({
+        id: `HC-P-${p._id?.slice(-4).toUpperCase()}`,
+        _id: p._id,
+        name: p.name,
+        phone: p.phone,
+        skill: Array.isArray(p.skills) && p.skills.length > 0 ? p.skills.join(', ') : 'General Care',
+        skills: p.skills || [],
+        experience: p.experience || '2+ Years',
+        jobs: (p.jobHistory || []).length || 0,
+        rating: p.avgRating || '—',
+        availability: p.active ? 'Available' : 'Offline',
+        verification: 'Verified',
+        status: p.active !== false ? 'Active' : 'Inactive',
+        active: p.active !== false,
+        _raw: p,
+    }));
 
     const filtered = partners.filter(p =>
         !searchQuery ||

@@ -11,6 +11,9 @@ const SESSION_COOKIE_SECURE = "__Secure-better-auth.session_token";
 /** Routes that require the user to be an authenticated office/admin user. */
 const PROTECTED_OFFICE_ROUTES = ["/office"];
 
+/** Routes that require the user to be an authenticated customer. */
+const PROTECTED_CUSTOMER_ROUTES = ["/customer"];
+
 /** Routes that authenticated users should be bounced away from. */
 const AUTH_ROUTES = ["/login/office"];
 
@@ -30,6 +33,21 @@ export function middleware(request) {
     if (isOfficePath && !hasSession) {
         const loginUrl = new URL("/login/office", request.url);
         // Preserve the intended destination so we can redirect after login
+        loginUrl.searchParams.set("from", pathname);
+        return NextResponse.redirect(loginUrl);
+    }
+
+    // ── Protect /customer/** ──────────────────────────────────────────────────
+    // Needed so a shared estimate/invoice link (e.g. from the estimate email
+    // or the office "Copy Link" button) sends a logged-out visitor through
+    // login and back to the exact page, rather than rendering a blank/broken
+    // dashboard shell that then 401s on every data fetch.
+    const isCustomerPath = PROTECTED_CUSTOMER_ROUTES.some((route) =>
+        pathname.startsWith(route)
+    );
+
+    if (isCustomerPath && !hasSession) {
+        const loginUrl = new URL("/login", request.url);
         loginUrl.searchParams.set("from", pathname);
         return NextResponse.redirect(loginUrl);
     }

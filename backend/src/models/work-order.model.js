@@ -103,6 +103,17 @@ const workOrderSchema = new mongoose.Schema(
     timeline: [timelineSchema],
 
     internalNotes: [internalNoteSchema],
+
+    emailSentAt: {
+      type: Date,
+      default: null,
+    },
+
+    emailSendError: {
+      type: String,
+      trim: true,
+      default: null,
+    },
   },
   {
     timestamps: true,

@@ -6,6 +6,7 @@ import { PERMISSIONS as P } from "../constants/permissions.js";
 
 const router = Router();
 router.use(requireAuth);
+router.get("/me", controller.getMyPayments);
 router.post("/", requirePermission(P.PAYMENT_CREATE), controller.createPayment);
 router.get("/", requirePermission(P.PAYMENT_READ), controller.getPayments);
 router.patch("/:id", requirePermission(P.PAYMENT_UPDATE), controller.updatePayment);

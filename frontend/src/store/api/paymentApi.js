@@ -9,6 +9,13 @@ export const paymentApi = apiSlice.injectEndpoints({
                     ? [...(Array.isArray(result) ? result : []).map(({ _id }) => ({ type: 'Payment', id: _id })), { type: 'Payment', id: 'LIST' }]
                     : [{ type: 'Payment', id: 'LIST' }],
         }),
+        getCustomerPayments: builder.query({
+            query: () => `/api/payments/me`,
+            providesTags: (result) =>
+                result
+                    ? [...(Array.isArray(result) ? result : []).map(({ _id }) => ({ type: 'Payment', id: _id })), { type: 'Payment', id: 'LIST' }]
+                    : [{ type: 'Payment', id: 'LIST' }],
+        }),
         createPayment: builder.mutation({
             query: (data) => ({ url: '/api/payments', method: 'POST', body: data }),
             invalidatesTags: [{ type: 'Payment', id: 'LIST' }, { type: 'Invoice', id: 'LIST' }],
@@ -19,7 +26,12 @@ export const paymentApi = apiSlice.injectEndpoints({
         }),
         verifyPayment: builder.mutation({
             query: ({ id, ...data }) => ({ url: `/api/payments/${id}/verify`, method: 'PATCH', body: data }),
-            invalidatesTags: (result, error, { id }) => [{ type: 'Payment', id }, { type: 'Payment', id: 'LIST' }],
+            invalidatesTags: (result, error, { id, invoiceId }) => [
+                { type: 'Payment', id },
+                { type: 'Payment', id: 'LIST' },
+                { type: 'Invoice', id: invoiceId || result?.invoiceId },
+                { type: 'Invoice', id: 'LIST' },
+            ],
         }),
         deletePayment: builder.mutation({
             query: (id) => ({ url: `/api/payments/${id}`, method: 'DELETE' }),
@@ -30,6 +42,7 @@ export const paymentApi = apiSlice.injectEndpoints({
 
 export const {
     useGetPaymentsQuery,
+    useGetCustomerPaymentsQuery,
     useCreatePaymentMutation,
     useUpdatePaymentMutation,
     useVerifyPaymentMutation,

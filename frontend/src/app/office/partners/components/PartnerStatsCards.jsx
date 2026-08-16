@@ -6,10 +6,10 @@ import { useGetPartnersQuery } from '@/store/api/partnerApi';
 export default function PartnerStatsCards() {
     const { data: partners = [] } = useGetPartnersQuery();
 
-    const totalPartners = partners.length > 0 ? partners.length : 248;
-    const activePartners = partners.length > 0 ? partners.filter(p => p.active !== false).length : 210;
-    const busyPartners = partners.length > 0 ? partners.filter(p => p.active !== false && p.isBusy).length : 42;
-    const offlinePartners = partners.length > 0 ? partners.filter(p => p.active === false).length : 38;
+    const totalPartners = partners.length;
+    const activePartners = partners.filter(p => p.active !== false).length;
+    const busyPartners = partners.filter(p => p.active !== false && p.isBusy).length;
+    const offlinePartners = partners.filter(p => p.active === false).length;
 
     const stats = [
         {

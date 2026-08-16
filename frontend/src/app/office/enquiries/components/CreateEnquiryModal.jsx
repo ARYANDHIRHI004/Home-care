@@ -2,14 +2,30 @@
 import { useState } from 'react';
 import Dialog from '@/components/office/ui/Dialog';
 import { useCreateEnquiryMutation } from '@/store/api/enquiryApi';
+import { useGetEnumsQuery } from '@/store/api/configApi';
+import { useGetCategoriesQuery } from '@/store/api/categoryApi';
+import { useGetServicesQuery } from '@/store/api/serviceApi';
+import { useGetServiceAreasQuery } from '@/store/api/serviceAreaApi';
+
+const formatEnum = (str) => {
+    if (!str) return '';
+    return str.split('_').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+};
 
 export default function CreateEnquiryModal({ isOpen, onClose }) {
+    const { data: enums = {} } = useGetEnumsQuery();
+    const { data: categories = [] } = useGetCategoriesQuery('active=true');
+    const { data: services = [] } = useGetServicesQuery('active=true');
+    const { data: serviceAreas = [] } = useGetServiceAreasQuery();
     const [createEnquiry, { isLoading }] = useCreateEnquiryMutation();
+    
+    // Extract unique cities from service areas
+    const uniqueCities = Array.from(new Set(serviceAreas.map(area => area.city).filter(Boolean)));
     const [form, setForm] = useState({
         name: '', phone: '', altPhone: '', email: '',
         address: '', city: '', serviceCategory: '', specificService: '',
-        priority: 'Medium', preferredDate: '', preferredTime: '',
-        source: 'call', status: 'New', description: '',
+        priority: 'normal', preferredDate: '', preferredTime: '',
+        source: 'call', status: 'new', description: '',
     });
     const [error, setError] = useState(null);
 
@@ -18,8 +34,8 @@ export default function CreateEnquiryModal({ isOpen, onClose }) {
     const resetForm = () => setForm({
         name: '', phone: '', altPhone: '', email: '',
         address: '', city: '', serviceCategory: '', specificService: '',
-        priority: 'Medium', preferredDate: '', preferredTime: '',
-        source: 'call', status: 'New', description: '',
+        priority: 'normal', preferredDate: '', preferredTime: '',
+        source: 'call', status: 'new', description: '',
     });
 
     const handleSubmit = async (e) => {
@@ -72,42 +88,37 @@ export default function CreateEnquiryModal({ isOpen, onClose }) {
                             <label className="text-sm font-medium text-slate-700 dark:text-slate-300">City</label>
                             <select name="city" value={form.city} onChange={handleChange} className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors">
                                 <option value="">Select City</option>
-                                <option value="Bhilai">Bhilai</option>
-                                <option value="Raipur">Raipur</option>
-                                <option value="Durg">Durg</option>
+                                {uniqueCities.map(city => (
+                                    <option key={city} value={city}>{city}</option>
+                                ))}
                             </select>
                         </div>
                         <div className="space-y-1">
                             <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Service Category *</label>
                             <select required name="serviceCategory" value={form.serviceCategory} onChange={handleChange} className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors">
                                 <option value="">Select Category</option>
-                                <option value="Cleaning">Cleaning</option>
-                                <option value="Repair">Repair</option>
-                                <option value="Pest Control">Pest Control</option>
-                                <option value="Painting">Painting</option>
-                                <option value="Electrical">Electrical</option>
-                                <option value="Plumbing">Plumbing</option>
-                                <option value="AC Service">AC Service</option>
+                                {categories.map(c => (
+                                    <option key={c._id} value={c.name}>{c.name}</option>
+                                ))}
                             </select>
                         </div>
                         <div className="space-y-1">
                             <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Specific Service</label>
                             <select name="specificService" value={form.specificService} onChange={handleChange} className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors">
                                 <option value="">Select Service</option>
-                                <option value="AC Cleaning">AC Cleaning</option>
-                                <option value="Sofa Cleaning">Sofa Cleaning</option>
-                                <option value="Full Home Cleaning">Full Home Cleaning</option>
-                                <option value="Kitchen Cleaning">Kitchen Cleaning</option>
-                                <option value="Bathroom Cleaning">Bathroom Cleaning</option>
+                                {services
+                                    .filter(s => !form.serviceCategory || s.categoryId?.name === form.serviceCategory)
+                                    .map(s => (
+                                    <option key={s._id} value={s.name}>{s.name}</option>
+                                ))}
                             </select>
                         </div>
                         <div className="space-y-1">
                             <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Priority</label>
                             <select name="priority" value={form.priority} onChange={handleChange} className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors">
-                                <option value="Low">Low</option>
-                                <option value="Medium">Medium</option>
-                                <option value="High">High</option>
-                                <option value="Urgent">Urgent</option>
+                                {(enums.workOrder?.priority || ['low', 'normal', 'high']).map(p => (
+                                    <option key={p} value={p}>{formatEnum(p)}</option>
+                                ))}
                             </select>
                         </div>
                         <div className="space-y-1">
@@ -115,27 +126,28 @@ export default function CreateEnquiryModal({ isOpen, onClose }) {
                             <input name="preferredDate" value={form.preferredDate} onChange={handleChange} type="date" className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors" />
                         </div>
                         <div className="space-y-1">
-                            <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Preferred Time</label>
-                            <input name="preferredTime" value={form.preferredTime} onChange={handleChange} type="time" className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors" />
+                            <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Preferred Time Slot</label>
+                            <select name="preferredTime" value={form.preferredTime} onChange={handleChange} className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors">
+                                <option value="">Select Time Slot</option>
+                                {(enums.enquiry?.timeSlots || ['9 - 11', '11 - 1', '2 - 4', '4 - 6']).map(slot => (
+                                    <option key={slot} value={slot}>{slot}</option>
+                                ))}
+                            </select>
                         </div>
                         <div className="space-y-1">
                             <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Lead Source</label>
                             <select name="source" value={form.source} onChange={handleChange} className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors">
-                                <option value="Phone Call">Phone Call</option>
-                                <option value="WhatsApp">WhatsApp</option>
-                                <option value="website">Website</option>
-                                <option value="Facebook">Facebook</option>
-                                <option value="Google">Google</option>
-                                <option value="Referral">Referral</option>
+                                {(enums.enquiry?.source || ['call', 'website', 'whatsapp', 'facebook', 'instagram']).map(s => (
+                                    <option key={s} value={s}>{formatEnum(s)}</option>
+                                ))}
                             </select>
                         </div>
                         <div className="space-y-1">
                             <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Status</label>
                             <select name="status" value={form.status} onChange={handleChange} className="w-full px-3 py-2 bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-900 dark:text-slate-100 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-colors">
-                                <option value="New">New</option>
-                                <option value="Follow Up">Follow Up</option>
-                                <option value="Converted">Converted</option>
-                                <option value="Closed">Closed</option>
+                                {(enums.enquiry?.status || ['new', 'contacted', 'qualified', 'converted', 'dropped']).map(s => (
+                                    <option key={s} value={s}>{formatEnum(s)}</option>
+                                ))}
                             </select>
                         </div>
                     </div>

@@ -40,9 +40,8 @@ export default function OfficeLayoutClient({ children }) {
         );
     }
 
-    // Double-check: if somehow still not authenticated after check, redirect
+    // Double-check: if somehow still not authenticated after check, show nothing while redirecting
     if (!isAuthenticated) {
-        router.replace('/login/office');
         return null;
     }
 

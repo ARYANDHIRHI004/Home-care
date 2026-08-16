@@ -11,6 +11,7 @@ import CreateBookingModal from './components/CreateBookingModal';
 import EditBookingModal from './components/EditBookingModal';
 import DeleteBookingDialog from './components/DeleteBookingDialog';
 import Pagination from '@/components/office/ui/Pagination';
+import { useGetBookingsQuery } from '@/store/api/bookingApi';
 
 export default function BookingsPage() {
     const [selectedRow, setSelectedRow] = useState(null);
@@ -23,16 +24,23 @@ export default function BookingsPage() {
     const [viewMode, setViewMode] = useState('list');
     const [searchQuery, setSearchQuery] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
-    const [itemsPerPage, setItemsPerPage] = useState(10);
-    
-    // Mock Data
-    const bookings = [
-        { id: 'BKG-9012', customer: 'Ramesh Gupta', phone: '+91 98765 43210', service: 'AC Deep Cleaning', date: 'Oct 25, 2023', time: '10:00 AM - 12:00 PM', assignedTo: 'Amit Kumar', status: 'In Progress', payment: 'Pending', amount: '₹1,299', createdBy: 'System', initial: 'R' },
-        { id: 'BKG-9013', customer: 'Sneha Reddy', phone: '+91 87654 32109', service: 'Full Home Cleaning', date: 'Oct 25, 2023', time: '02:00 PM - 06:00 PM', assignedTo: 'Neha Singh', status: 'Professional On The Way', payment: 'Partially Paid', amount: '₹4,500', createdBy: 'Rahul Admin', initial: 'S' },
-        { id: 'BKG-9014', customer: 'Vijay Sharma', phone: '+91 76543 21098', service: 'Plumbing Repair', date: 'Oct 25, 2023', time: '04:00 PM - 05:00 PM', assignedTo: 'Unassigned', status: 'Pending Assignment', payment: 'Pending', amount: '₹499', createdBy: 'Online', initial: 'V' },
-        { id: 'BKG-9015', customer: 'Anita Desai', phone: '+91 65432 10987', service: 'Electrical Work', date: 'Oct 24, 2023', time: '11:00 AM - 01:00 PM', assignedTo: 'Rajesh Verma', status: 'Completed', payment: 'Paid', amount: '₹850', createdBy: 'Priya Support', initial: 'A' },
-        { id: 'BKG-9016', customer: 'Karan Patel', phone: '+91 54321 09876', service: 'Sofa Cleaning', date: 'Oct 26, 2023', time: '09:00 AM - 11:00 PM', assignedTo: 'Suresh Kumar', status: 'Confirmed', payment: 'Paid', amount: '₹1,500', createdBy: 'System', initial: 'K' },
-    ];
+    const [itemsPerPage, setItemsPerPage] = useState(10);    const { data: rawBookings = [], isLoading, isError } = useGetBookingsQuery();
+    const bookings = rawBookings.map((booking) => ({
+        _id: booking._id,
+        id: booking.bookingNumber,
+        customer: booking.customerId?.name || booking.customerName,
+        phone: booking.customerId?.phone || booking.phone || '-',
+        service: booking.serviceId?.name || booking.serviceName,
+        date: booking.scheduledDate ? new Date(booking.scheduledDate).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '-',
+        time: booking.scheduledTime || '-',
+        assignedTo: booking.partnerId?.name || booking.assignedTo || 'Unassigned',
+        status: booking.status?.split('_').map((w) => w[0]?.toUpperCase() + w.slice(1)).join(' ') || 'Upcoming',
+        payment: booking.paymentStatus?.split('_').map((w) => w[0]?.toUpperCase() + w.slice(1)).join(' ') || 'Pending',
+        amount: `₹${Number(booking.amount || 0).toLocaleString('en-IN')}`,
+        createdBy: booking.createdBy || 'System',
+        initial: (booking.customerId?.name || booking.customerName || '?').charAt(0),
+        _raw: booking,
+    }));
 
     const handleRowClick = (bkg) => {
         setSelectedRow(bkg);
@@ -90,14 +98,48 @@ export default function BookingsPage() {
             />
 
             {/* KPI Cards */}
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 sm:gap-6 mb-8">
-                <BookingStats title="Today's Bookings" value="48" icon={CalendarCheck} trend="up" trendValue="12%" subtitle="vs yesterday" accentColor="default" />
-                <BookingStats title="Active Jobs" value="12" icon={Wrench} subtitle="Currently in progress" accentColor="purple" />
-                <BookingStats title="Completed Today" value="15" icon={CheckCircle2} trend="up" trendValue="5%" subtitle="Successfully finished" accentColor="green" />
-                <BookingStats title="Scheduled Tomorrow" value="32" icon={Clock} subtitle="Upcoming bookings" accentColor="yellow" />
-                <BookingStats title="Pending Assignment" value="8" icon={UserPlus} subtitle="Action required" accentColor="red" />
-                <BookingStats title="Cancelled Bookings" value="3" icon={XCircle} trend="down" trendValue="2%" subtitle="This week" accentColor="gray" />
-            </div>
+            {(() => {
+                const now = new Date();
+                const todayStart = new Date(now.getFullYear(), now.getMonth(), now.getDate()).getTime();
+                const todayEnd = todayStart + 24 * 60 * 60 * 1000;
+                const tomorrowEnd = todayEnd + 24 * 60 * 60 * 1000;
+                const weekStart = todayStart - 7 * 24 * 60 * 60 * 1000;
+
+                const todaysBookings = rawBookings.filter(b => {
+                    const date = new Date(b.createdAt).getTime();
+                    return date >= todayStart && date < todayEnd;
+                }).length;
+
+                const activeJobs = rawBookings.filter(b => b.status === 'in_progress').length;
+
+                const completedToday = rawBookings.filter(b => {
+                    const date = new Date(b.updatedAt || b.createdAt).getTime();
+                    return b.status === 'completed' && date >= todayStart && date < todayEnd;
+                }).length;
+
+                const scheduledTomorrow = rawBookings.filter(b => {
+                    const date = new Date(b.scheduledDate).getTime();
+                    return date >= todayEnd && date < tomorrowEnd;
+                }).length;
+
+                const pendingAssignment = rawBookings.filter(b => !b.partnerId && !b.assignedTo).length;
+
+                const cancelledThisWeek = rawBookings.filter(b => {
+                    const date = new Date(b.updatedAt || b.createdAt).getTime();
+                    return b.status === 'cancelled' && date >= weekStart;
+                }).length;
+
+                return (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4 sm:gap-6 mb-8">
+                        <BookingStats title="Today's Bookings" value={todaysBookings.toString()} icon={CalendarCheck} trend="neutral" subtitle="Today" accentColor="default" />
+                        <BookingStats title="Active Jobs" value={activeJobs.toString()} icon={Wrench} subtitle="Currently in progress" accentColor="purple" />
+                        <BookingStats title="Completed Today" value={completedToday.toString()} icon={CheckCircle2} trend="neutral" subtitle="Successfully finished" accentColor="green" />
+                        <BookingStats title="Scheduled Tomorrow" value={scheduledTomorrow.toString()} icon={Clock} subtitle="Upcoming bookings" accentColor="yellow" />
+                        <BookingStats title="Pending Assignment" value={pendingAssignment.toString()} icon={UserPlus} subtitle="Action required" accentColor="red" />
+                        <BookingStats title="Cancelled Bookings" value={cancelledThisWeek.toString()} icon={XCircle} trend="neutral" subtitle="This week" accentColor="gray" />
+                    </div>
+                );
+            })()}
 
             <div className="grid grid-cols-1 xl:grid-cols-4 gap-6 mb-8">
                 {/* Main Content Area */}
@@ -106,14 +148,20 @@ export default function BookingsPage() {
 
                     {viewMode === 'list' ? (
                         <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm shadow-slate-100/50 dark:shadow-slate-900/50 overflow-hidden transition-colors">
-                            <BookingTable 
-                                bookings={bookings} 
-                                onRowClick={handleRowClick}
-                                onEdit={handleEditClick}
-                                onDelete={handleDeleteClick}
-                            />
+                            {isLoading ? (
+                                <div className="p-12 text-center text-sm text-slate-500">Loading bookings...</div>
+                            ) : isError ? (
+                                <div className="p-12 text-center text-sm text-rose-600">Unable to load bookings.</div>
+                            ) : (
+                                <BookingTable 
+                                    bookings={bookings} 
+                                    onRowClick={handleRowClick}
+                                    onEdit={handleEditClick}
+                                    onDelete={handleDeleteClick}
+                                />
+                            )}
                             <Pagination 
-                                totalItems={48}
+                                totalItems={bookings.length}
                                 itemsPerPage={itemsPerPage}
                                 currentPage={currentPage}
                                 onPageChange={setCurrentPage}
@@ -136,7 +184,7 @@ export default function BookingsPage() {
 
                 {/* Sidebar Widgets */}
                 <div className="xl:col-span-1 space-y-6">
-                    <BookingSidebar />
+                    <BookingSidebar onCreateBooking={() => setIsCreateModalOpen(true)} />
                 </div>
             </div>
 

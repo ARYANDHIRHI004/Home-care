@@ -1,6 +1,6 @@
 'use client';
 
-import { useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
 import {
@@ -8,7 +8,9 @@ import {
 } from 'lucide-react';
 import StatusPill from '@/components/customer/StatusPill';
 import EstimateDocument from '@/components/customer/EstimateDocument';
-import { findBooking, findEstimateById, TIMELINE_STEPS } from '@/lib/customerData';
+import { useGetBookingByIdQuery } from '@/store/api/bookingApi';
+import { useRespondToMyEstimateMutation } from '@/store/api/estimateApi';
+import { mapCustomerBooking, mapCustomerEstimate, TIMELINE_STEPS } from '@/lib/customerApiMappers';
 
 const REJECT_REASONS = ['Price too high', "Timing doesn't work", 'Found another provider', 'Other'];
 
@@ -20,10 +22,12 @@ const RESCHEDULE_CUTOFF_STEP = 5;
 export default function ServiceDetailsPage() {
   const { bookingId } = useParams();
   const router = useRouter();
-  const booking = findBooking(bookingId);
-  const estimate = booking?.estimate ? findEstimateById(booking.estimate.id) : null;
+  const { data: rawBooking, isLoading, isError } = useGetBookingByIdQuery(bookingId);
+  const booking = rawBooking ? mapCustomerBooking(rawBooking) : null;
+  const estimate = rawBooking?.estimateId ? mapCustomerEstimate(rawBooking.estimateId, rawBooking) : null;
   const estimateDocRef = useRef(null);
 
+  const [respondToEstimate, { isLoading: isResponding, error: respondError }] = useRespondToMyEstimateMutation();
   const [rejectOpen, setRejectOpen] = useState(false);
   const [rejectReason, setRejectReason] = useState('');
   const [estimateStatus, setEstimateStatus] = useState(booking?.estimate?.status);
@@ -31,6 +35,13 @@ export default function ServiceDetailsPage() {
   const [draftRating, setDraftRating] = useState(0);
   const [hoverRating, setHoverRating] = useState(0);
   const [draftComment, setDraftComment] = useState('');
+
+  useEffect(() => {
+    setEstimateStatus(booking?.estimate?.status);
+  }, [booking?.estimate?.status]);
+
+  if (isLoading) return <div className="py-12 text-center text-sm text-[#0F172A]/50">Loading booking...</div>;
+  if (isError) return <div className="py-12 text-center text-sm text-rose-600">Unable to load booking.</div>;
 
   if (!booking) {
     return (
@@ -44,6 +55,27 @@ export default function ServiceDetailsPage() {
 
   const canReschedule = booking.status !== 'completed' && booking.status !== 'cancelled' && booking.timelineStep < RESCHEDULE_CUTOFF_STEP;
   const isPendingEstimate = estimateStatus === 'Pending';
+
+  async function acceptEstimate() {
+    try {
+      await respondToEstimate({ id: booking.estimate.id, approvalStatus: 'approved' }).unwrap();
+      setEstimateStatus('Approved');
+    } catch {
+      // respondError below the estimate card already surfaces this
+    }
+  }
+
+  async function confirmRejectEstimate() {
+    try {
+      await respondToEstimate({ id: booking.estimate.id, approvalStatus: 'rejected', rejectReason }).unwrap();
+      setEstimateStatus('Rejected');
+      setRejectOpen(false);
+    } catch {
+      // respondError below the estimate card already surfaces this — leave
+      // the modal open so the customer can retry instead of silently
+      // losing their selected reason.
+    }
+  }
 
   async function downloadEstimatePdf() {
     if (!estimateDocRef.current || !estimate) return;
@@ -163,19 +195,28 @@ export default function ServiceDetailsPage() {
           </div>
           <p className="text-xl font-bold text-[#0F172A] mb-4">₹{booking.estimate.amount.toLocaleString()}</p>
           {isPendingEstimate && (
-            <div className="flex gap-3">
-              <button
-                onClick={() => setEstimateStatus('Approved')}
-                className="flex-1 py-2.5 bg-[#2554F0] text-white rounded-xl text-sm font-medium hover:bg-[#1D45D1] transition-colors"
-              >
-                Accept
-              </button>
-              <button
-                onClick={() => setRejectOpen(true)}
-                className="flex-1 py-2.5 bg-white border border-[#0F172A]/15 text-[#0F172A] rounded-xl text-sm font-medium hover:bg-slate-50 transition-colors"
-              >
-                Reject
-              </button>
+            <div className="space-y-2">
+              <div className="flex gap-3">
+                <button
+                  onClick={acceptEstimate}
+                  disabled={isResponding}
+                  className="flex-1 py-2.5 bg-[#2554F0] text-white rounded-xl text-sm font-medium hover:bg-[#1D45D1] transition-colors disabled:opacity-50"
+                >
+                  {isResponding ? 'Saving…' : 'Accept'}
+                </button>
+                <button
+                  onClick={() => setRejectOpen(true)}
+                  disabled={isResponding}
+                  className="flex-1 py-2.5 bg-white border border-[#0F172A]/15 text-[#0F172A] rounded-xl text-sm font-medium hover:bg-slate-50 transition-colors disabled:opacity-50"
+                >
+                  Reject
+                </button>
+              </div>
+              {respondError && (
+                <p className="text-xs text-rose-600">
+                  {respondError.data?.message || 'Could not save your response. Please try again.'}
+                </p>
+              )}
             </div>
           )}
         </div>
@@ -284,18 +325,28 @@ export default function ServiceDetailsPage() {
             <RefreshCcw className="w-4 h-4" /> Book Again
           </Link>
         )}
-        {(booking.status === 'active' || booking.status === 'upcoming') && (
-          <a href="#" onClick={(e) => e.preventDefault()} className="flex items-center gap-2 px-4 py-2.5 bg-[#2554F0] text-white rounded-xl text-sm font-medium hover:bg-[#1D45D1] transition-colors">
-            <MapPin className="w-4 h-4" /> Track Service
-          </a>
-        )}
+        {/* Reschedule/Cancel aren't self-service yet — no backend endpoint lets
+            a customer mutate a booking's schedule or status directly (the
+            ones that exist are staff-permission-gated). Rather than leave
+            these as enabled buttons with no handler, they hand off to a
+            prefilled WhatsApp message to support — a real action, not a
+            silent no-op, until a proper customer-facing endpoint exists. */}
         <div className="relative group">
-          <button
-            disabled={!canReschedule}
-            className="flex items-center gap-2 px-4 py-2.5 bg-white border border-[#0F172A]/15 text-[#0F172A] rounded-xl text-sm font-medium hover:bg-slate-50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+          <a
+            href={
+              canReschedule
+                ? `https://wa.me/919876543210?text=${encodeURIComponent(`Hi, I'd like to reschedule booking ${booking.id} (${booking.service}).`)}`
+                : undefined
+            }
+            target={canReschedule ? '_blank' : undefined}
+            rel={canReschedule ? 'noreferrer' : undefined}
+            aria-disabled={!canReschedule}
+            className={`flex items-center gap-2 px-4 py-2.5 bg-white border border-[#0F172A]/15 text-[#0F172A] rounded-xl text-sm font-medium transition-colors ${
+              canReschedule ? 'hover:bg-slate-50' : 'opacity-40 pointer-events-none'
+            }`}
           >
             <RotateCcw className="w-4 h-4" /> Reschedule
-          </button>
+          </a>
           {!canReschedule && booking.status !== 'completed' && booking.status !== 'cancelled' && (
             <div className="absolute bottom-full left-0 mb-2 w-56 p-2 bg-[#0F172A] text-white text-xs rounded-lg opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none z-10">
               Contact support to change a booking already in progress
@@ -303,12 +354,21 @@ export default function ServiceDetailsPage() {
           )}
         </div>
         <div className="relative group">
-          <button
-            disabled={!canReschedule}
-            className="flex items-center gap-2 px-4 py-2.5 bg-white border border-rose-200 text-rose-600 rounded-xl text-sm font-medium hover:bg-rose-50 transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+          <a
+            href={
+              canReschedule
+                ? `https://wa.me/919876543210?text=${encodeURIComponent(`Hi, I'd like to cancel booking ${booking.id} (${booking.service}).`)}`
+                : undefined
+            }
+            target={canReschedule ? '_blank' : undefined}
+            rel={canReschedule ? 'noreferrer' : undefined}
+            aria-disabled={!canReschedule}
+            className={`flex items-center gap-2 px-4 py-2.5 bg-white border border-rose-200 text-rose-600 rounded-xl text-sm font-medium transition-colors ${
+              canReschedule ? 'hover:bg-rose-50' : 'opacity-40 pointer-events-none'
+            }`}
           >
             <X className="w-4 h-4" /> Cancel
-          </button>
+          </a>
         </div>
         <a
           href={`https://wa.me/919876543210?text=Hi%2C%20I%20need%20help%20with%20booking%20${booking.id}`}
@@ -339,16 +399,21 @@ export default function ServiceDetailsPage() {
                 </button>
               ))}
             </div>
+            {respondError && (
+              <p className="text-xs text-rose-600 mb-3">
+                {respondError.data?.message || 'Could not save your response. Please try again.'}
+              </p>
+            )}
             <div className="flex gap-3">
               <button onClick={() => setRejectOpen(false)} className="flex-1 py-2.5 text-sm font-medium text-[#0F172A]/70 hover:bg-slate-100 rounded-xl transition-colors">
                 Cancel
               </button>
               <button
-                disabled={!rejectReason}
-                onClick={() => { setEstimateStatus('Rejected'); setRejectOpen(false); }}
+                disabled={!rejectReason || isResponding}
+                onClick={confirmRejectEstimate}
                 className="flex-1 py-2.5 bg-rose-600 text-white rounded-xl text-sm font-medium hover:bg-rose-700 transition-colors disabled:opacity-40"
               >
-                Confirm Reject
+                {isResponding ? 'Saving…' : 'Confirm Reject'}
               </button>
             </div>
           </div>

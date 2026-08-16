@@ -54,33 +54,33 @@ export default function CreateCustomerModal({ isOpen, onClose, onSave }) {
 
     return (
         <div className="fixed inset-0 z-[60] bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4">
-            <div className="w-full max-w-md bg-white rounded-2xl shadow-2xl">
-                <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200">
-                    <h2 className="text-lg font-bold text-slate-900 flex items-center gap-2">
-                        <UserPlus className="w-5 h-5 text-blue-600" /> Add Customer
+            <div className="w-full max-w-md bg-white dark:bg-slate-900 rounded-2xl shadow-2xl">
+                <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-800">
+                    <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                        <UserPlus className="w-5 h-5 text-blue-600 dark:text-blue-400" /> Add Customer
                     </h2>
-                    <button onClick={onClose} className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-colors">
+                    <button onClick={onClose} className="p-2 text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors">
                         <X className="w-5 h-5" />
                     </button>
                 </div>
 
                 <form onSubmit={handleSubmit} className="p-6 space-y-4">
                     <div>
-                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Full Name</label>
+                        <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5">Full Name</label>
                         <input
                             type="text"
                             value={form.name}
                             onChange={(e) => update('name', e.target.value)}
                             placeholder="Priya Sharma"
-                            className="w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                            className="w-full px-3 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                             required
                         />
                     </div>
 
                     <div>
-                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">Mobile Number</label>
-                        <div className="flex items-center border border-slate-200 rounded-lg overflow-hidden focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:border-blue-500">
-                            <span className="px-3 py-2.5 bg-slate-50 text-sm text-slate-600 border-r border-slate-200">+91</span>
+                        <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5">Mobile Number</label>
+                        <div className="flex items-center border border-slate-200 dark:border-slate-700 rounded-lg overflow-hidden focus-within:ring-2 focus-within:ring-blue-500/20 focus-within:border-blue-500">
+                            <span className="px-3 py-2.5 bg-slate-50 dark:bg-slate-800 text-sm text-slate-600 dark:text-slate-300 border-r border-slate-200 dark:border-slate-700">+91</span>
                             <input
                                 type="tel"
                                 inputMode="numeric"
@@ -88,59 +88,59 @@ export default function CreateCustomerModal({ isOpen, onClose, onSave }) {
                                 value={form.phone}
                                 onChange={(e) => update('phone', e.target.value.replace(/\D/g, ''))}
                                 placeholder="98765 43210"
-                                className="flex-1 px-3 py-2.5 text-sm outline-none"
+                                className="flex-1 px-3 py-2.5 text-sm bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 outline-none"
                                 required
                             />
                         </div>
-                        <p className="text-xs text-slate-400 mt-1">Used to match this customer if they later sign in on the website — same phone number, same profile.</p>
+                        <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">Used to match this customer if they later sign in on the website — same phone number, same profile.</p>
                     </div>
 
                     <div>
-                        <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
-                            Email <span className="text-slate-400 normal-case font-normal">(optional)</span>
+                        <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5">
+                            Email <span className="text-slate-400 dark:text-slate-500 normal-case font-normal">(optional)</span>
                         </label>
                         <input
                             type="email"
                             value={form.email}
                             onChange={(e) => update('email', e.target.value)}
                             placeholder="customer@email.com"
-                            className="w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                            className="w-full px-3 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                         />
                     </div>
 
                     <div className="grid grid-cols-2 gap-3">
                         <div>
-                            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">City</label>
+                            <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5">City</label>
                             <select
                                 value={form.city}
                                 onChange={(e) => update('city', e.target.value)}
-                                className="w-full px-3 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white"
+                                className="w-full px-3 py-2.5 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white dark:bg-slate-800"
                             >
                                 <option value="Bhilai">Bhilai</option>
                                 <option value="Durg">Durg</option>
                             </select>
                         </div>
                         <div>
-                            <label className="block text-xs font-bold text-slate-500 uppercase tracking-wider mb-1.5">
-                                Address <span className="text-slate-400 normal-case font-normal">(optional)</span>
+                            <label className="block text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider mb-1.5">
+                                Address <span className="text-slate-400 dark:text-slate-500 normal-case font-normal">(optional)</span>
                             </label>
                             <div className="relative">
-                                <MapPin className="absolute left-3 top-3 w-3.5 h-3.5 text-slate-400" />
+                                <MapPin className="absolute left-3 top-3 w-3.5 h-3.5 text-slate-400 dark:text-slate-500" />
                                 <input
                                     type="text"
                                     value={form.addressLine}
                                     onChange={(e) => update('addressLine', e.target.value)}
                                     placeholder="Sector 6"
-                                    className="w-full pl-8 pr-3 py-2.5 border border-slate-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
+                                    className="w-full pl-8 pr-3 py-2.5 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500"
                                 />
                             </div>
                         </div>
                     </div>
 
-                    {error && <p className="text-xs text-rose-600">{error}</p>}
+                    {error && <p className="text-xs text-rose-600 dark:text-rose-400">{error}</p>}
 
                     <div className="flex items-center justify-end gap-3 pt-2">
-                        <button type="button" onClick={onClose} className="px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-100 rounded-xl transition-colors">
+                        <button type="button" onClick={onClose} className="px-4 py-2.5 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors">
                             Cancel
                         </button>
                         <button type="submit" className="flex items-center gap-2 px-5 py-2.5 bg-blue-600 text-white rounded-xl text-sm font-medium hover:bg-blue-700 transition-colors shadow-sm">

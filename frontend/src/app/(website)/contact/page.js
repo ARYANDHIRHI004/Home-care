@@ -1,6 +1,7 @@
 'use client';
 
 import React, { useState } from 'react';
+import Link from 'next/link';
 import { motion, AnimatePresence } from 'framer-motion';
 import { 
   MapPin, Phone, Mail, Clock, MessageCircle, Building, 
@@ -46,10 +47,10 @@ function HeroSection() {
               Have questions, need assistance, or want to book a service? Our team is ready to help you with quick responses and professional support.
             </motion.p>
             <motion.div variants={fadeUp} className="flex flex-col sm:flex-row items-center justify-center lg:justify-start gap-4">
-              <button className="w-full sm:w-auto px-8 py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-semibold shadow-lg shadow-blue-600/20 transition-all hover:shadow-xl hover:-translate-y-0.5 flex items-center justify-center gap-2">
+              <Link href="/services" className="w-full sm:w-auto px-8 py-4 bg-blue-600 hover:bg-blue-700 text-white rounded-2xl font-semibold shadow-lg shadow-blue-600/20 transition-all hover:shadow-xl hover:-translate-y-0.5 flex items-center justify-center gap-2">
                 Book a Service <ArrowRight className="w-5 h-5" />
-              </button>
-              <a href="tel:+919876543210" className="w-full sm:w-auto px-8 py-4 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-2xl font-semibold shadow-sm transition-all flex items-center justify-center gap-2">
+              </Link>
+              <a href="tel:+919111466642" className="w-full sm:w-auto px-8 py-4 bg-white hover:bg-slate-50 text-slate-700 border border-slate-200 rounded-2xl font-semibold shadow-sm transition-all flex items-center justify-center gap-2">
                 <Phone className="w-5 h-5 text-blue-600" /> Call Now
               </a>
             </motion.div>
@@ -91,10 +92,10 @@ function ContactCards() {
       title: 'Call Us',
       icon: Phone,
       color: 'blue',
-      detail: '+91 98765 43210',
+      detail: '+91 91114 66642',
       subtext: 'Available: 9 AM - 8 PM',
       action: 'Call Now',
-      href: 'tel:+919876543210'
+      href: 'tel:+919111466642'
     },
     {
       title: 'WhatsApp',
@@ -109,10 +110,10 @@ function ContactCards() {
       title: 'Email',
       icon: Mail,
       color: 'orange',
-      detail: 'support@homecare.in',
+      detail: 'homecarre2405@gmail.com',
       subtext: 'Response within 24 Hours',
       action: 'Send Email',
-      href: 'mailto:support@homecare.in'
+      href: 'mailto:homecarre2405@gmail.com'
     },
     {
       title: 'Office',
@@ -284,7 +285,7 @@ function ContactForm() {
                         required 
                         value={phone}
                         onChange={e => setPhone(e.target.value)}
-                        placeholder="+91 98765 43210" 
+                        placeholder="+91 91114 66642" 
                         className="w-full pl-11 pr-4 py-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all" 
                       />
                     </div>
@@ -624,7 +625,7 @@ function FinalCTA() {
               <button className="px-8 py-4 bg-white text-blue-700 font-bold rounded-2xl shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all">
                 Book Service Online
               </button>
-              <a href="tel:+919876543210" className="px-8 py-4 bg-blue-700 hover:bg-blue-800 text-white border border-blue-500 font-bold rounded-2xl transition-all">
+              <a href="tel:+919111466642" className="px-8 py-4 bg-blue-700 hover:bg-blue-800 text-white border border-blue-500 font-bold rounded-2xl transition-all">
                 Call Support Team
               </a>
             </div>
@@ -650,7 +651,7 @@ export default function ContactPage() {
       
       {/* Sticky Mobile Buttons (visible only on small screens) */}
       <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-slate-200 p-4 md:hidden z-50 flex gap-4 pb-safe">
-        <a href="tel:+919876543210" className="flex-1 bg-blue-600 text-white font-semibold py-3 rounded-xl flex items-center justify-center gap-2">
+        <a href="tel:+919111466642" className="flex-1 bg-blue-600 text-white font-semibold py-3 rounded-xl flex items-center justify-center gap-2">
           <Phone className="w-5 h-5" /> Call
         </a>
         <a href="#" className="flex-1 bg-green-500 text-white font-semibold py-3 rounded-xl flex items-center justify-center gap-2">

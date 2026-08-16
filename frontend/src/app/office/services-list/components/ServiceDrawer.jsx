@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { X, Image as ImageIcon, Type, AlignLeft, Save, Briefcase, IndianRupee, Clock, ShieldCheck, Loader2 } from 'lucide-react';
 import { useCreateServiceMutation, useUpdateServiceMutation } from '@/store/api/serviceApi';
 import { useGetCategoriesQuery } from '@/store/api/categoryApi';
+import ImageUploader from '@/components/common/ImageUploader';
 
 export default function ServiceDrawer({ service, isOpen, onClose }) {
     const isNew = !service || !service._raw;
@@ -16,6 +17,7 @@ export default function ServiceDrawer({ service, isOpen, onClose }) {
     const [basePrice, setBasePrice] = useState('');
     const [visitCharges, setVisitCharges] = useState('0');
     const [description, setDescription] = useState('');
+    const [images, setImages] = useState([]);
     const [errorMsg, setErrorMsg] = useState('');
 
     useEffect(() => {
@@ -25,16 +27,19 @@ export default function ServiceDrawer({ service, isOpen, onClose }) {
             setBasePrice(String(service._raw.basePrice || ''));
             setVisitCharges(String(service._raw.visitCharges || '0'));
             setDescription(service._raw.description || '');
+            setImages(service._raw.images || []);
         } else if (service) {
             setName(service.name || '');
             setBasePrice(String(service.basePrice || ''));
             setDescription(service.description || '');
+            setImages(service.images || []);
         } else {
             setName('');
             setCategoryId(categories[0]?._id || '');
             setBasePrice('');
             setVisitCharges('0');
             setDescription('');
+            setImages([]);
         }
         setErrorMsg('');
     }, [service, isOpen, categories]);
@@ -61,6 +66,7 @@ export default function ServiceDrawer({ service, isOpen, onClose }) {
             basePrice: Number(basePrice) || 0,
             visitCharges: Number(visitCharges) || 0,
             description: description.trim(),
+            images,
         };
 
         try {
@@ -80,41 +86,41 @@ export default function ServiceDrawer({ service, isOpen, onClose }) {
     return (
         <div className="fixed inset-0 z-50 bg-slate-900/20 backdrop-blur-sm flex justify-end" onClick={onClose}>
             <div
-                className="w-full max-w-2xl bg-white shadow-2xl flex flex-col h-full animate-in slide-in-from-right duration-300"
+                className="w-full max-w-2xl bg-white dark:bg-slate-900 shadow-2xl flex flex-col h-full animate-in slide-in-from-right duration-300"
                 onClick={e => e.stopPropagation()}
             >
                 {/* Header */}
-                <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 bg-white flex-shrink-0">
+                <div className="flex items-center justify-between px-6 py-4 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex-shrink-0">
                     <div>
-                        <h2 className="text-lg font-bold text-slate-900">
+                        <h2 className="text-lg font-bold text-slate-900 dark:text-slate-100">
                             {isNew ? 'New Service' : 'Edit Service'}
                         </h2>
-                        {service && <p className="text-xs text-slate-500 font-mono mt-0.5">{service.id}</p>}
+                        {service && <p className="text-xs text-slate-500 dark:text-slate-400 font-mono mt-0.5">{service.id}</p>}
                     </div>
-                    <button onClick={onClose} className="p-2 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-colors">
+                    <button onClick={onClose} className="p-2 text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors">
                         <X className="w-5 h-5" />
                     </button>
                 </div>
 
                 {/* Scrollable Body */}
-                <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 bg-slate-50/50 space-y-6">
+                <form onSubmit={handleSubmit} className="flex-1 overflow-y-auto p-6 bg-slate-50/50 dark:bg-slate-900/50 space-y-6">
                     {errorMsg && (
-                        <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-xs text-red-600">
+                        <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-xs text-red-600 dark:text-red-400">
                             {errorMsg}
                         </div>
                     )}
 
                     {/* Basic Info */}
-                    <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm space-y-4">
-                        <h3 className="text-sm font-semibold text-slate-900 mb-4 flex items-center gap-1.5"><Type className="w-4 h-4" /> Basic Information</h3>
-                        
+                    <div className="bg-white dark:bg-slate-800/50 p-5 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm space-y-4">
+                        <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100 mb-4 flex items-center gap-1.5"><Type className="w-4 h-4" /> Basic Information</h3>
+
                         <div>
-                            <label className="block text-xs font-semibold text-slate-700 mb-1.5">Service Name *</label>
-                            <input 
-                                type="text" 
+                            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Service Name *</label>
+                            <input
+                                type="text"
                                 value={name}
                                 onChange={e => setName(e.target.value)}
-                                className="w-full text-sm border border-slate-200 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white" 
+                                className="w-full text-sm border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-800"
                                 placeholder="e.g. Deep Home Cleaning (3 BHK)"
                                 required
                             />
@@ -122,11 +128,11 @@ export default function ServiceDrawer({ service, isOpen, onClose }) {
 
                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                             <div>
-                                <label className="block text-xs font-semibold text-slate-700 mb-1.5">Category *</label>
-                                <select 
+                                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Category *</label>
+                                <select
                                     value={categoryId}
                                     onChange={e => setCategoryId(e.target.value)}
-                                    className="w-full text-sm border border-slate-200 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white cursor-pointer"
+                                    className="w-full text-sm border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-800 cursor-pointer"
                                     required
                                 >
                                     <option value="">Select Category</option>
@@ -143,13 +149,13 @@ export default function ServiceDrawer({ service, isOpen, onClose }) {
                                 </select>
                             </div>
                             <div>
-                                <label className="block text-xs font-semibold text-slate-700 mb-1.5">Base Price (₹) *</label>
-                                <input 
-                                    type="number" 
+                                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Base Price (₹) *</label>
+                                <input
+                                    type="number"
                                     value={basePrice}
                                     onChange={e => setBasePrice(e.target.value)}
                                     placeholder="499"
-                                    className="w-full text-sm border border-slate-200 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                                    className="w-full text-sm border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-800"
                                     required
                                     min="0"
                                 />
@@ -157,29 +163,42 @@ export default function ServiceDrawer({ service, isOpen, onClose }) {
                         </div>
 
                         <div>
-                            <label className="block text-xs font-semibold text-slate-700 mb-1.5">Visit / Inspection Charges (₹)</label>
-                            <input 
-                                type="number" 
+                            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Visit / Inspection Charges (₹)</label>
+                            <input
+                                type="number"
                                 value={visitCharges}
                                 onChange={e => setVisitCharges(e.target.value)}
                                 placeholder="0"
-                                className="w-full text-sm border border-slate-200 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white"
+                                className="w-full text-sm border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-800"
                                 min="0"
                             />
                         </div>
 
                         <div>
-                            <label className="block text-xs font-semibold text-slate-700 mb-1.5 flex items-center gap-1.5">
+                            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5 flex items-center gap-1.5">
                                 <AlignLeft className="w-3.5 h-3.5" /> Description & Inclusions
                             </label>
-                            <textarea 
+                            <textarea
                                 rows={4}
                                 value={description}
                                 onChange={e => setDescription(e.target.value)}
-                                className="w-full text-sm border border-slate-200 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white resize-none" 
+                                className="w-full text-sm border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-800 resize-none"
                                 placeholder="Details about this service, scope of work, etc."
                             />
                         </div>
+                    </div>
+
+                    {/* Images */}
+                    <div className="bg-white dark:bg-slate-800/50 p-5 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm space-y-4">
+                        <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100 mb-4 flex items-center gap-1.5"><ImageIcon className="w-4 h-4" /> Service Images</h3>
+                        <ImageUploader
+                            value={images}
+                            onChange={setImages}
+                            folder="services"
+                            maxFiles={6}
+                            label="Upload service images"
+                            helpText="Shown to customers on the booking page — up to 6 images, 5MB each."
+                        />
                     </div>
 
                     {/* Footer Actions */}
@@ -187,7 +206,7 @@ export default function ServiceDrawer({ service, isOpen, onClose }) {
                         <button
                             type="button"
                             onClick={onClose}
-                            className="px-4 py-2.5 rounded-lg border border-slate-200 text-slate-700 text-sm font-medium hover:bg-slate-100 transition-colors"
+                            className="px-4 py-2.5 rounded-lg border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 text-sm font-medium hover:bg-slate-100 dark:hover:bg-slate-800 transition-colors"
                         >
                             Cancel
                         </button>

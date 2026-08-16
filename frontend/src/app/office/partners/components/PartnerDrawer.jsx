@@ -3,31 +3,36 @@
 import { X, User, ShieldCheck, CreditCard, Activity, Briefcase, FileText, Calendar, Star, Phone, Mail, MapPin, Loader2, Save } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useCreatePartnerMutation, useUpdatePartnerMutation } from '@/store/api/partnerApi';
+import { useGetCategoriesQuery } from '@/store/api/categoryApi';
 
 export default function PartnerDrawer({ partner, isOpen, onClose }) {
     const isNew = !partner || !partner._raw;
     const [createPartner, { isLoading: isCreating }] = useCreatePartnerMutation();
     const [updatePartner, { isLoading: isUpdating }] = useUpdatePartnerMutation();
+    // Skill/category is a growing collection admins manage on the Categories
+    // page, not a fixed enum — comes from its own live query, not the
+    // /config/enums mechanism, so it never goes stale as categories are added.
+    const { data: categories = [] } = useGetCategoriesQuery('active=true', { skip: !isOpen });
 
     const [activeTab, setActiveTab] = useState('overview');
     const [name, setName] = useState('');
     const [phone, setPhone] = useState('');
-    const [skill, setSkill] = useState('Plumbing');
+    const [skill, setSkill] = useState('');
     const [errorMsg, setErrorMsg] = useState('');
 
     useEffect(() => {
         if (partner && partner._raw) {
             setName(partner._raw.name || '');
             setPhone(partner._raw.phone || '');
-            setSkill(partner._raw.skills?.[0] || 'Plumbing');
+            setSkill(partner._raw.skills?.[0] || '');
         } else if (partner) {
             setName(partner.name || '');
             setPhone(partner.phone || '');
-            setSkill(partner.skill || 'Plumbing');
+            setSkill(partner.skill || '');
         } else {
             setName('');
             setPhone('');
-            setSkill('Plumbing');
+            setSkill('');
         }
         setErrorMsg('');
     }, [partner, isOpen]);
@@ -51,8 +56,11 @@ export default function PartnerDrawer({ partner, isOpen, onClose }) {
         const payload = {
             name: name.trim(),
             phone: phone.trim(),
-            skills: [skill],
-            active: true,
+            skills: skill ? [skill] : [],
+            // Editing and saving used to force every partner back to active
+            // regardless of their real state — preserve it on update, only
+            // default true for a brand-new partner.
+            active: partner?._raw ? partner._raw.active !== false : true,
         };
 
         try {
@@ -79,7 +87,7 @@ export default function PartnerDrawer({ partner, isOpen, onClose }) {
     return (
         <div className="fixed inset-0 z-50 bg-slate-900/20 backdrop-blur-sm flex justify-end" onClick={onClose}>
             <div
-                className="w-full max-w-4xl bg-white shadow-2xl flex flex-col h-full animate-in slide-in-from-right duration-300"
+                className="w-full max-w-4xl bg-white dark:bg-slate-900 shadow-2xl flex flex-col h-full animate-in slide-in-from-right duration-300"
                 onClick={e => e.stopPropagation()}
             >
                 {/* Header Profile Section */}
@@ -100,8 +108,15 @@ export default function PartnerDrawer({ partner, isOpen, onClose }) {
                                     {isNew ? 'Add New Partner' : (name || partner?.name)}
                                 </h2>
                                 {!isNew && (
-                                    <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wide bg-emerald-500/20 text-emerald-400 border border-emerald-500/30">
-                                        {partner?.status || 'Active'}
+                                    // ServicePartner has no status enum — just a boolean `active`
+                                    // field. This previously always read "Active" regardless of
+                                    // the real value.
+                                    <span className={`inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-bold uppercase tracking-wide border ${
+                                        partner?._raw?.active !== false
+                                            ? 'bg-emerald-500/20 text-emerald-400 border-emerald-500/30'
+                                            : 'bg-slate-500/20 text-slate-400 border-slate-500/30'
+                                    }`}>
+                                        {partner?._raw?.active !== false ? 'Active' : 'Inactive'}
                                     </span>
                                 )}
                             </div>
@@ -140,10 +155,10 @@ export default function PartnerDrawer({ partner, isOpen, onClose }) {
 
                 {/* Scrollable Body */}
                 <form onSubmit={handleSubmit} className="flex-1 flex flex-col min-h-0">
-                    <div className="flex-1 overflow-y-auto bg-slate-50 p-8">
+                    <div className="flex-1 overflow-y-auto bg-slate-50 dark:bg-slate-900/50 p-8">
                         <div className="max-w-3xl mx-auto space-y-6">
                             {errorMsg && (
-                                <div className="p-3 bg-red-50 border border-red-200 rounded-lg text-xs text-red-600">
+                                <div className="p-3 bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg text-xs text-red-600 dark:text-red-400">
                                     {errorMsg}
                                 </div>
                             )}
@@ -152,46 +167,44 @@ export default function PartnerDrawer({ partner, isOpen, onClose }) {
                             {activeTab === 'overview' && (
                                 <div className="space-y-6 animate-in fade-in duration-200">
                                     {/* Personal Details */}
-                                    <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
-                                        <h3 className="text-sm font-bold text-slate-900 uppercase tracking-wider flex items-center gap-2">
-                                            <User className="w-4 h-4 text-blue-600" /> Partner Details
+                                    <div className="bg-white dark:bg-slate-800/50 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm space-y-4">
+                                        <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 uppercase tracking-wider flex items-center gap-2">
+                                            <User className="w-4 h-4 text-blue-600 dark:text-blue-400" /> Partner Details
                                         </h3>
                                         <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                                             <div>
-                                                <label className="block text-xs font-semibold text-slate-700 mb-1.5">Full Name *</label>
-                                                <input 
-                                                    type="text" 
-                                                    value={name} 
-                                                    onChange={e => setName(e.target.value)} 
-                                                    className="w-full text-sm border border-slate-200 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white" 
+                                                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Full Name *</label>
+                                                <input
+                                                    type="text"
+                                                    value={name}
+                                                    onChange={e => setName(e.target.value)}
+                                                    className="w-full text-sm border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-800"
                                                     placeholder="e.g. Rajesh Kumar"
-                                                    required 
+                                                    required
                                                 />
                                             </div>
                                             <div>
-                                                <label className="block text-xs font-semibold text-slate-700 mb-1.5">Phone Number *</label>
-                                                <input 
-                                                    type="text" 
-                                                    value={phone} 
-                                                    onChange={e => setPhone(e.target.value)} 
-                                                    className="w-full text-sm border border-slate-200 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white" 
+                                                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Phone Number *</label>
+                                                <input
+                                                    type="text"
+                                                    value={phone}
+                                                    onChange={e => setPhone(e.target.value)}
+                                                    className="w-full text-sm border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-800"
                                                     placeholder="+91 98765 43210"
-                                                    required 
+                                                    required
                                                 />
                                             </div>
                                             <div className="sm:col-span-2">
-                                                <label className="block text-xs font-semibold text-slate-700 mb-1.5">Primary Skill / Category</label>
-                                                <select 
-                                                    value={skill} 
-                                                    onChange={e => setSkill(e.target.value)} 
-                                                    className="w-full text-sm border border-slate-200 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white cursor-pointer"
+                                                <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Primary Skill / Category</label>
+                                                <select
+                                                    value={skill}
+                                                    onChange={e => setSkill(e.target.value)}
+                                                    className="w-full text-sm border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-800 cursor-pointer"
                                                 >
-                                                    <option value="Plumbing">Plumbing</option>
-                                                    <option value="AC Repair">AC Repair</option>
-                                                    <option value="Deep Cleaning">Deep Cleaning</option>
-                                                    <option value="Electrical">Electrical</option>
-                                                    <option value="Pest Control">Pest Control</option>
-                                                    <option value="Painting">Painting</option>
+                                                    <option value="">Select category</option>
+                                                    {categories.map(c => (
+                                                        <option key={c._id} value={c.name}>{c.name}</option>
+                                                    ))}
                                                 </select>
                                             </div>
                                         </div>
@@ -203,17 +216,19 @@ export default function PartnerDrawer({ partner, isOpen, onClose }) {
                             {activeTab === 'performance' && (
                                 <div className="space-y-6 animate-in fade-in duration-200">
                                     <div className="grid grid-cols-3 gap-4">
-                                        <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
-                                            <p className="text-xs font-semibold text-slate-500 mb-1">Completed Jobs</p>
-                                            <p className="text-2xl font-bold text-slate-900">{partner?.jobs || 24}</p>
+                                        <div className="bg-white dark:bg-slate-800/50 p-5 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
+                                            <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">Completed Jobs</p>
+                                            <p className="text-2xl font-bold text-slate-900 dark:text-slate-100">{partner?.jobs || 24}</p>
                                         </div>
-                                        <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
-                                            <p className="text-xs font-semibold text-slate-500 mb-1">Average Rating</p>
-                                            <p className="text-2xl font-bold text-slate-900">{partner?.rating || 4.8}</p>
+                                        <div className="bg-white dark:bg-slate-800/50 p-5 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
+                                            <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">Average Rating</p>
+                                            <p className="text-2xl font-bold text-slate-900 dark:text-slate-100">{partner?.rating || 4.8}</p>
                                         </div>
-                                        <div className="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
-                                            <p className="text-xs font-semibold text-slate-500 mb-1">Status</p>
-                                            <p className="text-2xl font-bold text-emerald-600">Active</p>
+                                        <div className="bg-white dark:bg-slate-800/50 p-5 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm">
+                                            <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mb-1">Status</p>
+                                            <p className={`text-2xl font-bold ${partner?._raw?.active !== false ? 'text-emerald-600 dark:text-emerald-400' : 'text-slate-400 dark:text-slate-500'}`}>
+                                                {partner?._raw?.active !== false ? 'Active' : 'Inactive'}
+                                            </p>
                                         </div>
                                     </div>
                                 </div>
@@ -221,12 +236,12 @@ export default function PartnerDrawer({ partner, isOpen, onClose }) {
 
                             {/* TAB: DOCUMENTS */}
                             {activeTab === 'documents' && (
-                                <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm space-y-4">
-                                    <h3 className="text-sm font-bold text-slate-900 flex items-center gap-2">
-                                        <FileText className="w-4 h-4 text-blue-600" /> Verification Documents
+                                <div className="bg-white dark:bg-slate-800/50 p-6 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm space-y-4">
+                                    <h3 className="text-sm font-bold text-slate-900 dark:text-slate-100 flex items-center gap-2">
+                                        <FileText className="w-4 h-4 text-blue-600 dark:text-blue-400" /> Verification Documents
                                     </h3>
-                                    <p className="text-xs text-slate-500">Aadhaar Card, Police Verification, and Skills Certifications.</p>
-                                    <div className="p-4 border border-dashed border-slate-300 rounded-xl text-center text-xs text-slate-500 bg-slate-50">
+                                    <p className="text-xs text-slate-500 dark:text-slate-400">Aadhaar Card, Police Verification, and Skills Certifications.</p>
+                                    <div className="p-4 border border-dashed border-slate-300 dark:border-slate-600 rounded-xl text-center text-xs text-slate-500 dark:text-slate-400 bg-slate-50 dark:bg-slate-900/50">
                                         Documents are automatically verified during partner onboarding.
                                     </div>
                                 </div>
@@ -234,20 +249,20 @@ export default function PartnerDrawer({ partner, isOpen, onClose }) {
 
                             {/* TAB: HISTORY */}
                             {activeTab === 'history' && (
-                                <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
+                                <div className="bg-white dark:bg-slate-800/50 rounded-2xl border border-slate-200 dark:border-slate-700 shadow-sm overflow-hidden">
                                     <table className="w-full text-left text-sm">
-                                        <thead className="bg-slate-50 border-b border-slate-100">
+                                        <thead className="bg-slate-50 dark:bg-slate-900/50 border-b border-slate-100 dark:border-slate-700">
                                             <tr>
-                                                <th className="px-5 py-3 text-xs font-semibold text-slate-500">Date</th>
-                                                <th className="px-5 py-3 text-xs font-semibold text-slate-500">Booking</th>
-                                                <th className="px-5 py-3 text-xs font-semibold text-slate-500">Service</th>
+                                                <th className="px-5 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400">Date</th>
+                                                <th className="px-5 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400">Booking</th>
+                                                <th className="px-5 py-3 text-xs font-semibold text-slate-500 dark:text-slate-400">Service</th>
                                             </tr>
                                         </thead>
-                                        <tbody className="divide-y divide-slate-100">
-                                            <tr className="hover:bg-slate-50">
-                                                <td className="px-5 py-3 text-slate-600">Recent</td>
-                                                <td className="px-5 py-3 font-medium text-blue-600">#WO-2026-1024</td>
-                                                <td className="px-5 py-3 text-slate-700">{skill}</td>
+                                        <tbody className="divide-y divide-slate-100 dark:divide-slate-700">
+                                            <tr className="hover:bg-slate-50 dark:hover:bg-slate-700/50">
+                                                <td className="px-5 py-3 text-slate-600 dark:text-slate-400">Recent</td>
+                                                <td className="px-5 py-3 font-medium text-blue-600 dark:text-blue-400">#WO-2026-1024</td>
+                                                <td className="px-5 py-3 text-slate-700 dark:text-slate-300">{skill}</td>
                                             </tr>
                                         </tbody>
                                     </table>
@@ -257,18 +272,18 @@ export default function PartnerDrawer({ partner, isOpen, onClose }) {
                     </div>
 
                     {/* Footer Actions */}
-                    <div className="flex-shrink-0 px-6 py-4 border-t border-slate-200 bg-white flex justify-end gap-3 z-10">
-                        <button 
-                            type="button" 
-                            onClick={onClose} 
-                            className="px-4 py-2 border border-slate-200 text-slate-700 rounded-lg text-sm font-medium hover:bg-slate-50 transition-colors"
+                    <div className="flex-shrink-0 px-6 py-4 border-t border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex justify-end gap-3 z-10">
+                        <button
+                            type="button"
+                            onClick={onClose}
+                            className="px-4 py-2 border border-slate-200 dark:border-slate-700 text-slate-700 dark:text-slate-300 rounded-lg text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors"
                         >
                             Cancel
                         </button>
-                        <button 
-                            type="submit" 
+                        <button
+                            type="submit"
                             disabled={isSubmitting}
-                            className="px-6 py-2 bg-slate-900 text-white rounded-lg text-sm font-medium hover:bg-slate-800 transition-colors shadow-sm flex items-center gap-2 disabled:opacity-60"
+                            className="px-6 py-2 bg-slate-900 dark:bg-slate-700 text-white rounded-lg text-sm font-medium hover:bg-slate-800 dark:hover:bg-slate-600 transition-colors shadow-sm flex items-center gap-2 disabled:opacity-60"
                         >
                             {isSubmitting ? (
                                 <>

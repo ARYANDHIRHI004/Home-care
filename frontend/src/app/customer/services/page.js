@@ -4,7 +4,8 @@ import { useState, useMemo } from 'react';
 import { Search, Wrench } from 'lucide-react';
 import ServiceCard from '@/components/customer/ServiceCard';
 import EmptyState from '@/components/customer/EmptyState';
-import { MOCK_BOOKINGS } from '@/lib/customerData';
+import { useGetCustomerBookingsQuery } from '@/store/api/bookingApi';
+import { mapCustomerBooking } from '@/lib/customerApiMappers';
 
 const TABS = [
   { id: 'active', label: 'Active' },
@@ -27,12 +28,14 @@ const PRIMARY_LABEL = { active: 'Track', upcoming: 'Details', completed: 'Book A
 export default function MyServicesPage() {
   const [tab, setTab] = useState('active');
   const [query, setQuery] = useState('');
+  const { data: rawBookings = [], isLoading, isError } = useGetCustomerBookingsQuery();
+  const bookings = useMemo(() => rawBookings.map(mapCustomerBooking), [rawBookings]);
 
   const filtered = useMemo(() => {
-    return MOCK_BOOKINGS.filter((b) => b.status === tab).filter((b) =>
+    return bookings.filter((b) => b.status === tab).filter((b) =>
       query ? b.service.toLowerCase().includes(query.toLowerCase()) || b.id.toLowerCase().includes(query.toLowerCase()) : true
     );
-  }, [tab, query]);
+  }, [bookings, tab, query]);
 
   return (
     <div className="space-y-5">
@@ -65,7 +68,11 @@ export default function MyServicesPage() {
         />
       </div>
 
-      {filtered.length === 0 ? (
+      {isLoading ? (
+        <div className="py-12 text-center text-sm text-[#0F172A]/50">Loading services...</div>
+      ) : isError ? (
+        <div className="py-12 text-center text-sm text-rose-600">Unable to load services.</div>
+      ) : filtered.length === 0 ? (
         <div className="bg-white border border-[#0F172A]/10 rounded-2xl">
           <EmptyState icon={Wrench} title={EMPTY_COPY[tab].title} description={EMPTY_COPY[tab].description} />
         </div>

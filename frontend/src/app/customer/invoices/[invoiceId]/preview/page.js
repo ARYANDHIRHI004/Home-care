@@ -3,12 +3,29 @@
 import { useParams, useRouter } from 'next/navigation';
 import { ArrowLeft, Printer, Sparkles } from 'lucide-react';
 import StatusPill from '@/components/customer/StatusPill';
-import { findInvoiceById, MOCK_PROFILE } from '@/lib/customerData';
+import { useGetMyInvoiceByIdQuery } from '@/store/api/invoiceApi';
+import { mapCustomerInvoice } from '@/lib/customerApiMappers';
 
 export default function InvoicePreviewPage() {
   const { invoiceId } = useParams();
   const router = useRouter();
-  const invoice = findInvoiceById(invoiceId);
+  const { data: rawInvoice, isLoading, isError } = useGetMyInvoiceByIdQuery(invoiceId);
+  const invoice = rawInvoice ? {
+    ...mapCustomerInvoice(rawInvoice),
+    lineItems: rawInvoice.lineItems || [],
+    tax: Number(rawInvoice.tax || 0),
+    discount: Number(rawInvoice.discount || 0),
+    gst: Number(rawInvoice.tax || 0),
+    booking: {
+      id: rawInvoice.workOrderId?._id || rawInvoice.workOrderId || '-',
+      date: rawInvoice.createdAt ? new Date(rawInvoice.createdAt).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' }) : '-',
+      address: rawInvoice.workOrderId?.address || '-',
+      service: rawInvoice.lineItems?.[0]?.name || 'Service',
+    },
+  } : null;
+
+  if (isLoading) return <div className="py-12 text-center text-sm text-[#0F172A]/50">Loading invoice...</div>;
+  if (isError) return <div className="py-12 text-center text-sm text-rose-600">Unable to load invoice.</div>;
 
   if (!invoice) {
     return (
@@ -59,8 +76,8 @@ export default function InvoicePreviewPage() {
         <div className="grid grid-cols-2 gap-6 mb-8 text-sm">
           <div>
             <p className="text-xs font-bold text-[#0F172A]/40 uppercase tracking-wider mb-1">Billed To</p>
-            <p className="font-medium text-[#0F172A]">{MOCK_PROFILE.name}</p>
-            <p className="text-[#0F172A]/60">{MOCK_PROFILE.phone}</p>
+            <p className="font-medium text-[#0F172A]">Customer</p>
+            <p className="text-[#0F172A]/60">-</p>
             <p className="text-[#0F172A]/60">{invoice.booking.address}</p>
           </div>
           <div>

@@ -9,8 +9,19 @@ export const invoiceApi = apiSlice.injectEndpoints({
                     ? [...(Array.isArray(result) ? result : []).map(({ _id }) => ({ type: 'Invoice', id: _id })), { type: 'Invoice', id: 'LIST' }]
                     : [{ type: 'Invoice', id: 'LIST' }],
         }),
+        getCustomerInvoices: builder.query({
+            query: () => `/api/invoices/me`,
+            providesTags: (result) =>
+                result
+                    ? [...(Array.isArray(result) ? result : []).map(({ _id }) => ({ type: 'Invoice', id: _id })), { type: 'Invoice', id: 'LIST' }]
+                    : [{ type: 'Invoice', id: 'LIST' }],
+        }),
         getInvoiceById: builder.query({
             query: (id) => `/api/invoices/${id}`,
+            providesTags: (result, error, id) => [{ type: 'Invoice', id }],
+        }),
+        getMyInvoiceById: builder.query({
+            query: (id) => `/api/invoices/me/${id}`,
             providesTags: (result, error, id) => [{ type: 'Invoice', id }],
         }),
         createInvoice: builder.mutation({
@@ -34,7 +45,9 @@ export const invoiceApi = apiSlice.injectEndpoints({
 
 export const {
     useGetInvoicesQuery,
+    useGetCustomerInvoicesQuery,
     useGetInvoiceByIdQuery,
+    useGetMyInvoiceByIdQuery,
     useCreateInvoiceMutation,
     useUpdateInvoiceMutation,
     useUpdateInvoicePaymentStatusMutation,

@@ -17,17 +17,17 @@ export default function SendEstimateModal({ isOpen, onClose, estimate, onConfirm
 
     return (
         <div className="fixed inset-0 z-[70] bg-slate-900/40 backdrop-blur-sm flex items-center justify-center p-4">
-            <div className="w-full max-w-sm bg-white rounded-2xl shadow-2xl">
-                <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200">
-                    <h2 className="text-sm font-bold text-slate-900">Send estimate to customer</h2>
-                    <button onClick={onClose} className="p-1.5 text-slate-400 hover:text-slate-600 hover:bg-slate-100 rounded-full transition-colors">
+            <div className="w-full max-w-sm bg-white dark:bg-slate-900 rounded-2xl shadow-2xl">
+                <div className="flex items-center justify-between px-5 py-4 border-b border-slate-200 dark:border-slate-800">
+                    <h2 className="text-sm font-bold text-slate-900 dark:text-slate-100">Send estimate to customer</h2>
+                    <button onClick={onClose} className="p-1.5 text-slate-400 dark:text-slate-500 hover:text-slate-600 dark:hover:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-full transition-colors">
                         <X className="w-4 h-4" />
                     </button>
                 </div>
                 <div className="p-5 space-y-4">
-                    <p className="text-sm text-slate-600">
-                        {estimate?.id} — <span className="font-semibold text-slate-900">{estimate?.finalAmount}</span> will be sent to{' '}
-                        <span className="font-semibold text-slate-900">{estimate?.customer}</span>.
+                    <p className="text-sm text-slate-600 dark:text-slate-400">
+                        {estimate?.id} — <span className="font-semibold text-slate-900 dark:text-slate-100">{estimate?.finalAmount}</span> will be sent to{' '}
+                        <span className="font-semibold text-slate-900 dark:text-slate-100">{estimate?.customer}</span>.
                     </p>
                     <div className="flex gap-2">
                         {['whatsapp', 'email'].map((c) => (
@@ -36,8 +36,8 @@ export default function SendEstimateModal({ isOpen, onClose, estimate, onConfirm
                                 onClick={() => setChannel(c)}
                                 className={`flex-1 px-3 py-2 rounded-lg text-sm font-medium border transition-colors capitalize ${
                                     channel === c
-                                        ? 'bg-blue-50 border-blue-200 text-blue-700'
-                                        : 'bg-white border-slate-200 text-slate-600 hover:bg-slate-50'
+                                        ? 'bg-blue-50 dark:bg-blue-900/30 border-blue-200 dark:border-blue-800 text-blue-700 dark:text-blue-400'
+                                        : 'bg-white dark:bg-slate-800 border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 hover:bg-slate-50 dark:hover:bg-slate-700'
                                 }`}
                             >
                                 {c}
@@ -45,8 +45,8 @@ export default function SendEstimateModal({ isOpen, onClose, estimate, onConfirm
                         ))}
                     </div>
                 </div>
-                <div className="px-5 py-4 border-t border-slate-100 flex justify-end gap-3">
-                    <button onClick={onClose} className="px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-100 rounded-xl transition-colors">
+                <div className="px-5 py-4 border-t border-slate-100 dark:border-slate-800 flex justify-end gap-3">
+                    <button onClick={onClose} className="px-4 py-2 text-sm font-medium text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-xl transition-colors">
                         Cancel
                     </button>
                     <button

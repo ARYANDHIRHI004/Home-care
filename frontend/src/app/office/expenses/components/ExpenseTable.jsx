@@ -1,15 +1,10 @@
 import { MoreHorizontal, ChevronUp, ChevronDown, Receipt, Fuel, Zap, Wifi, Users, Truck, Wrench, ShieldAlert } from 'lucide-react';
 import { useState } from 'react';
-
-const mockExpenses = [
-    { id: 'EXP-1001', category: 'Fuel', description: 'Monthly fuel allowance', vendor: 'IndianOil', amount: 8500, method: 'Corporate Card', paidBy: 'Rahul Admin', date: '24 Oct 2023', receipt: true },
-    { id: 'EXP-1002', category: 'Partner Advance', description: 'Advance for Diwali', vendor: 'Suresh Tech', amount: 5000, method: 'UPI', paidBy: 'Pooja', date: '24 Oct 2023', receipt: false },
-    { id: 'EXP-1003', category: 'Electricity', description: 'Office Electricity Bill', vendor: 'Adani Electricity', amount: 12500, method: 'Bank Transfer', paidBy: 'Auto-Debit', date: '22 Oct 2023', receipt: true },
-    { id: 'EXP-1004', category: 'Internet', description: 'Broadband connection', vendor: 'JioFiber', amount: 2499, method: 'Corporate Card', paidBy: 'Rahul Admin', date: '20 Oct 2023', receipt: true },
-    { id: 'EXP-1005', category: 'Maintenance', description: 'AC Repair Office', vendor: 'Cooling Experts', amount: 3500, method: 'Petty Cash', paidBy: 'Pooja', date: '15 Oct 2023', receipt: true },
-];
+import { useGetExpensesQuery, useDeleteExpenseMutation } from '@/store/api/expenseApi';
 
 export default function ExpenseTable({ searchQuery, onRowClick }) {
+    const { data: rawExpenses = [], isLoading } = useGetExpensesQuery();
+    const [deleteExpense] = useDeleteExpenseMutation();
     const [sortCol, setSortCol] = useState('date');
     const [sortDir, setSortDir] = useState('desc');
     const [openMenuId, setOpenMenuId] = useState(null);
@@ -23,11 +18,25 @@ export default function ExpenseTable({ searchQuery, onRowClick }) {
         ? (sortDir === 'asc' ? <ChevronUp className="w-3.5 h-3.5 text-blue-500" /> : <ChevronDown className="w-3.5 h-3.5 text-blue-500" />)
         : <ChevronDown className="w-3.5 h-3.5 text-slate-300" />;
 
-    const filtered = mockExpenses.filter(e =>
+    const expenses = rawExpenses.map(e => ({
+        id: e._id,
+        displayId: `EXP-${e._id.slice(-4).toUpperCase()}`,
+        category: e.category,
+        description: e.description,
+        vendor: e.vendor || 'Unknown',
+        amount: e.amount,
+        method: e.paymentMethod,
+        paidBy: e.paidBy || 'N/A',
+        date: new Date(e.date).toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' }),
+        receipt: !!e.receiptUrl,
+        _raw: e
+    }));
+
+    const filtered = expenses.filter(e =>
         !searchQuery ||
         e.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
         e.vendor.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        e.id.toLowerCase().includes(searchQuery.toLowerCase())
+        e.displayId.toLowerCase().includes(searchQuery.toLowerCase())
     );
 
     const getCategoryIcon = (category) => {
@@ -85,7 +94,7 @@ export default function ExpenseTable({ searchQuery, onRowClick }) {
                                         </div>
                                         <div>
                                             <div className="font-bold text-slate-900 text-sm">{e.description}</div>
-                                            <div className="text-xs text-slate-500 mt-0.5">{e.id} • {e.category}</div>
+                                            <div className="text-xs text-slate-500 mt-0.5">{e.displayId} • {e.category}</div>
                                         </div>
                                     </div>
                                 </td>
@@ -123,12 +132,12 @@ export default function ExpenseTable({ searchQuery, onRowClick }) {
                                         </button>
                                         {openMenuId === e.id && (
                                             <div className="absolute right-0 top-8 w-48 bg-white rounded-lg shadow-xl border border-slate-200 z-20 py-1">
-                                                <button onClick={() => onRowClick(e)} className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">Edit Expense</button>
+                                                <button onClick={() => onRowClick(e._raw)} className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">Edit Expense</button>
                                                 {!e.receipt && (
                                                     <button className="w-full text-left px-4 py-2 text-sm text-slate-700 hover:bg-slate-50">Upload Receipt</button>
                                                 )}
                                                 <div className="border-t border-slate-100 my-1"></div>
-                                                <button className="w-full text-left px-4 py-2 text-sm text-rose-600 hover:bg-rose-50">Delete</button>
+                                                <button onClick={() => deleteExpense(e.id)} className="w-full text-left px-4 py-2 text-sm text-rose-600 hover:bg-rose-50">Delete</button>
                                             </div>
                                         )}
                                     </div>
