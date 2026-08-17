@@ -1,10 +1,25 @@
 'use client';
 import { useState } from 'react';
-import { Search, Calendar, SlidersHorizontal, X, RotateCcw } from 'lucide-react';
+import { SlidersHorizontal } from 'lucide-react';
 
 const DATE_RANGES = ['Today', 'This Week', 'This Month', 'This Year', 'Custom'];
+const PAYMENT_STATUS_OPTIONS = ['All Statuses', 'unpaid', 'partial', 'paid'];
+const METHOD_OPTIONS = ['All Methods', 'cash', 'upi', 'razorpay'];
 
-export default function RevenueFilters({ activeRange, setActiveRange }) {
+function toLabel(value) {
+    if (value === 'All Statuses' || value === 'All Methods') return value;
+    return value.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+export default function RevenueFilters({
+    activeRange, setActiveRange,
+    customFrom, setCustomFrom,
+    customTo, setCustomTo,
+    paymentStatusFilter, setPaymentStatusFilter,
+    categoryFilter, setCategoryFilter,
+    methodFilter, setMethodFilter,
+    categories = [],
+}) {
     const [showFilters, setShowFilters] = useState(false);
 
     return (
@@ -27,9 +42,9 @@ export default function RevenueFilters({ activeRange, setActiveRange }) {
                     ))}
                     {activeRange === 'Custom' && (
                         <div className="flex items-center gap-2 ml-1">
-                            <input type="date" className="text-xs border border-slate-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                            <input type="date" value={customFrom} onChange={(e) => setCustomFrom(e.target.value)} className="text-xs border border-slate-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500" />
                             <span className="text-slate-400 text-xs font-medium">to</span>
-                            <input type="date" className="text-xs border border-slate-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                            <input type="date" value={customTo} onChange={(e) => setCustomTo(e.target.value)} className="text-xs border border-slate-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500" />
                         </div>
                     )}
                 </div>
@@ -47,21 +62,26 @@ export default function RevenueFilters({ activeRange, setActiveRange }) {
             </div>
 
             {showFilters && (
-                <div className="pt-3 border-t border-slate-100 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-3">
-                    {[
-                        { label: 'Payment Status', options: ['All Statuses', 'Paid', 'Pending', 'Partial', 'Failed'] },
-                        { label: 'Service Category', options: ['All Categories', 'Deep Cleaning', 'Pest Control', 'Painting', 'Plumbing', 'Electrical'] },
-                        { label: 'Payment Method', options: ['All Methods', 'UPI', 'Cash', 'Card', 'Bank Transfer'] },
-                        { label: 'Partner', options: ['All Partners', 'Suresh Kumar', 'Ravi Sharma', 'Priya Singh'] },
-                        { label: 'City', options: ['All Cities', 'Mumbai', 'Pune', 'Nagpur'] },
-                    ].map((f) => (
-                        <div key={f.label}>
-                            <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">{f.label}</label>
-                            <select className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer">
-                                {f.options.map((o) => <option key={o}>{o}</option>)}
-                            </select>
-                        </div>
-                    ))}
+                <div className="pt-3 border-t border-slate-100 grid grid-cols-2 sm:grid-cols-3 gap-3">
+                    <div>
+                        <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Invoice Payment Status</label>
+                        <select value={paymentStatusFilter} onChange={(e) => setPaymentStatusFilter(e.target.value)} className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer">
+                            {PAYMENT_STATUS_OPTIONS.map((o) => <option key={o} value={o}>{toLabel(o)}</option>)}
+                        </select>
+                    </div>
+                    <div>
+                        <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Service Category</label>
+                        <select value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)} className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer">
+                            <option value="All Categories">All Categories</option>
+                            {categories.map((c) => <option key={c} value={c}>{c}</option>)}
+                        </select>
+                    </div>
+                    <div>
+                        <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Payment Method</label>
+                        <select value={methodFilter} onChange={(e) => setMethodFilter(e.target.value)} className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer">
+                            {METHOD_OPTIONS.map((o) => <option key={o} value={o}>{toLabel(o)}</option>)}
+                        </select>
+                    </div>
                 </div>
             )}
         </div>

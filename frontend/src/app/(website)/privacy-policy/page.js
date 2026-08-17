@@ -415,14 +415,14 @@ export default function PrivacyPolicyPage() {
                     <h3 className="text-2xl font-bold mb-2">Questions regarding this Policy?</h3>
                     <p className="text-slate-400 mb-6">Contact our dedicated Privacy Team.</p>
                     <ul className="space-y-3">
-                      <li className="flex items-center gap-3 text-slate-300"><Phone className="w-5 h-5 text-blue-400" /> +91 98765 43210</li>
-                      <li className="flex items-center gap-3 text-slate-300"><Mail className="w-5 h-5 text-blue-400" /> privacy@homecare.in</li>
-                      <li className="flex items-center gap-3 text-slate-300"><Building className="w-5 h-5 text-blue-400" /> 123 HomeCare Tower, New Delhi</li>
+                      <li className="flex items-center gap-3 text-slate-300"><Phone className="w-5 h-5 text-blue-400" /> +91 91114 66642</li>
+                      <li className="flex items-center gap-3 text-slate-300"><Mail className="w-5 h-5 text-blue-400" /> homecarre2405@gmail.com</li>
+                      <li className="flex items-center gap-3 text-slate-300"><Building className="w-5 h-5 text-blue-400" /> Krishna Talkies Road, Risali, Bhilai, Durg</li>
                     </ul>
                   </div>
                   <div className="flex flex-col gap-4 w-full md:w-auto">
-                    <button className="px-8 py-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl transition-colors shadow-lg">Contact Support</button>
-                    <button className="px-8 py-4 bg-white/10 hover:bg-white/20 text-white font-bold rounded-xl transition-colors">Email Us</button>
+                    <a href="/contact" className="px-8 py-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl transition-colors shadow-lg text-center">Contact Support</a>
+                    <a href="mailto:homecarre2405@gmail.com" className="px-8 py-4 bg-white/10 hover:bg-white/20 text-white font-bold rounded-xl transition-colors text-center">Email Us</a>
                   </div>
                 </div>
               </div>

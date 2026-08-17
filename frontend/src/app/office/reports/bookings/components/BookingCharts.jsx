@@ -5,7 +5,6 @@ import {
     PieChart, Pie, Cell,
     XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer
 } from 'recharts';
-import { useGetWorkOrdersQuery } from '@/store/api/workOrderApi';
 
 const RADIAN = Math.PI / 180;
 const renderPctLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent }) => {
@@ -19,6 +18,10 @@ const renderPctLabel = ({ cx, cy, midAngle, innerRadius, outerRadius, percent })
     );
 };
 
+function toLabel(value) {
+    return String(value || '').replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
 function ChartCard({ title, subtitle, children, className = '' }) {
     return (
         <div className={`bg-white rounded-2xl border border-slate-200 shadow-sm p-6 overflow-hidden ${className}`}>
@@ -31,11 +34,12 @@ function ChartCard({ title, subtitle, children, className = '' }) {
     );
 }
 
-export function DailyBookingTrendChart() {
-    const { data: rawWorkOrders = [] } = useGetWorkOrdersQuery();
+function EmptyState() {
+    return <div className="h-[210px] flex items-center justify-center text-sm text-slate-400">No data yet</div>;
+}
 
+export function DailyBookingTrendChart({ bookings = [] }) {
     const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-    const currentDay = new Date().getDay();
     const last7Days = [];
     for (let i = 6; i >= 0; i--) {
         const d = new Date();
@@ -45,13 +49,13 @@ export function DailyBookingTrendChart() {
 
     const dataMap = last7Days.reduce((acc, d) => ({ ...acc, [d]: { day: d, bookings: 0, completed: 0, cancelled: 0 } }), {});
 
-    rawWorkOrders.forEach(wo => {
-        if (!wo.createdAt) return;
-        const d = days[new Date(wo.createdAt).getDay()];
+    bookings.forEach((b) => {
+        if (!b.createdAt) return;
+        const d = days[new Date(b.createdAt).getDay()];
         if (dataMap[d]) {
             dataMap[d].bookings += 1;
-            if (wo.status === 'Completed') dataMap[d].completed += 1;
-            if (wo.status === 'Cancelled') dataMap[d].cancelled += 1;
+            if (b.status === 'completed') dataMap[d].completed += 1;
+            if (b.status === 'cancelled') dataMap[d].cancelled += 1;
         }
     });
 
@@ -75,12 +79,10 @@ export function DailyBookingTrendChart() {
     );
 }
 
-export function BookingByCategoryChart() {
-    const { data: rawWorkOrders = [] } = useGetWorkOrdersQuery();
-
+export function BookingByCategoryChart({ bookings = [] }) {
     const colors = ['#2563EB', '#10B981', '#F59E0B', '#8B5CF6', '#EC4899', '#14B8A6'];
-    const catMap = rawWorkOrders.reduce((acc, wo) => {
-        const cat = wo.enquiryId?.serviceCategory || wo.title || 'Other';
+    const catMap = bookings.reduce((acc, b) => {
+        const cat = b.category || b.serviceName || 'Other';
         acc[cat] = (acc[cat] || 0) + 1;
         return acc;
     }, {});
@@ -92,63 +94,64 @@ export function BookingByCategoryChart() {
 
     return (
         <ChartCard title="Bookings by Service Category" subtitle="Volume distribution across service types">
-            <div className="flex items-center gap-5">
-                <ResponsiveContainer width="50%" height={210}>
-                    <PieChart>
-                        <Pie data={chartData} cx="50%" cy="50%" outerRadius={88}
-                            dataKey="value" labelLine={false} label={renderPctLabel}>
-                            {chartData.map((e, i) => <Cell key={i} fill={e.color} />)}
-                        </Pie>
-                        <Tooltip formatter={(v) => `${v} bookings`} contentStyle={{ borderRadius: 12, border: '1px solid #e2e8f0', fontSize: 12 }} />
-                    </PieChart>
-                </ResponsiveContainer>
-                <div className="flex-1 space-y-2.5 min-w-0">
-                    {chartData.map((item) => {
-                        const total = chartData.reduce((s, i) => s + i.value, 0);
-                        const pct = total > 0 ? ((item.value / total) * 100).toFixed(1) : 0;
-                        return (
-                            <div key={item.name}>
-                                <div className="flex items-center justify-between mb-1">
-                                    <div className="flex items-center gap-2 min-w-0">
-                                        <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: item.color }} />
-                                        <span className="text-xs font-medium text-slate-700 truncate">{item.name}</span>
+            {chartData.length === 0 ? <EmptyState /> : (
+                <div className="flex items-center gap-5">
+                    <ResponsiveContainer width="50%" height={210}>
+                        <PieChart>
+                            <Pie data={chartData} cx="50%" cy="50%" outerRadius={88}
+                                dataKey="value" labelLine={false} label={renderPctLabel}>
+                                {chartData.map((e, i) => <Cell key={i} fill={e.color} />)}
+                            </Pie>
+                            <Tooltip formatter={(v) => `${v} bookings`} contentStyle={{ borderRadius: 12, border: '1px solid #e2e8f0', fontSize: 12 }} />
+                        </PieChart>
+                    </ResponsiveContainer>
+                    <div className="flex-1 space-y-2.5 min-w-0">
+                        {chartData.map((item) => {
+                            const total = chartData.reduce((s, i) => s + i.value, 0);
+                            const pct = total > 0 ? ((item.value / total) * 100).toFixed(1) : 0;
+                            return (
+                                <div key={item.name}>
+                                    <div className="flex items-center justify-between mb-1">
+                                        <div className="flex items-center gap-2 min-w-0">
+                                            <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: item.color }} />
+                                            <span className="text-xs font-medium text-slate-700 truncate">{item.name}</span>
+                                        </div>
+                                        <span className="text-xs font-bold text-slate-900 ml-2 flex-shrink-0">{pct}%</span>
                                     </div>
-                                    <span className="text-xs font-bold text-slate-900 ml-2 flex-shrink-0">{pct}%</span>
+                                    <div className="h-1.5 rounded-full bg-slate-100 overflow-hidden">
+                                        <div className="h-full rounded-full" style={{ width: `${pct}%`, background: item.color }} />
+                                    </div>
                                 </div>
-                                <div className="h-1.5 rounded-full bg-slate-100 overflow-hidden">
-                                    <div className="h-full rounded-full" style={{ width: `${pct}%`, background: item.color }} />
-                                </div>
-                            </div>
-                        );
-                    })}
+                            );
+                        })}
+                    </div>
                 </div>
-            </div>
+            )}
         </ChartCard>
     );
 }
 
-export function BookingStatusChart() {
-    const { data: rawWorkOrders = [] } = useGetWorkOrdersQuery();
-
+export function BookingStatusChart({ bookings = [] }) {
     const colors = {
-        'Completed': '#10B981',
-        'In Progress': '#2563EB',
-        'Assigned': '#3B82F6',
-        'New': '#6366F1',
-        'Open': '#8B5CF6',
-        'Cancelled': '#F43F5E'
+        completed: '#10B981',
+        in_progress: '#2563EB',
+        active: '#3B82F6',
+        confirmed: '#6366F1',
+        upcoming: '#8B5CF6',
+        pending_assignment: '#F59E0B',
+        cancelled: '#F43F5E',
     };
 
-    const statusMap = rawWorkOrders.reduce((acc, wo) => {
-        const status = wo.status || 'New';
+    const statusMap = bookings.reduce((acc, b) => {
+        const status = b.status || 'upcoming';
         acc[status] = (acc[status] || 0) + 1;
         return acc;
     }, {});
 
-    const total = rawWorkOrders.length;
+    const total = bookings.length;
     const chartData = Object.entries(statusMap)
         .map(([name, count]) => ({
-            name,
+            name: toLabel(name),
             value: total > 0 ? Number(((count / total) * 100).toFixed(1)) : 0,
             color: colors[name] || '#94A3B8'
         }))
@@ -156,82 +159,80 @@ export function BookingStatusChart() {
 
     return (
         <ChartCard title="Booking Status Distribution" subtitle="Current status breakdown of all bookings">
-            <div className="flex items-center gap-5">
-                <ResponsiveContainer width="50%" height={210}>
-                    <PieChart>
-                        <Pie data={chartData} cx="50%" cy="50%" innerRadius={52} outerRadius={88}
-                            dataKey="value" labelLine={false} label={renderPctLabel}>
-                            {chartData.map((e, i) => <Cell key={i} fill={e.color} />)}
-                        </Pie>
-                        <Tooltip formatter={(v) => `${v}%`} contentStyle={{ borderRadius: 12, border: '1px solid #e2e8f0', fontSize: 12 }} />
-                    </PieChart>
-                </ResponsiveContainer>
-                <div className="flex-1 space-y-3 min-w-0">
-                    {chartData.map((item) => (
-                        <div key={item.name} className="flex items-center gap-3">
-                            <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: item.color }} />
-                            <div className="flex-1 min-w-0">
-                                <div className="flex justify-between items-center mb-1">
-                                    <span className="text-xs font-semibold text-slate-700">{item.name}</span>
-                                    <span className="text-xs font-bold text-slate-900">{item.value}%</span>
-                                </div>
-                                <div className="h-1.5 rounded-full bg-slate-100 overflow-hidden">
-                                    <div className="h-full rounded-full" style={{ width: `${item.value}%`, background: item.color }} />
+            {chartData.length === 0 ? <EmptyState /> : (
+                <div className="flex items-center gap-5">
+                    <ResponsiveContainer width="50%" height={210}>
+                        <PieChart>
+                            <Pie data={chartData} cx="50%" cy="50%" innerRadius={52} outerRadius={88}
+                                dataKey="value" labelLine={false} label={renderPctLabel}>
+                                {chartData.map((e, i) => <Cell key={i} fill={e.color} />)}
+                            </Pie>
+                            <Tooltip formatter={(v) => `${v}%`} contentStyle={{ borderRadius: 12, border: '1px solid #e2e8f0', fontSize: 12 }} />
+                        </PieChart>
+                    </ResponsiveContainer>
+                    <div className="flex-1 space-y-3 min-w-0">
+                        {chartData.map((item) => (
+                            <div key={item.name} className="flex items-center gap-3">
+                                <div className="w-2.5 h-2.5 rounded-full flex-shrink-0" style={{ background: item.color }} />
+                                <div className="flex-1 min-w-0">
+                                    <div className="flex justify-between items-center mb-1">
+                                        <span className="text-xs font-semibold text-slate-700">{item.name}</span>
+                                        <span className="text-xs font-bold text-slate-900">{item.value}%</span>
+                                    </div>
+                                    <div className="h-1.5 rounded-full bg-slate-100 overflow-hidden">
+                                        <div className="h-full rounded-full" style={{ width: `${item.value}%`, background: item.color }} />
+                                    </div>
                                 </div>
                             </div>
-                        </div>
-                    ))}
+                        ))}
+                    </div>
                 </div>
-            </div>
+            )}
         </ChartCard>
     );
 }
 
-export function BookingBySourceChart() {
-    const { data: rawWorkOrders = [] } = useGetWorkOrdersQuery();
-
-    const colors = ['#2563EB', '#10B981', '#F59E0B', '#8B5CF6'];
-    const sourceMap = rawWorkOrders.reduce((acc, wo) => {
-        const source = wo.enquiryId?.source || 'App'; // Default to App if not found
-        acc[source] = (acc[source] || 0) + 1;
+export function BookingByPaymentStatusChart({ bookings = [] }) {
+    const colors = { paid: '#10B981', partial: '#2563EB', pending: '#F59E0B', under_verification: '#8B5CF6' };
+    const statusMap = bookings.reduce((acc, b) => {
+        const status = b.paymentStatus || 'pending';
+        acc[status] = (acc[status] || 0) + 1;
         return acc;
     }, {});
 
-    const chartData = Object.entries(sourceMap)
-        .map(([source, bookings], i) => ({
-            source,
-            bookings,
-            color: colors[i % colors.length]
-        }))
-        .sort((a, b) => b.bookings - a.bookings)
-        .slice(0, 5);
+    const chartData = Object.entries(statusMap)
+        .map(([status, bookingsCount]) => ({ source: toLabel(status), bookings: bookingsCount, color: colors[status] || '#94A3B8' }))
+        .sort((a, b) => b.bookings - a.bookings);
 
     return (
-        <ChartCard title="Bookings by Source" subtitle="Which channels drive the most bookings">
-            <ResponsiveContainer width="100%" height={210}>
-                <BarChart data={chartData} layout="vertical" margin={{ top: 0, right: 16, left: 0, bottom: 0 }} barCategoryGap="30%">
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" horizontal={false} />
-                    <XAxis type="number" tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
-                    <YAxis type="category" dataKey="source" tick={{ fontSize: 11, fill: '#64748b', fontWeight: 600 }} axisLine={false} tickLine={false} width={72} />
-                    <Tooltip contentStyle={{ borderRadius: 12, border: '1px solid #e2e8f0', fontSize: 12 }} />
-                    <Bar dataKey="bookings" name="Bookings" radius={[0, 4, 4, 0]}>
-                        {chartData.map((entry, i) => <Cell key={i} fill={entry.color} />)}
-                    </Bar>
-                </BarChart>
-            </ResponsiveContainer>
+        <ChartCard title="Bookings by Payment Status" subtitle="Payment collection status across bookings">
+            {chartData.length === 0 ? <EmptyState /> : (
+                <ResponsiveContainer width="100%" height={210}>
+                    <BarChart data={chartData} layout="vertical" margin={{ top: 0, right: 16, left: 0, bottom: 0 }} barCategoryGap="30%">
+                        <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" horizontal={false} />
+                        <XAxis type="number" tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
+                        <YAxis type="category" dataKey="source" tick={{ fontSize: 11, fill: '#64748b', fontWeight: 600 }} axisLine={false} tickLine={false} width={90} />
+                        <Tooltip contentStyle={{ borderRadius: 12, border: '1px solid #e2e8f0', fontSize: 12 }} />
+                        <Bar dataKey="bookings" name="Bookings" radius={[0, 4, 4, 0]}>
+                            {chartData.map((entry, i) => <Cell key={i} fill={entry.color} />)}
+                        </Bar>
+                    </BarChart>
+                </ResponsiveContainer>
+            )}
         </ChartCard>
     );
 }
 
-export function PartnerWorkloadChart() {
-    const { data: rawWorkOrders = [] } = useGetWorkOrdersQuery();
+export function PartnerWorkloadChart({ bookings = [], partners = [] }) {
+    const partnerNameById = partners.reduce((acc, p) => { acc[p._id] = p.name; return acc; }, {});
 
-    const partnerMap = rawWorkOrders.reduce((acc, wo) => {
-        if (!wo.assignedPartnerId) return acc;
-        const name = wo.assignedPartnerId.name || 'Unknown';
+    const partnerMap = bookings.reduce((acc, b) => {
+        const id = b.partnerId?._id || b.partnerId;
+        if (!id) return acc;
+        const name = partnerNameById[id] || b.assignedTo || 'Unknown';
         if (!acc[name]) acc[name] = { partner: name, assigned: 0, completed: 0 };
         acc[name].assigned += 1;
-        if (wo.status === 'Completed') acc[name].completed += 1;
+        if (b.status === 'completed') acc[name].completed += 1;
         return acc;
     }, {});
 
@@ -241,17 +242,19 @@ export function PartnerWorkloadChart() {
 
     return (
         <ChartCard title="Partner Workload" subtitle="Assigned vs completed jobs per partner">
-            <ResponsiveContainer width="100%" height={210}>
-                <BarChart data={chartData} margin={{ top: 4, right: 8, left: 0, bottom: 0 }} barCategoryGap="30%">
-                    <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
-                    <XAxis dataKey="partner" tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
-                    <YAxis tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} width={32} />
-                    <Tooltip contentStyle={{ borderRadius: 12, border: '1px solid #e2e8f0', fontSize: 12 }} />
-                    <Legend wrapperStyle={{ fontSize: 12 }} />
-                    <Bar dataKey="assigned" name="Assigned" fill="#e2e8f0" radius={[4, 4, 0, 0]} />
-                    <Bar dataKey="completed" name="Completed" fill="#2563EB" radius={[4, 4, 0, 0]} />
-                </BarChart>
-            </ResponsiveContainer>
+            {chartData.length === 0 ? <EmptyState /> : (
+                <ResponsiveContainer width="100%" height={210}>
+                    <BarChart data={chartData} margin={{ top: 4, right: 8, left: 0, bottom: 0 }} barCategoryGap="30%">
+                        <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" vertical={false} />
+                        <XAxis dataKey="partner" tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} />
+                        <YAxis tick={{ fontSize: 11, fill: '#94a3b8' }} axisLine={false} tickLine={false} width={32} />
+                        <Tooltip contentStyle={{ borderRadius: 12, border: '1px solid #e2e8f0', fontSize: 12 }} />
+                        <Legend wrapperStyle={{ fontSize: 12 }} />
+                        <Bar dataKey="assigned" name="Assigned" fill="#e2e8f0" radius={[4, 4, 0, 0]} />
+                        <Bar dataKey="completed" name="Completed" fill="#2563EB" radius={[4, 4, 0, 0]} />
+                    </BarChart>
+                </ResponsiveContainer>
+            )}
         </ChartCard>
     );
 }

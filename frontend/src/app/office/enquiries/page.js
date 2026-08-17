@@ -12,6 +12,7 @@ import DeleteEnquiryDialog from './components/DeleteEnquiryDialog';
 import Pagination from '@/components/office/ui/Pagination';
 import CreateEstimateModal from '@/components/office/estimates/CreateEstimateModal';
 import { useGetEnquiriesQuery } from '@/store/api/enquiryApi';
+import { exportToCSV } from '@/lib/csvExport';
 export default function EnquiriesPage() {
     const [selectedRow, setSelectedRow] = useState(null);
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
@@ -25,7 +26,7 @@ export default function EnquiriesPage() {
     const [itemsPerPage, setItemsPerPage] = useState(10);
     const [isCreateEstimateModalOpen, setIsCreateEstimateModalOpen] = useState(false);
     
-    const { data: fetchedEnquiries = [], isLoading, isError } = useGetEnquiriesQuery();
+    const { data: fetchedEnquiries = [], isLoading, isError, refetch, isFetching } = useGetEnquiriesQuery();
 
     const enquiries = fetchedEnquiries.map(enq => ({
         id: enq._id,
@@ -47,6 +48,9 @@ export default function EnquiriesPage() {
         initial: (enq.customerId?.name || 'U').charAt(0).toUpperCase(),
         _raw: enq, // keep raw data for edit/delete modals
     }));
+
+    console.log(enquiries);
+    
 
     const handleRowClick = (enq) => {
         setSelectedRow(enq);
@@ -71,11 +75,26 @@ export default function EnquiriesPage() {
                 description="Manage and track all incoming customer enquiries from every channel before they become bookings."
                 actions={
                     <>
-                        <button className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 rounded-xl text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors shadow-sm">
-                            <RefreshCw className="w-4 h-4" />
+                        <button onClick={() => refetch()} className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 rounded-xl text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors shadow-sm">
+                            <RefreshCw className={`w-4 h-4 ${isFetching ? 'animate-spin' : ''}`} />
                             Refresh
                         </button>
-                        <button className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 rounded-xl text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors shadow-sm">
+                        <button
+                            onClick={() => exportToCSV('enquiries', enquiries, [
+                                { key: 'displayId', label: 'Enquiry ID' },
+                                { key: 'customer', label: 'Customer' },
+                                { key: 'email', label: 'Email' },
+                                { key: 'phone', label: 'Phone' },
+                                { key: 'service', label: 'Service' },
+                                { key: 'address', label: 'Address' },
+                                { key: 'source', label: 'Source' },
+                                { key: 'priority', label: 'Priority' },
+                                { key: 'assignedTo', label: 'Assigned To' },
+                                { key: 'status', label: 'Status' },
+                                { key: 'date', label: 'Date' },
+                            ])}
+                            className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 rounded-xl text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors shadow-sm"
+                        >
                             <Download className="w-4 h-4" />
                             Export
                         </button>

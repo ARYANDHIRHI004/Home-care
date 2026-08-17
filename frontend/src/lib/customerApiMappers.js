@@ -63,7 +63,7 @@ export function mapCustomerEstimate(estimate, booking) {
   return {
     id: estimate._id,
     displayId: estimate.estimateNumber || `EST-${estimate._id?.slice(-6).toUpperCase()}`,
-    bookingId: booking?._id || estimate.bookingId || estimate.workOrderId,
+    bookingId: booking?._id || estimate.bookingId?._id || estimate.bookingId || estimate.workOrderId?._id || estimate.workOrderId,
     service,
     status: estimate.approvalStatus?.replace(/^\w/, (m) => m.toUpperCase()) || 'Pending',
     amount: Number(estimate.total || 0),
@@ -80,7 +80,7 @@ export function mapCustomerInvoice(invoice, booking) {
   return {
     id: invoice._id,
     displayId: invoice.invoiceNumber || `INV-${invoice._id?.slice(-6).toUpperCase()}`,
-    bookingId: booking?._id || invoice.bookingId || invoice.workOrderId,
+    bookingId: booking?._id || invoice.bookingId?._id || invoice.bookingId || invoice.workOrderId?._id || invoice.workOrderId,
     service: booking?.serviceId?.name || booking?.serviceName || invoice.lineItems?.[0]?.name || 'Service',
     amount: Number(invoice.total || 0),
     status: invoice.paymentStatus === 'paid' ? 'Paid' : invoice.paymentStatus === 'partial' ? 'Payment Under Verification' : 'Unpaid',

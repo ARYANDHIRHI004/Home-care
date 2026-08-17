@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useDispatch } from 'react-redux';
 import { RefreshCw, Download } from 'lucide-react';
 import PageHeader from '@/components/office/PageHeader';
 import PaymentStatsCards from './components/PaymentStatsCards';
@@ -8,6 +9,9 @@ import PaymentFilters from './components/PaymentFilters';
 import PaymentTable from './components/PaymentTable';
 import PaymentDrawer from './components/PaymentDrawer';
 import ReceivePaymentModal from './components/ReceivePaymentModal';
+import { apiSlice } from '@/store/apiSlice';
+import { useGetPaymentsQuery } from '@/store/api/paymentApi';
+import { exportToCSV } from '@/lib/csvExport';
 
 export default function PaymentsPage() {
     const [searchQuery, setSearchQuery] = useState('');
@@ -15,6 +19,25 @@ export default function PaymentsPage() {
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [paymentToReceive, setPaymentToReceive] = useState(null);
+    const dispatch = useDispatch();
+    const { data: rawPayments = [], isFetching } = useGetPaymentsQuery();
+
+    const handleRefresh = () => dispatch(apiSlice.util.invalidateTags([{ type: 'Payment', id: 'LIST' }]));
+    const handleExport = () => exportToCSV('payments', rawPayments.map(p => ({
+        customer: p.invoiceId?.customerId?.name || p.customerId?.name || 'Unknown',
+        amount: p.amount || 0,
+        paid: p.amountPaid || p.amount || 0,
+        method: p.method || '',
+        status: p.status || 'Pending',
+        date: p.paidAt ? new Date(p.paidAt).toLocaleString() : '',
+    })), [
+        { key: 'customer', label: 'Customer' },
+        { key: 'amount', label: 'Amount' },
+        { key: 'paid', label: 'Paid' },
+        { key: 'method', label: 'Method' },
+        { key: 'status', label: 'Status' },
+        { key: 'date', label: 'Date' },
+    ]);
 
     const handleRowClick = (payment) => {
         setSelectedPayment(payment);
@@ -34,10 +57,10 @@ export default function PaymentsPage() {
 
     const actions = (
         <>
-            <button className="p-2 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors border border-transparent">
-                <RefreshCw className="w-4 h-4" />
+            <button onClick={handleRefresh} className="p-2 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors border border-transparent">
+                <RefreshCw className={`w-4 h-4 ${isFetching ? 'animate-spin' : ''}`} />
             </button>
-            <button className="hidden sm:flex items-center gap-2 px-3 py-2 bg-white border border-slate-200 text-slate-700 rounded-lg text-sm font-medium hover:bg-slate-50 transition-colors shadow-sm">
+            <button onClick={handleExport} className="hidden sm:flex items-center gap-2 px-3 py-2 bg-white border border-slate-200 text-slate-700 rounded-lg text-sm font-medium hover:bg-slate-50 transition-colors shadow-sm">
                 <Download className="w-4 h-4" /> Export
             </button>
         </>

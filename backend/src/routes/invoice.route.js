@@ -14,5 +14,7 @@ router.get("/:id", requirePermission(P.INVOICE_READ), controller.getInvoiceById)
 router.patch("/:id", requirePermission(P.INVOICE_UPDATE), controller.updateInvoice);
 router.patch("/:id/payment-status", requirePermission(P.INVOICE_UPDATE), controller.updatePaymentStatus);
 router.patch("/:id/whatsapp-sent", requirePermission(P.INVOICE_UPDATE), controller.markWhatsAppSent);
+router.get("/:id/pdf", requirePermission(P.INVOICE_READ), controller.downloadInvoicePdf);
+router.post("/:id/send", requirePermission(P.INVOICE_UPDATE), controller.sendInvoiceEmailWithPdf);
 router.delete("/:id", requirePermission(P.INVOICE_DELETE), controller.deleteInvoice);
 export default router;

@@ -50,6 +50,31 @@ const documentSchema = new mongoose.Schema(
   { _id: false }
 );
 
+export const sanitizeCustomerIdentity = (data = {}) => {
+  const payload = { ...data };
+
+  const normalizeOptionalUnique = (fieldName) => {
+    const rawValue = payload[fieldName];
+    const trimmedValue = typeof rawValue === "string" ? rawValue.trim() : rawValue;
+
+    if (trimmedValue === undefined || trimmedValue === null || trimmedValue === "") {
+      delete payload[fieldName];
+      return;
+    }
+
+    payload[fieldName] = trimmedValue;
+  };
+
+  normalizeOptionalUnique("phone");
+  normalizeOptionalUnique("email");
+
+  if (typeof payload.email === "string") {
+    payload.email = payload.email.toLowerCase();
+  }
+
+  return payload;
+};
+
 const customerSchema = new mongoose.Schema(
   {
     name: {

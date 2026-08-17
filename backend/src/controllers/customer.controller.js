@@ -1,4 +1,4 @@
-import Customer from "../models/customer.model.js";
+import Customer, { sanitizeCustomerIdentity } from "../models/customer.model.js";
 import { resolveCustomerIdForSession } from "../utils/resolveCustomer.js";
 
 export const findOrCreateByPhone = async (req, res) => {
@@ -6,17 +6,22 @@ export const findOrCreateByPhone = async (req, res) => {
     const { name, phone, email, registrationChannel = "call" } = req.body;
     if (!phone) return res.status(400).json({ message: "Phone is required" });
 
-    let customer = await Customer.findOne({ phone });
+    const normalizedPhone = typeof phone === "string" ? phone.trim() : phone;
+    const safePhone = normalizedPhone || undefined;
+
+    let customer = safePhone ? await Customer.findOne({ phone: safePhone }) : null;
 
     if (customer) return res.status(200).json({ message: "Customer found", customer });
 
-    customer = await Customer.create({
-      name,
-      phone,
-      email,
-      otpVerified: false,
-      registrationChannel: "call",
-    });
+    customer = await Customer.create(
+      sanitizeCustomerIdentity({
+        name,
+        phone: safePhone,
+        email,
+        otpVerified: false,
+        registrationChannel: "call",
+      })
+    );
 
     return res.status(201).json({ message: "Customer created", customer });
   } catch (error) {
@@ -92,7 +97,7 @@ export const deleteMyAddress = async (req, res) => {
 
 export const createCustomer = async (req, res) => {
   try {
-    const customer = await Customer.create(req.body);
+    const customer = await Customer.create(sanitizeCustomerIdentity(req.body));
     res.status(201).json(customer);
   } catch (error) {
     res.status(400).json({ message: error.message });

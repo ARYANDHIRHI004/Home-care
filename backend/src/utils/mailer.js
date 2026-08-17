@@ -17,7 +17,16 @@ function parseFromAddress(fromString) {
 // SMTP auth on this account is gated by an IP-authorization allowlist that a
 // rotating/CGNAT public IP (as seen in local dev) can never reliably
 // satisfy; this HTTPS endpoint only checks the API key, no IP restriction.
-export async function sendEmail({ to, subject, html, replyTo }) {
+export async function sendEmail({ to, subject, html, replyTo, attachments }) {
+  // Brevo's `attachment` field wants base64 `content` + `name`, not a raw
+  // Buffer — the caller (e.g. sendInvoiceEmailWithPdf) passes Node Buffers
+  // the same way nodemailer's `attachments` option would, so that shape is
+  // converted here rather than making every caller know Brevo's wire format.
+  const brevoAttachments = (attachments || []).map((a) => ({
+    name: a.filename || a.name,
+    content: Buffer.isBuffer(a.content) ? a.content.toString("base64") : a.content,
+  }));
+
   const response = await fetch(BREVO_API_URL, {
     method: "POST",
     headers: {
@@ -31,6 +40,7 @@ export async function sendEmail({ to, subject, html, replyTo }) {
       subject,
       htmlContent: html,
       ...(replyTo ? { replyTo: { email: replyTo } } : {}),
+      ...(brevoAttachments.length ? { attachment: brevoAttachments } : {}),
     }),
   });
 

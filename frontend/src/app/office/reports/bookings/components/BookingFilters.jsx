@@ -4,7 +4,23 @@ import { SlidersHorizontal } from 'lucide-react';
 
 const DATE_RANGES = ['Today', 'This Week', 'This Month', 'This Year', 'Custom'];
 
-export default function BookingFilters({ activeRange, setActiveRange }) {
+const STATUS_OPTIONS = ['All Statuses', 'active', 'upcoming', 'confirmed', 'pending_assignment', 'in_progress', 'completed', 'cancelled'];
+const PAYMENT_STATUS_OPTIONS = ['Any', 'pending', 'partial', 'paid', 'under_verification'];
+
+function toLabel(value) {
+    if (value === 'All Statuses' || value === 'Any') return value;
+    return value.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+export default function BookingFilters({
+    activeRange, setActiveRange,
+    customFrom, setCustomFrom,
+    customTo, setCustomTo,
+    statusFilter, setStatusFilter,
+    categoryFilter, setCategoryFilter,
+    paymentStatusFilter, setPaymentStatusFilter,
+    categories = [],
+}) {
     const [showFilters, setShowFilters] = useState(false);
 
     return (
@@ -26,9 +42,9 @@ export default function BookingFilters({ activeRange, setActiveRange }) {
                     ))}
                     {activeRange === 'Custom' && (
                         <div className="flex items-center gap-2 ml-1">
-                            <input type="date" className="text-xs border border-slate-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                            <input type="date" value={customFrom} onChange={(e) => setCustomFrom(e.target.value)} className="text-xs border border-slate-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500" />
                             <span className="text-slate-400 text-xs font-medium">to</span>
-                            <input type="date" className="text-xs border border-slate-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500" />
+                            <input type="date" value={customTo} onChange={(e) => setCustomTo(e.target.value)} className="text-xs border border-slate-200 rounded-lg px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-blue-500" />
                         </div>
                     )}
                 </div>
@@ -44,22 +60,26 @@ export default function BookingFilters({ activeRange, setActiveRange }) {
             </div>
 
             {showFilters && (
-                <div className="pt-3 border-t border-slate-100 grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-6 gap-3">
-                    {[
-                        { label: 'Booking Status', options: ['All Statuses', 'Completed', 'In Progress', 'Pending', 'Cancelled'] },
-                        { label: 'Service Category', options: ['All Categories', 'Deep Cleaning', 'Pest Control', 'Painting', 'Plumbing', 'Electrical'] },
-                        { label: 'Partner', options: ['All Partners', 'Suresh Kumar', 'Ravi Sharma', 'Priya Tiwari'] },
-                        { label: 'City', options: ['All Cities', 'Mumbai', 'Pune', 'Nagpur'] },
-                        { label: 'Source', options: ['All Sources', 'Website', 'Phone', 'WhatsApp', 'Referral'] },
-                        { label: 'Payment Status', options: ['Any', 'Paid', 'Pending', 'Partial'] },
-                    ].map((f) => (
-                        <div key={f.label}>
-                            <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">{f.label}</label>
-                            <select className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer">
-                                {f.options.map((o) => <option key={o}>{o}</option>)}
-                            </select>
-                        </div>
-                    ))}
+                <div className="pt-3 border-t border-slate-100 grid grid-cols-2 sm:grid-cols-3 gap-3">
+                    <div>
+                        <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Booking Status</label>
+                        <select value={statusFilter} onChange={(e) => setStatusFilter(e.target.value)} className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer">
+                            {STATUS_OPTIONS.map((o) => <option key={o} value={o}>{toLabel(o)}</option>)}
+                        </select>
+                    </div>
+                    <div>
+                        <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Service Category</label>
+                        <select value={categoryFilter} onChange={(e) => setCategoryFilter(e.target.value)} className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer">
+                            <option value="All Categories">All Categories</option>
+                            {categories.map((c) => <option key={c} value={c}>{c}</option>)}
+                        </select>
+                    </div>
+                    <div>
+                        <label className="block text-[10px] font-bold text-slate-500 uppercase tracking-wider mb-1.5">Payment Status</label>
+                        <select value={paymentStatusFilter} onChange={(e) => setPaymentStatusFilter(e.target.value)} className="w-full px-3 py-2 text-xs border border-slate-200 rounded-lg bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 cursor-pointer">
+                            {PAYMENT_STATUS_OPTIONS.map((o) => <option key={o} value={o}>{toLabel(o)}</option>)}
+                        </select>
+                    </div>
                 </div>
             )}
         </div>

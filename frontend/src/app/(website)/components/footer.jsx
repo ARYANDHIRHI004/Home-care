@@ -9,7 +9,7 @@ import {
   Mail,
   Clock,
   Map,
-  ShieldCheck,
+  ShieldCheck, 
   CheckCircle2,
   Lock,
   Tag,
@@ -17,7 +17,8 @@ import {
   FileText,
   ArrowRight
 } from 'lucide-react';
-import { FaWhatsapp } from 'react-icons/fa6';
+import { FaWhatsapp, FaFacebook, FaInstagram } from 'react-icons/fa6';
+import { useGetCategoriesQuery } from '@/store/api/categoryApi';
 
 const FOOTER_LINKS = {
   company: [
@@ -64,6 +65,8 @@ const TRUST_BADGES = [
 // than link to nowhere.
 const SOCIAL_LINKS = [
   { icon: FaWhatsapp, href: 'https://wa.me/919111466642', label: 'WhatsApp' },
+  { icon: FaFacebook, href: 'https://www.facebook.com/share/1Js2yuQnrX/', label: 'Facebook' },
+  { icon: FaInstagram, href: 'https://www.instagram.com/_homecare_services?igsh=ZnhiZHphaGVydmJj', label: 'Instagram' },
 ];
 
 const fadeIn = {
@@ -86,6 +89,9 @@ const staggerContainer = {
 };
 
 export default function Footer() {
+  const { data: categories = [] } = useGetCategoriesQuery('active=true');
+  const displayCategories = categories.slice(0, 8);
+
   return (
     <footer className="bg-slate-950 pt-24 pb-8 border-t border-slate-900 font-sans text-slate-400">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -155,13 +161,16 @@ export default function Footer() {
           <motion.div variants={fadeIn}>
             <h4 className="text-sm font-bold text-white uppercase tracking-wider mb-6">Services</h4>
             <ul className="space-y-4">
-              {FOOTER_LINKS.services.map((link) => (
-                <li key={link.name}>
+              {displayCategories.map(c => ({ name: c.name, href: `/services?q=${encodeURIComponent(c.name.toLowerCase())}`, key: c._id })).map((link) => (
+                <li key={link.key || link.name}>
                   <Link href={link.href} className="text-sm text-slate-400 hover:text-white relative inline-block after:content-[''] after:absolute after:w-full after:scale-x-0 after:h-0.5 after:bottom-0 after:left-0 after:bg-blue-500 after:origin-bottom-right hover:after:scale-x-100 hover:after:origin-bottom-left after:transition-transform after:duration-300">
                     {link.name}
                   </Link>
                 </li>
               ))}
+              {displayCategories.length === 0 && (
+                <li className="text-sm text-slate-500 italic">No categories yet</li>
+              )}
             </ul>
           </motion.div>
 
@@ -197,11 +206,11 @@ export default function Footer() {
               </li>
               <li className="flex items-center gap-3">
                 <Mail className="w-5 h-5 text-blue-500 shrink-0" />
-                <a href="mailto:homecarre2405@gmail.com" className="text-sm text-slate-400 hover:text-blue-400 transition-colors">homecarre2405@gmail.com</a>
+                <a href="mailto:hello@homecare-online.com" className="text-sm text-slate-400 hover:text-blue-400 transition-colors">hello@homecare-online.com</a>
               </li>
               <li className="flex items-center gap-3">
                 <Clock className="w-5 h-5 text-blue-500 shrink-0" />
-                <span className="text-sm text-slate-400">Mon - Sun: 8:00 AM - 9:00 PM</span>
+                <span className="text-sm text-slate-400">Mon - Sun: 10:00 AM - 8:00 PM</span>
               </li>
             </ul>
 

@@ -3,12 +3,13 @@ import { apiSlice } from '../apiSlice';
 export const expenseApi = apiSlice.injectEndpoints({
     endpoints: (builder) => ({
         getExpenses: builder.query({
-            query: () => '/expenses',
+            query: () => '/api/expenses',
+            transformResponse: (response) => response.data,
             providesTags: ['Expense'],
         }),
         createExpense: builder.mutation({
             query: (data) => ({
-                url: '/expenses',
+                url: '/api/expenses',
                 method: 'POST',
                 body: data,
             }),
@@ -16,7 +17,7 @@ export const expenseApi = apiSlice.injectEndpoints({
         }),
         updateExpense: builder.mutation({
             query: ({ id, ...data }) => ({
-                url: `/expenses/${id}`,
+                url: `/api/expenses/${id}`,
                 method: 'PUT',
                 body: data,
             }),
@@ -24,7 +25,7 @@ export const expenseApi = apiSlice.injectEndpoints({
         }),
         deleteExpense: builder.mutation({
             query: (id) => ({
-                url: `/expenses/${id}`,
+                url: `/api/expenses/${id}`,
                 method: 'DELETE',
             }),
             invalidatesTags: ['Expense'],

@@ -3,13 +3,16 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  Search, HelpCircle, ChevronDown, CheckCircle2, Loader2, 
-  ThumbsUp, ThumbsDown, Phone, Mail, Building, Upload,
-  Calendar, CreditCard, XCircle, RefreshCcw, Wrench, 
+  Search, HelpCircle, ChevronDown, CheckCircle2, Loader2,
+  ThumbsUp, ThumbsDown, Phone, Mail, Building,
+  Calendar, CreditCard, XCircle, RefreshCcw, Wrench,
   ArrowRight, User, Smartphone, MapPin, Tag, FileText
 } from 'lucide-react';
 import { FaWhatsapp } from 'react-icons/fa6';
 import { BsShieldCheck, BsHeadset } from 'react-icons/bs';
+import Link from 'next/link';
+import { useCreateEnquiryMutation } from '@/store/api/enquiryApi';
+import { useGetFaqsQuery, useSuggestFaqMutation } from '@/store/api/faqApi';
 
 // --- Animation Variants ---
 const fadeUp = {
@@ -34,43 +37,7 @@ const FAQ_CATEGORIES = [
   { id: 'Support', icon: BsHeadset }
 ];
 
-const FAQS = {
-  Booking: [
-    { q: 'How do I book a service?', a: 'To book a service, you first submit an enquiry through our platform. Our support team will review it and call you within 15 minutes to confirm details and provide an estimate before finalizing the booking.' },
-    { q: 'Can I modify my booking?', a: 'Yes, you can modify your booking requirements or time slot by contacting our support team at least 2 hours before the scheduled service time.' },
-    { q: 'Can I cancel my enquiry?', a: 'Yes, you can request a cancellation at any time before the technician starts travelling to your location. Simply reach out to support.' },
-    { q: 'How long does confirmation take?', a: 'Enquiries are typically reviewed and confirmed over a quick phone call within 15 minutes during standard business hours.' }
-  ],
-  Pricing: [
-    { q: 'How is pricing calculated?', a: 'Pricing is based on the specific requirements of your task, materials needed, and standardized labor rates. You will always receive a clear estimate before work begins.' },
-    { q: 'Are there any hidden charges?', a: 'No, we believe in 100% transparent pricing. You only pay the amount agreed upon in the final estimate unless you request additional scope during the service.' },
-    { q: 'Will I receive an estimate first?', a: 'Yes, our consultation-first model ensures you always receive and approve a detailed estimate before a professional is assigned.' }
-  ],
-  Payment: [
-    { q: 'Which payment methods are accepted?', a: 'We accept all major credit/debit cards, UPI (GPay, PhonePe, Paytm), Net Banking, and cash after service completion.' },
-    { q: 'Can I pay after service completion?', a: 'Yes, for most services, you can choose to pay securely online or via cash once the professional has successfully completed the job.' },
-    { q: 'Will I receive a GST invoice?', a: 'Absolutely. A detailed digital GST invoice will be automatically sent to your registered email and WhatsApp upon job completion.' }
-  ],
-  Technicians: [
-    { q: 'Are professionals verified?', a: 'Yes, 100% of our service partners undergo strict background checks, including Aadhaar and police verification, along with rigorous technical skill assessments.' },
-    { q: 'Can I request a different technician?', a: 'If you are unsatisfied with the assigned technician before the work starts, you can contact support to request a replacement.' },
-    { q: 'Can I track the technician?', a: 'Yes, you will receive a tracking link via SMS/WhatsApp once the professional is dispatched to your location.' }
-  ],
-  Cancellation: [
-    { q: 'How do I request cancellation?', a: 'You can request cancellation via the app, or by calling/WhatsApping our support team directly.' },
-    { q: 'Will cancellation charges apply?', a: 'Cancellation is free if done before the professional starts travelling. Late cancellations may incur a nominal visit fee to compensate the partner.' },
-    { q: 'Can I reschedule instead?', a: 'Yes! We highly recommend rescheduling your service to a more convenient time instead of completely cancelling.' }
-  ],
-  Refund: [
-    { q: 'When will my refund be processed?', a: 'Eligible refunds are processed immediately upon cancellation approval by our support team.' },
-    { q: 'How long does refund take?', a: 'Once processed from our end, refunds typically take 5-7 business days to reflect in your original payment method depending on your bank.' }
-  ],
-  Support: [
-    { q: 'How can I contact support?', a: 'You can reach our dedicated support team via Phone, WhatsApp, or Email using the contact options at the bottom of this page.' },
-    { q: 'What are support timings?', a: 'Our standard support operates Monday to Saturday from 9:00 AM to 8:00 PM. We provide emergency support on Sundays.' },
-    { q: 'Can I contact through WhatsApp?', a: 'Yes, our WhatsApp support is the fastest way to get instant automated updates or chat with a live agent.' }
-  ]
-};
+// FAQS are now fetched dynamically from backend
 
 // --- Sub-components ---
 
@@ -117,13 +84,13 @@ function HeroSection({ searchQuery, setSearchQuery }) {
   );
 }
 
-function PopularTopics({ setActiveCategory }) {
+function PopularTopics({ setActiveCategory, dynamicCategories }) {
   return (
     <section className="py-12 bg-[#F8FAFC]">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <h3 className="text-xl font-bold text-slate-900 mb-6 text-center lg:text-left">Popular Topics</h3>
         <div className="flex flex-wrap gap-4 justify-center lg:justify-start">
-          {FAQ_CATEGORIES.map((cat, i) => (
+          {dynamicCategories.length > 0 ? dynamicCategories.map((cat, i) => (
             <motion.button
               key={cat.id}
               initial={{ opacity: 0, scale: 0.9 }} whileInView={{ opacity: 1, scale: 1 }} viewport={{ once: true }} transition={{ delay: i * 0.05 }}
@@ -136,7 +103,9 @@ function PopularTopics({ setActiveCategory }) {
               <cat.icon className="w-5 h-5 text-blue-500 group-hover:scale-110 transition-transform" />
               {cat.id}
             </motion.button>
-          ))}
+          )) : (
+             <div className="text-slate-500 italic text-sm">No topics available</div>
+          )}
         </div>
       </div>
     </section>
@@ -214,15 +183,124 @@ function AccordionItem({ q, a }) {
   );
 }
 
-function MainContent({ searchQuery, activeCategory }) {
-  const [formState, setFormState] = useState('idle'); // idle, loading, success
+// Distinct from the "Didn't Find Your Answer?" support form on the right —
+// that creates an Enquiry for staff to call the customer back; this instead
+// suggests a new question for the FAQ list itself. Goes to Faq.status
+// 'pending' and only appears here once an office admin answers and
+// publishes it from /office/faqs — never shown publicly before that.
+function SuggestQuestionForm() {
+  const [suggestFaq, { isLoading }] = useSuggestFaqMutation();
+  const [question, setQuestion] = useState('');
+  const [name, setName] = useState('');
+  const [email, setEmail] = useState('');
+  const [submitted, setSubmitted] = useState(false);
+  const [errorMsg, setErrorMsg] = useState('');
 
-  const handleSupportSubmit = (e) => {
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setErrorMsg('');
+    try {
+      await suggestFaq({ question: question.trim(), name: name.trim() || undefined, email: email.trim() || undefined }).unwrap();
+      setSubmitted(true);
+      setQuestion('');
+      setName('');
+      setEmail('');
+    } catch (err) {
+      setErrorMsg(err.data?.message || err.message || 'Failed to submit your question. Please try again.');
+    }
+  };
+
+  if (submitted) {
+    return (
+      <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-6 flex items-start gap-3 mb-10">
+        <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0 mt-0.5" />
+        <div>
+          <p className="text-sm font-semibold text-emerald-800">Thanks — your question has been submitted for review.</p>
+          <p className="text-xs text-emerald-700 mt-1">Our team will answer it and add it to this list soon.</p>
+          <button onClick={() => setSubmitted(false)} className="text-xs font-semibold text-emerald-700 underline underline-offset-2 mt-2">Ask another question</button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="bg-white border border-slate-200 rounded-2xl p-6 mb-10">
+      <h4 className="text-sm font-bold text-slate-900 mb-1">Don&apos;t see your question here?</h4>
+      <p className="text-xs text-slate-500 mb-4">Suggest it and our team will add an answer for everyone.</p>
+      <form onSubmit={handleSubmit} className="space-y-3">
+        <textarea
+          required
+          rows={2}
+          value={question}
+          onChange={e => setQuestion(e.target.value)}
+          placeholder="Type your question…"
+          className="w-full p-3 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all resize-none"
+        />
+        <div className="grid grid-cols-2 gap-3">
+          <input
+            type="text"
+            value={name}
+            onChange={e => setName(e.target.value)}
+            placeholder="Your name (optional)"
+            className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all"
+          />
+          <input
+            type="email"
+            value={email}
+            onChange={e => setEmail(e.target.value)}
+            placeholder="Email (optional)"
+            className="w-full px-3 py-2 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:bg-white transition-all"
+          />
+        </div>
+        {errorMsg && <p className="text-xs text-rose-600">{errorMsg}</p>}
+        <button
+          type="submit"
+          disabled={isLoading || !question.trim()}
+          className="flex items-center gap-2 px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white text-sm font-semibold rounded-xl transition-colors disabled:opacity-50"
+        >
+          {isLoading ? <Loader2 className="w-4 h-4 animate-spin" /> : null}
+          {isLoading ? 'Submitting…' : 'Submit Question'}
+        </button>
+      </form>
+    </div>
+  );
+}
+
+function MainContent({ searchQuery, activeCategory, faqsByCategory, rawFaqs, isLoading }) {
+  const [createEnquiry] = useCreateEnquiryMutation();
+  const [formState, setFormState] = useState('idle'); // idle, loading, success, error
+  const [errorMsg, setErrorMsg] = useState('');
+
+  const [name, setName] = useState('');
+  const [phone, setPhone] = useState('');
+  const [email, setEmail] = useState('');
+  const [city, setCity] = useState('');
+  const [category, setCategory] = useState('');
+  const [subject, setSubject] = useState('');
+  const [message, setMessage] = useState('');
+  const [contactMethod, setContactMethod] = useState('Phone Call');
+  const [preferredTime, setPreferredTime] = useState('Morning');
+
+  const handleSupportSubmit = async (e) => {
     e.preventDefault();
     setFormState('loading');
-    setTimeout(() => {
+    setErrorMsg('');
+    try {
+      await createEnquiry({
+        name: name.trim(),
+        phone: phone.trim(),
+        email: email.trim() || undefined,
+        source: 'website',
+        serviceCategory: category || 'Support',
+        description: `[${category || 'Support'}] ${subject} — ${message} (Preferred contact: ${contactMethod}, ${preferredTime})`,
+        city: city || undefined,
+      }).unwrap();
       setFormState('success');
-    }, 2000);
+    } catch (err) {
+      setFormState('error');
+      setErrorMsg(err.data?.message || err.message || 'Failed to submit. Please try again.');
+      setTimeout(() => setFormState('idle'), 5000);
+    }
   };
 
   // Filter logic for FAQs
@@ -230,12 +308,10 @@ function MainContent({ searchQuery, activeCategory }) {
     if (searchQuery.trim() !== '') {
       const results = [];
       const query = searchQuery.toLowerCase();
-      Object.entries(FAQS).forEach(([cat, questions]) => {
-        questions.forEach(q => {
-          if (q.q.toLowerCase().includes(query) || q.a.toLowerCase().includes(query) || cat.toLowerCase().includes(query)) {
-            results.push({ ...q, category: cat });
-          }
-        });
+      rawFaqs.forEach(faq => {
+        if (faq.question.toLowerCase().includes(query) || faq.answer.toLowerCase().includes(query) || faq.category.toLowerCase().includes(query)) {
+          results.push({ ...faq, category: faq.category });
+        }
       });
       return results;
     }
@@ -251,12 +327,16 @@ function MainContent({ searchQuery, activeCategory }) {
           
           {/* LEFT: FAQ List */}
           <div className="w-full lg:w-1/2 xl:w-7/12">
-            {searchResults !== null ? (
+            {isLoading ? (
+               <div className="flex justify-center py-20">
+                 <Loader2 className="w-10 h-10 text-blue-500 animate-spin" />
+               </div>
+            ) : searchResults !== null ? (
               <div>
                 <h3 className="text-2xl font-bold text-slate-900 mb-6">Search Results ({searchResults.length})</h3>
                 {searchResults.length > 0 ? (
                   searchResults.map((faq, i) => (
-                    <AccordionItem key={`search-${i}`} q={faq.q} a={faq.a} />
+                    <AccordionItem key={`search-${faq._id || i}`} q={faq.question} a={faq.answer} />
                   ))
                 ) : (
                   <div className="bg-white p-8 rounded-2xl text-center border border-slate-200">
@@ -269,25 +349,34 @@ function MainContent({ searchQuery, activeCategory }) {
             ) : (
               <div>
                 <h3 className="text-3xl font-bold text-slate-900 mb-8">{activeCategory} FAQs</h3>
-                {FAQS[activeCategory] ? (
-                  FAQS[activeCategory].map((faq, i) => (
-                    <AccordionItem key={`${activeCategory}-${i}`} q={faq.q} a={faq.a} />
+                {faqsByCategory[activeCategory] ? (
+                  faqsByCategory[activeCategory].map((faq, i) => (
+                    <AccordionItem key={`${activeCategory}-${faq._id || i}`} q={faq.question} a={faq.answer} />
                   ))
                 ) : (
-                  Object.entries(FAQS).map(([cat, questions]) => (
-                    <div key={cat} className="mb-10">
-                      <h4 className="text-xl font-bold text-slate-800 mb-4 flex items-center gap-2">
-                        {FAQ_CATEGORIES.find(c => c.id === cat)?.icon && React.createElement(FAQ_CATEGORIES.find(c => c.id === cat).icon, { className: 'w-5 h-5 text-blue-600' })}
-                        {cat}
-                      </h4>
-                      {questions.map((faq, i) => (
-                        <AccordionItem key={`${cat}-${i}`} q={faq.q} a={faq.a} />
-                      ))}
-                    </div>
-                  ))
+                  Object.keys(faqsByCategory).length > 0 ? (
+                    Object.entries(faqsByCategory).map(([cat, questions]) => (
+                      <div key={cat} className="mb-10">
+                        <h4 className="text-xl font-bold text-slate-800 mb-4 flex items-center gap-2">
+                          {FAQ_CATEGORIES.find(c => c.id.toLowerCase() === cat.toLowerCase())?.icon && React.createElement(FAQ_CATEGORIES.find(c => c.id.toLowerCase() === cat.toLowerCase()).icon, { className: 'w-5 h-5 text-blue-600' })}
+                          {cat}
+                        </h4>
+                        {questions.map((faq, i) => (
+                          <AccordionItem key={`${cat}-${faq._id || i}`} q={faq.question} a={faq.answer} />
+                        ))}
+                      </div>
+                    ))
+                  ) : (
+                     <div className="bg-white p-8 rounded-2xl text-center border border-slate-200">
+                       <p className="text-lg text-slate-600 font-medium">No FAQs available yet.</p>
+                       <p className="text-slate-500 mt-2">Check back later or submit a concern below.</p>
+                     </div>
+                  )
                 )}
               </div>
             )}
+
+            {!isLoading && <SuggestQuestionForm />}
           </div>
 
           {/* RIGHT: Support Form (Sticky on Desktop) */}
@@ -304,18 +393,14 @@ function MainContent({ searchQuery, activeCategory }) {
                     <CheckCircle2 className="w-10 h-10 text-green-600" />
                   </div>
                   <h3 className="text-2xl font-bold text-slate-900 mb-2">Thank You!</h3>
-                  <p className="text-slate-600 mb-6">Your concern has been submitted successfully. Our Customer Support team will contact you shortly.</p>
-                  <div className="bg-slate-50 py-3 rounded-xl mb-8 border border-slate-100">
-                    <p className="text-sm text-slate-500 mb-1">Reference ID</p>
-                    <p className="font-mono font-bold text-slate-900">HC-2026-000123</p>
-                  </div>
+                  <p className="text-slate-600 mb-8">Your concern has been submitted successfully. Our Customer Support team will contact you shortly.</p>
                   <div className="flex flex-col gap-3">
                     <button onClick={() => setFormState('idle')} className="w-full py-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl transition-colors">
-                      Back to Home
+                      Submit Another
                     </button>
-                    <button className="w-full py-4 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold rounded-xl transition-colors">
+                    <Link href="/contact" className="w-full py-4 bg-white border border-slate-200 hover:bg-slate-50 text-slate-700 font-bold rounded-xl transition-colors block">
                       View Contact Details
-                    </button>
+                    </Link>
                   </div>
                 </motion.div>
               ) : (
@@ -335,14 +420,14 @@ function MainContent({ searchQuery, activeCategory }) {
                         <label className="text-xs font-semibold text-slate-700 uppercase tracking-wide">Full Name</label>
                         <div className="relative mt-1">
                           <User className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                          <input type="text" required className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white outline-none transition-all text-sm" />
+                          <input type="text" required value={name} onChange={e => setName(e.target.value)} className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white outline-none transition-all text-sm" />
                         </div>
                       </div>
                       <div>
                         <label className="text-xs font-semibold text-slate-700 uppercase tracking-wide">Mobile Number</label>
                         <div className="relative mt-1">
                           <Smartphone className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                          <input type="tel" required className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white outline-none transition-all text-sm" />
+                          <input type="tel" required value={phone} onChange={e => setPhone(e.target.value)} className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white outline-none transition-all text-sm" />
                         </div>
                       </div>
                     </div>
@@ -352,17 +437,17 @@ function MainContent({ searchQuery, activeCategory }) {
                         <label className="text-xs font-semibold text-slate-700 uppercase tracking-wide">Email <span className="text-slate-400 lowercase font-normal">(Optional)</span></label>
                         <div className="relative mt-1">
                           <Mail className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                          <input type="email" className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white outline-none transition-all text-sm" />
+                          <input type="email" value={email} onChange={e => setEmail(e.target.value)} className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white outline-none transition-all text-sm" />
                         </div>
                       </div>
                       <div>
                         <label className="text-xs font-semibold text-slate-700 uppercase tracking-wide">City</label>
                         <div className="relative mt-1">
                           <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                          <select required className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white outline-none transition-all appearance-none text-sm text-slate-700">
+                          <select required value={city} onChange={e => setCity(e.target.value)} className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white outline-none transition-all appearance-none text-sm text-slate-700">
                             <option value="">Select City</option>
-                            <option value="delhi">New Delhi</option>
-                            <option value="mumbai">Mumbai</option>
+                            <option value="bhilai">Bhilai</option>
+                            <option value="durg">Durg</option>
                           </select>
                           <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 pointer-events-none" />
                         </div>
@@ -373,7 +458,7 @@ function MainContent({ searchQuery, activeCategory }) {
                       <label className="text-xs font-semibold text-slate-700 uppercase tracking-wide">Concern Category</label>
                       <div className="relative mt-1">
                         <Tag className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                        <select required className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white outline-none transition-all appearance-none text-sm text-slate-700">
+                        <select required value={category} onChange={e => setCategory(e.target.value)} className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white outline-none transition-all appearance-none text-sm text-slate-700">
                           <option value="">Select Category</option>
                           <option value="Booking">Booking</option>
                           <option value="Payment">Payment</option>
@@ -393,19 +478,19 @@ function MainContent({ searchQuery, activeCategory }) {
                       <label className="text-xs font-semibold text-slate-700 uppercase tracking-wide">Subject</label>
                       <div className="relative mt-1">
                         <FileText className="absolute left-4 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400" />
-                        <input type="text" required className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white outline-none transition-all text-sm" />
+                        <input type="text" required value={subject} onChange={e => setSubject(e.target.value)} className="w-full pl-10 pr-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white outline-none transition-all text-sm" />
                       </div>
                     </div>
 
                     <div>
                       <label className="text-xs font-semibold text-slate-700 uppercase tracking-wide">Message</label>
-                      <textarea required rows="3" className="mt-1 w-full p-4 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white outline-none transition-all resize-none text-sm"></textarea>
+                      <textarea required rows="3" value={message} onChange={e => setMessage(e.target.value)} className="mt-1 w-full p-4 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white outline-none transition-all resize-none text-sm"></textarea>
                     </div>
 
                     <div className="grid grid-cols-1 sm:grid-cols-2 gap-5">
                       <div>
                         <label className="text-xs font-semibold text-slate-700 uppercase tracking-wide">Contact Method</label>
-                        <select required className="mt-1 w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white outline-none transition-all appearance-none text-sm text-slate-700">
+                        <select required value={contactMethod} onChange={e => setContactMethod(e.target.value)} className="mt-1 w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white outline-none transition-all appearance-none text-sm text-slate-700">
                           <option value="Phone Call">Phone Call</option>
                           <option value="WhatsApp">WhatsApp</option>
                           <option value="Email">Email</option>
@@ -413,7 +498,7 @@ function MainContent({ searchQuery, activeCategory }) {
                       </div>
                       <div>
                         <label className="text-xs font-semibold text-slate-700 uppercase tracking-wide">Preferred Time</label>
-                        <select required className="mt-1 w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white outline-none transition-all appearance-none text-sm text-slate-700">
+                        <select required value={preferredTime} onChange={e => setPreferredTime(e.target.value)} className="mt-1 w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:bg-white outline-none transition-all appearance-none text-sm text-slate-700">
                           <option value="Morning">Morning</option>
                           <option value="Afternoon">Afternoon</option>
                           <option value="Evening">Evening</option>
@@ -421,16 +506,11 @@ function MainContent({ searchQuery, activeCategory }) {
                       </div>
                     </div>
 
-                    <div>
-                      <label className="text-xs font-semibold text-slate-700 uppercase tracking-wide">Attach Screenshot <span className="text-slate-400 lowercase font-normal">(Optional)</span></label>
-                      <div className="mt-1 relative flex items-center justify-center w-full px-4 py-4 bg-slate-50 border-2 border-dashed border-slate-300 rounded-xl hover:bg-slate-100 hover:border-blue-400 transition-colors cursor-pointer group">
-                        <input type="file" className="absolute inset-0 w-full h-full opacity-0 cursor-pointer" />
-                        <div className="flex items-center gap-2 text-slate-500 group-hover:text-blue-600 transition-colors">
-                          <Upload className="w-5 h-5" />
-                          <span className="text-sm font-medium">Choose File</span>
-                        </div>
+                    {errorMsg && (
+                      <div className="p-3 bg-red-50 border border-red-200 rounded-xl text-xs text-red-600">
+                        {errorMsg}
                       </div>
-                    </div>
+                    )}
 
                     <div className="flex items-start gap-3 pt-2">
                       <input type="checkbox" id="consent" required className="mt-1 w-4 h-4 rounded border-slate-300 text-blue-600 focus:ring-blue-500" />
@@ -462,10 +542,10 @@ function MainContent({ searchQuery, activeCategory }) {
 
 function QuickContact() {
   const contacts = [
-    { title: 'Call Support', icon: Phone, detail: '+91 91114 66642', color: 'blue' },
-    { title: 'WhatsApp Support', icon: FaWhatsapp, detail: 'Chat with us', color: 'green' },
-    { title: 'Email Support', icon: Mail, detail: 'homecarre2405@gmail.com', color: 'orange' },
-    { title: 'Visit Office', icon: Building, detail: '123 HomeCare Tower', color: 'purple' },
+    { title: 'Call Support', icon: Phone, detail: '+91 91114 66642', color: 'blue', href: 'tel:+919111466642' },
+    { title: 'WhatsApp Support', icon: FaWhatsapp, detail: 'Chat with us', color: 'green', href: 'https://wa.me/919111466642' },
+    { title: 'Email Support', icon: Mail, detail: 'homecarre2405@gmail.com', color: 'orange', href: 'mailto:homecarre2405@gmail.com' },
+    { title: 'Visit Office', icon: Building, detail: 'Risali, Bhilai, Durg', color: 'purple', href: '/contact#map' },
   ];
 
   const colorStyles = {
@@ -483,8 +563,10 @@ function QuickContact() {
         
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
           {contacts.map((contact, i) => (
-            <motion.a 
-              href="#"
+            <motion.a
+              href={contact.href}
+              target={contact.href.startsWith('http') ? '_blank' : undefined}
+              rel={contact.href.startsWith('http') ? 'noopener noreferrer' : undefined}
               key={i}
               initial={{ opacity: 0, y: 20 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ delay: i * 0.1 }}
               className="flex flex-col items-center p-8 bg-[#F8FAFC] border border-slate-200 rounded-3xl hover:shadow-xl hover:border-blue-200 transition-all duration-300 hover:-translate-y-1 group"
@@ -506,12 +588,39 @@ function QuickContact() {
 export default function FAQPage() {
   const [searchQuery, setSearchQuery] = useState('');
   const [activeCategory, setActiveCategory] = useState('All');
+  
+  const { data: faqs = [], isLoading } = useGetFaqsQuery('active=true');
+
+  const faqsByCategory = React.useMemo(() => {
+    const grouped = {};
+    faqs.forEach(faq => {
+      if (!grouped[faq.category]) grouped[faq.category] = [];
+      grouped[faq.category].push(faq);
+    });
+    return grouped;
+  }, [faqs]);
+
+  const dynamicCategories = React.useMemo(() => {
+    return Object.keys(faqsByCategory).map(catName => {
+      const existing = FAQ_CATEGORIES.find(c => c.id.toLowerCase() === catName.toLowerCase());
+      return {
+        id: catName,
+        icon: existing ? existing.icon : HelpCircle
+      };
+    });
+  }, [faqsByCategory]);
 
   return (
     <div className="min-h-screen selection:bg-blue-600 selection:text-white">
       <HeroSection searchQuery={searchQuery} setSearchQuery={setSearchQuery} />
-      <PopularTopics setActiveCategory={setActiveCategory} />
-      <MainContent searchQuery={searchQuery} activeCategory={activeCategory === 'All' ? 'Booking' : activeCategory} />
+      <PopularTopics setActiveCategory={setActiveCategory} dynamicCategories={dynamicCategories} />
+      <MainContent 
+        searchQuery={searchQuery} 
+        activeCategory={activeCategory === 'All' && dynamicCategories.length > 0 ? dynamicCategories[0].id : activeCategory} 
+        faqsByCategory={faqsByCategory}
+        rawFaqs={faqs}
+        isLoading={isLoading}
+      />
       <QuickContact />
       
       {/* Sticky Mobile Contact Buttons */}
@@ -519,7 +628,7 @@ export default function FAQPage() {
         <a href="tel:+919111466642" className="flex-1 bg-blue-600 text-white font-semibold py-3 rounded-xl flex items-center justify-center gap-2">
           <Phone className="w-5 h-5" /> Call
         </a>
-        <a href="#" className="flex-1 bg-green-500 text-white font-semibold py-3 rounded-xl flex items-center justify-center gap-2">
+        <a href="https://wa.me/919111466642" target="_blank" rel="noopener noreferrer" className="flex-1 bg-green-500 text-white font-semibold py-3 rounded-xl flex items-center justify-center gap-2">
           <FaWhatsapp className="w-5 h-5" /> WhatsApp
         </a>
       </div>

@@ -1,26 +1,21 @@
 import { Star, Calendar, Zap, XCircle, RefreshCcw } from 'lucide-react';
-import { useGetWorkOrdersQuery } from '@/store/api/workOrderApi';
-import { useGetPartnersQuery } from '@/store/api/partnerApi';
 
-export default function BookingInsightsPanel() {
-    const { data: rawWorkOrders = [] } = useGetWorkOrdersQuery();
-    const { data: partners = [] } = useGetPartnersQuery();
-
+export default function BookingInsightsPanel({ bookings = [], partners = [] }) {
     // Most Booked Service & Highest Cancellation Category
     let mostBookedService = 'N/A';
     let maxServiceBookings = 0;
     let highestCancellationCategory = 'N/A';
     let maxCancelRate = 0;
-    
-    if (rawWorkOrders.length > 0) {
-        const servicesMap = rawWorkOrders.reduce((acc, wo) => {
-            const service = wo.enquiryId?.serviceCategory || wo.title || 'Unknown Service';
+
+    if (bookings.length > 0) {
+        const servicesMap = bookings.reduce((acc, b) => {
+            const service = b.category || b.serviceName || 'Unknown Service';
             if (!acc[service]) acc[service] = { total: 0, cancelled: 0 };
             acc[service].total += 1;
-            if (wo.status === 'Cancelled') acc[service].cancelled += 1;
+            if (b.status === 'cancelled') acc[service].cancelled += 1;
             return acc;
         }, {});
-        
+
         const sortedServices = Object.entries(servicesMap).sort((a, b) => b[1].total - a[1].total);
         if (sortedServices.length > 0) {
             mostBookedService = sortedServices[0][0];
@@ -30,7 +25,7 @@ export default function BookingInsightsPanel() {
         const sortedCancel = Object.entries(servicesMap)
             .map(([cat, stats]) => ({ cat, rate: stats.total > 0 ? (stats.cancelled / stats.total) * 100 : 0 }))
             .sort((a, b) => b.rate - a.rate);
-        
+
         if (sortedCancel.length > 0 && sortedCancel[0].rate > 0) {
             highestCancellationCategory = sortedCancel[0].cat;
             maxCancelRate = sortedCancel[0].rate.toFixed(1);
@@ -39,11 +34,11 @@ export default function BookingInsightsPanel() {
 
     // Peak Booking Day
     let peakBookingDay = 'N/A';
-    if (rawWorkOrders.length > 0) {
+    if (bookings.length > 0) {
         const days = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
-        const dayCounts = rawWorkOrders.reduce((acc, wo) => {
-            if (wo.createdAt) {
-                const day = new Date(wo.createdAt).getDay();
+        const dayCounts = bookings.reduce((acc, b) => {
+            if (b.createdAt) {
+                const day = new Date(b.createdAt).getDay();
                 acc[day] = (acc[day] || 0) + 1;
             }
             return acc;
@@ -52,27 +47,33 @@ export default function BookingInsightsPanel() {
         if (maxDayIdx !== undefined) peakBookingDay = days[maxDayIdx];
     }
 
-    // Fastest Partner
-    let fastestPartner = 'N/A';
-    let partnerRating = 0;
-    if (partners.length > 0) {
-        const topPartner = [...partners].sort((a, b) => (b.rating || 0) - (a.rating || 0))[0];
-        if (topPartner) {
-            fastestPartner = topPartner.name || 'Unknown';
-            partnerRating = topPartner.rating || 4.5;
-        }
+    // Top Partner — most completed bookings (there is no duration field to determine "fastest")
+    let topPartnerName = 'N/A';
+    let topPartnerJobs = 0;
+    const partnerNameById = partners.reduce((acc, p) => { acc[p._id] = p.name; return acc; }, {});
+    const partnerCompletions = bookings.reduce((acc, b) => {
+        if (b.status !== 'completed') return acc;
+        const id = b.partnerId?._id || b.partnerId;
+        if (!id) return acc;
+        const name = partnerNameById[id] || b.assignedTo || 'Unknown';
+        acc[name] = (acc[name] || 0) + 1;
+        return acc;
+    }, {});
+    const sortedPartners = Object.entries(partnerCompletions).sort((a, b) => b[1] - a[1]);
+    if (sortedPartners.length > 0) {
+        topPartnerName = sortedPartners[0][0];
+        topPartnerJobs = sortedPartners[0][1];
     }
 
     // Repeat Customer Rate
     let repeatCustomerRate = 0;
-    const customerCounts = rawWorkOrders.reduce((acc, wo) => {
-        if (wo.customerId?._id) {
-            acc[wo.customerId._id] = (acc[wo.customerId._id] || 0) + 1;
-        }
+    const customerCounts = bookings.reduce((acc, b) => {
+        const key = b.customerId?._id || b.customerId || b.phone || b.customerName;
+        if (key) acc[key] = (acc[key] || 0) + 1;
         return acc;
     }, {});
     const uniqueCustomers = Object.keys(customerCounts).length;
-    const repeatCustomerCount = Object.values(customerCounts).filter(count => count > 1).length;
+    const repeatCustomerCount = Object.values(customerCounts).filter((count) => count > 1).length;
     if (uniqueCustomers > 0) {
         repeatCustomerRate = ((repeatCustomerCount / uniqueCustomers) * 100).toFixed(1);
     }
@@ -94,10 +95,10 @@ export default function BookingInsightsPanel() {
         },
         {
             label: 'Top Partner',
-            value: fastestPartner,
+            value: topPartnerName,
             icon: Zap,
             color: 'text-emerald-600 bg-emerald-50 border-emerald-100',
-            sub: `${partnerRating} ★ rating`,
+            sub: `${topPartnerJobs} completed jobs`,
         },
         {
             label: 'Highest Cancellation',

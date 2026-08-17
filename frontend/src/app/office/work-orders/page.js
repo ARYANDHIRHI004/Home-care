@@ -9,8 +9,11 @@ import WorkOrderDrawer from './components/WorkOrderDrawer';
 import CreateWorkOrderModal from './components/CreateWorkOrderModal';
 import EditWorkOrderModal from './components/EditWorkOrderModal';
 import DeleteWorkOrderDialog from './components/DeleteWorkOrderDialog';
+import AssignPartnerModal from './components/AssignPartnerModal';
+import UpdateWorkOrderStatusModal from './components/UpdateWorkOrderStatusModal';
 import KanbanBoard from './components/KanbanBoard';
 import { useGetWorkOrdersQuery } from '@/store/api/workOrderApi';
+import { exportToCSV } from '@/lib/csvExport';
 
 export default function WorkOrdersPage() {
     const [selectedOrder, setSelectedOrder] = useState(null);
@@ -18,6 +21,8 @@ export default function WorkOrdersPage() {
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [isEditModalOpen, setIsEditModalOpen] = useState(false);
     const [isDeleteModalOpen, setIsDeleteModalOpen] = useState(false);
+    const [isAssignModalOpen, setIsAssignModalOpen] = useState(false);
+    const [isStatusModalOpen, setIsStatusModalOpen] = useState(false);
     const [orderToEdit, setOrderToEdit] = useState(null);
     const [orderToDelete, setOrderToDelete] = useState(null);
     const [searchQuery, setSearchQuery] = useState('');
@@ -25,7 +30,7 @@ export default function WorkOrdersPage() {
     const [currentPage, setCurrentPage] = useState(1);
     const [itemsPerPage, setItemsPerPage] = useState(10);
 
-    const { data: rawOrders = [], isLoading } = useGetWorkOrdersQuery();
+    const { data: rawOrders = [], isLoading, refetch, isFetching } = useGetWorkOrdersQuery();
 
     // Map backend fields to the shape the UI components expect
     const workOrders = rawOrders.map(wo => ({
@@ -33,7 +38,7 @@ export default function WorkOrdersPage() {
         displayId: `WO-${wo._id.slice(-4).toUpperCase()}`,
         bookingId: wo.enquiryId?._id || wo.enquiryId || '',
         customer: wo.customerId?.name || wo.customerName || 'Unknown',
-        service: wo.serviceCategory || 'N/A',
+        service: wo.enquiryId?.serviceCategory || 'N/A',
         assignedTo: wo.assignedPartnerId?.name || 'Unassigned',
         date: wo.scheduledAt ? new Date(wo.scheduledAt).toLocaleString() : 'N/A',
         status: wo.status || 'open',
@@ -41,6 +46,14 @@ export default function WorkOrdersPage() {
         createdDate: new Date(wo.createdAt).toLocaleDateString(),
         _raw: wo,
     }));
+
+    // Re-derive from the live query result rather than trusting the snapshot
+    // captured at click time — after Assign/Update Status mutates the record,
+    // RTK Query refetches `workOrders`, but `selectedOrder` itself wouldn't
+    // reflect that update, leaving the drawer showing stale assignment/status.
+    const liveSelectedOrder = selectedOrder
+        ? workOrders.find((w) => w.id === selectedOrder.id) || selectedOrder
+        : null;
 
     const handleRowClick = (order) => {
         setSelectedOrder(order);
@@ -65,11 +78,23 @@ export default function WorkOrdersPage() {
 
     const actions = (
         <>
-            <button className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 rounded-xl text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors shadow-sm">
-                <RefreshCw className="w-4 h-4" />
+            <button onClick={() => refetch()} className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 rounded-xl text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors shadow-sm">
+                <RefreshCw className={`w-4 h-4 ${isFetching ? 'animate-spin' : ''}`} />
                 Refresh
             </button>
-            <button className="hidden sm:flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 rounded-xl text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors shadow-sm">
+            <button
+                onClick={() => exportToCSV('work-orders', workOrders, [
+                    { key: 'displayId', label: 'Work Order ID' },
+                    { key: 'customer', label: 'Customer' },
+                    { key: 'service', label: 'Service' },
+                    { key: 'assignedTo', label: 'Assigned To' },
+                    { key: 'date', label: 'Scheduled Date' },
+                    { key: 'status', label: 'Status' },
+                    { key: 'priority', label: 'Priority' },
+                    { key: 'createdDate', label: 'Created' },
+                ])}
+                className="hidden sm:flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 rounded-xl text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors shadow-sm"
+            >
                 <Download className="w-4 h-4" /> Export CSV
             </button>
             <div className="flex items-center bg-slate-100 dark:bg-slate-800 p-1 rounded-xl transition-colors">
@@ -124,9 +149,21 @@ export default function WorkOrdersPage() {
             )}
 
             <WorkOrderDrawer
-                workOrder={selectedOrder}
+                workOrder={liveSelectedOrder}
                 isOpen={isDrawerOpen}
                 onClose={() => setIsDrawerOpen(false)}
+                onAssignPartner={() => setIsAssignModalOpen(true)}
+                onUpdateStatus={() => setIsStatusModalOpen(true)}
+            />
+            <AssignPartnerModal
+                isOpen={isAssignModalOpen}
+                onClose={() => setIsAssignModalOpen(false)}
+                workOrder={liveSelectedOrder}
+            />
+            <UpdateWorkOrderStatusModal
+                isOpen={isStatusModalOpen}
+                onClose={() => setIsStatusModalOpen(false)}
+                workOrder={liveSelectedOrder}
             />
             <CreateWorkOrderModal 
                 isOpen={isCreateModalOpen} 

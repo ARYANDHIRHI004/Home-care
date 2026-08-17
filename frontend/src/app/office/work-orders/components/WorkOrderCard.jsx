@@ -1,6 +1,7 @@
 'use client';
 import { CalendarIcon, User, Wrench } from 'lucide-react';
 import { PriorityBadge } from '@/components/office/ui/Badge';
+import { titleCase } from '@/lib/officeApiMappers';
 
 export default function WorkOrderCard({ wo, onClick }) {
     return (
@@ -12,7 +13,7 @@ export default function WorkOrderCard({ wo, onClick }) {
                 <span className="font-mono text-xs font-semibold text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/30 px-2 py-0.5 rounded border border-blue-100 dark:border-blue-800 transition-colors">
                     {wo.id}
                 </span>
-                <PriorityBadge priority={wo.priority} />
+                <PriorityBadge priority={titleCase(wo.priority)} />
             </div>
             
             <div className="mb-4">

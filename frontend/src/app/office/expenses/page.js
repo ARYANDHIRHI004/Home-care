@@ -1,17 +1,40 @@
 'use client';
 
 import { useState } from 'react';
+import { useDispatch } from 'react-redux';
 import { RefreshCw, Download, Plus } from 'lucide-react';
 import PageHeader from '@/components/office/PageHeader';
 import ExpenseStatsCards from './components/ExpenseStatsCards';
 import ExpenseFilters from './components/ExpenseFilters';
 import ExpenseTable from './components/ExpenseTable';
 import ExpenseModal from './components/ExpenseModal';
+import { apiSlice } from '@/store/apiSlice';
+import { useGetExpensesQuery } from '@/store/api/expenseApi';
+import { exportToCSV } from '@/lib/csvExport';
 
 export default function ExpensesPage() {
     const [searchQuery, setSearchQuery] = useState('');
     const [isModalOpen, setIsModalOpen] = useState(false);
     const [expenseToEdit, setExpenseToEdit] = useState(null);
+    const dispatch = useDispatch();
+    const { data: rawExpenses = [], isFetching } = useGetExpensesQuery();
+
+    const handleRefresh = () => dispatch(apiSlice.util.invalidateTags(['Expense']));
+    const handleExport = () => exportToCSV('expenses', rawExpenses.map(e => ({
+        category: e.category,
+        description: e.description,
+        vendor: e.vendor || 'Unknown',
+        amount: e.amount,
+        method: e.paymentMethod,
+        date: e.date ? new Date(e.date).toLocaleDateString('en-GB') : '',
+    })), [
+        { key: 'category', label: 'Category' },
+        { key: 'description', label: 'Description' },
+        { key: 'vendor', label: 'Vendor' },
+        { key: 'amount', label: 'Amount' },
+        { key: 'method', label: 'Payment Method' },
+        { key: 'date', label: 'Date' },
+    ]);
 
     const handleRowClick = (expense) => {
         setExpenseToEdit(expense);
@@ -31,10 +54,10 @@ export default function ExpensesPage() {
 
     const actions = (
         <>
-            <button className="p-2 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors border border-transparent">
-                <RefreshCw className="w-4 h-4" />
+            <button onClick={handleRefresh} className="p-2 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors border border-transparent">
+                <RefreshCw className={`w-4 h-4 ${isFetching ? 'animate-spin' : ''}`} />
             </button>
-            <button className="hidden sm:flex items-center gap-2 px-3 py-2 bg-white border border-slate-200 text-slate-700 rounded-lg text-sm font-medium hover:bg-slate-50 transition-colors shadow-sm">
+            <button onClick={handleExport} className="hidden sm:flex items-center gap-2 px-3 py-2 bg-white border border-slate-200 text-slate-700 rounded-lg text-sm font-medium hover:bg-slate-50 transition-colors shadow-sm">
                 <Download className="w-4 h-4" /> Export
             </button>
             <button 

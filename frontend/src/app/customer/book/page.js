@@ -52,8 +52,16 @@ export default function BookServicePage() {
     desc: service.description || 'Professional home care service',
     priceFrom: service.basePrice || 0,
     duration: service.duration || '1-2 hrs',
+    image: service.images?.[0] || null,
     _raw: service,
   }));
+  
+  const servicesByCategory = serviceCatalog.reduce((acc, s) => {
+    if (!acc[s.category]) acc[s.category] = [];
+    acc[s.category].push(s);
+    return acc;
+  }, {});
+
   const termsByCategory = rawTerms.reduce((acc, term) => {
     const categoryId = term.categoryId?._id || term.categoryId;
     acc[categoryId] = term;
@@ -325,25 +333,47 @@ export default function BookServicePage() {
 
       {/* STEP 1 — Choose Service */}
       {step === 1 && (
-        <div className="space-y-4">
+        <div className="space-y-6">
           <h1 className="text-lg font-bold text-[#0F172A]">Choose a service</h1>
-          <div className="space-y-2">
-            {serviceCatalog.map((s) => (
-              <button
-                key={s.name}
-                onClick={() => selectService(s)}
-                className={`w-full text-left p-4 rounded-2xl border transition-colors ${
-                  form.service?.name === s.name ? 'border-[#2554F0] bg-[#F0F4FF]' : 'border-[#0F172A]/10 bg-white hover:border-[#0F172A]/20'
-                }`}
-              >
-                <div className="flex items-center justify-between mb-1">
-                  <span className="text-sm font-bold text-[#0F172A]">{s.name}</span>
-                  <span className="text-xs font-bold text-[#2554F0]">From ₹{s.priceFrom}</span>
+          
+          <div className="space-y-6">
+            {Object.entries(servicesByCategory).map(([cat, services]) => (
+              <div key={cat} className="space-y-3">
+                <h2 className="text-sm font-bold text-[#0F172A]/60 uppercase tracking-wider">{cat}</h2>
+                <div className="space-y-2">
+                  {services.map((s) => (
+                    <button
+                      key={s.name}
+                      onClick={() => selectService(s)}
+                      className={`w-full text-left p-3 rounded-2xl border transition-colors flex items-center gap-4 ${
+                        form.service?.name === s.name ? 'border-[#2554F0] bg-[#F0F4FF]' : 'border-[#0F172A]/10 bg-white hover:border-[#0F172A]/20'
+                      }`}
+                    >
+                      {s.image ? (
+                        <div className="w-16 h-16 shrink-0 rounded-xl overflow-hidden bg-slate-100 border border-slate-200">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img src={s.image} alt={s.name} className="w-full h-full object-cover" />
+                        </div>
+                      ) : (
+                        <div className="w-16 h-16 shrink-0 rounded-xl bg-slate-100 border border-slate-200 flex items-center justify-center">
+                          <span className="text-[10px] text-slate-400 font-medium text-center leading-tight">No<br/>Image</span>
+                        </div>
+                      )}
+                      
+                      <div className="flex-1 min-w-0 py-1">
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-1 gap-1">
+                          <span className="text-sm font-bold text-[#0F172A] truncate">{s.name}</span>
+                          <span className="text-xs font-bold text-[#2554F0] shrink-0">From ₹{s.priceFrom}</span>
+                        </div>
+                        <p className="text-xs text-[#0F172A]/50 line-clamp-2">{s.desc}</p>
+                      </div>
+                    </button>
+                  ))}
                 </div>
-                <p className="text-xs text-[#0F172A]/50">{s.desc} · {s.duration}</p>
-              </button>
+              </div>
             ))}
           </div>
+
           <button
             onClick={goNext}
             disabled={!termsAccepted}

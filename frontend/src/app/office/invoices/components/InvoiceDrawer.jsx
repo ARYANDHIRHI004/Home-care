@@ -1,6 +1,11 @@
-import { X, FileText, Download, Send, CheckCircle2, Clock, AlertTriangle, FileEdit } from 'lucide-react';
+import { X, FileText, Download, Send, CheckCircle2, Clock, AlertTriangle, FileEdit, Loader2 } from 'lucide-react';
+import { useState } from 'react';
+import { toast } from 'react-hot-toast';
 
 export default function InvoiceDrawer({ invoice, isOpen, onClose }) {
+    const [isDownloading, setIsDownloading] = useState(false);
+    const [isSending, setIsSending] = useState(false);
+
     if (!isOpen || !invoice) return null;
 
     // Matches Invoice.paymentStatus's real enum (unpaid/partial/paid).
@@ -15,6 +20,57 @@ export default function InvoiceDrawer({ invoice, isOpen, onClose }) {
 
     const lineItems = invoice._raw?.lineItems?.length ? invoice._raw.lineItems : [];
     const subtotal = lineItems.reduce((sum, li) => sum + (li.qty || 0) * (li.price || 0), 0);
+
+    const handleDownloadPdf = async () => {
+        try {
+            setIsDownloading(true);
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/invoices/${invoice._raw._id || invoice.id}/pdf`, {
+                method: 'GET',
+                credentials: 'include'
+            });
+            if (!response.ok) {
+                const errText = await response.text();
+                throw new Error(`Failed to generate PDF: ${response.status} ${errText}`);
+            }
+            const blob = await response.blob();
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `invoice-${invoice._raw?.invoiceNumber || invoice.id}.pdf`;
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+            window.URL.revokeObjectURL(url);
+        } catch (error) {
+            console.error('Download error:', error);
+            toast.error('Failed to download PDF');
+        } finally {
+            setIsDownloading(false);
+        }
+    };
+
+    const handleSendInvoice = async () => {
+        try {
+            setIsSending(true);
+            const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/invoices/${invoice._raw._id || invoice.id}/send`, {
+                method: 'POST',
+                credentials: 'include'
+            });
+            const data = await response.json();
+            if (!response.ok) throw new Error(data.message || 'Failed to send invoice');
+
+            if (data.message && data.message.includes('WhatsApp')) {
+                toast.success('No email on file. Share the PDF via WhatsApp instead.', { duration: 5000 });
+            } else {
+                toast.success(data.message || 'Invoice sent successfully');
+            }
+        } catch (error) {
+            console.error('Send error:', error);
+            toast.error(error.message || 'Failed to send invoice');
+        } finally {
+            setIsSending(false);
+        }
+    };
 
     return (
         <div className="fixed inset-0 z-50 bg-slate-900/20 backdrop-blur-sm flex justify-end" onClick={onClose}>
@@ -41,7 +97,7 @@ export default function InvoiceDrawer({ invoice, isOpen, onClose }) {
                 {/* Scrollable Body - Realistic Invoice Preview */}
                 <div className="flex-1 overflow-y-auto p-8 bg-slate-100/50">
                     <div className="bg-white border border-slate-200 shadow-sm rounded-xl overflow-hidden max-w-[600px] mx-auto relative">
-                        
+
                         {/* Invoice Header */}
                         <div className="p-8 border-b border-slate-200 flex justify-between items-start bg-slate-50">
                             <div>
@@ -49,12 +105,14 @@ export default function InvoiceDrawer({ invoice, isOpen, onClose }) {
                                 <p className="text-sm font-bold text-slate-500">#{invoice.id}</p>
                                 <p className="text-xs text-slate-400 mt-1">Date: {invoice.date}</p>
                             </div>
-                            <div className="text-right">
-                                <div className="w-10 h-10 bg-blue-600 rounded-lg flex items-center justify-center text-white font-bold text-xl ml-auto mb-2">H</div>
+                            <div className="text-right flex items-center flex-col  ">
+                                {/* <div className="w-10 h-10 rounded-lg "> */}
+                                    <img src='/logo.png' className='w-12 h-12' />
+                                    {/* </div> */}
                                 <h3 className="text-sm font-bold text-slate-900">HomeCare Ltd.</h3>
                                 <p className="text-[10px] text-slate-500 mt-0.5">GSTIN: 22AAAAA0000A1Z5</p>
                                 <p className="text-[10px] text-slate-500">homecarre2405@gmail.com</p>
-                            </div>
+                            </div> 
                         </div>
 
                         {/* Customer & Booking Details */}
@@ -109,12 +167,12 @@ export default function InvoiceDrawer({ invoice, isOpen, onClose }) {
                                     </div>
                                 )}
                                 <div className="flex justify-between text-slate-600">
-                                    <span>GST</span>
-                                    <span className="font-medium">₹{invoice.gst.toLocaleString()}</span>
+                                    <span>18% GST</span>
+                                    <span className="font-medium">₹{invoice.gst?.toLocaleString() || 0}</span>
                                 </div>
                                 <div className="flex justify-between border-t border-slate-900 pt-3 text-lg font-black text-slate-900">
                                     <span>Total</span>
-                                    <span>₹{invoice.total.toLocaleString()}</span>
+                                    <span>₹{invoice.total?.toLocaleString() || 0}</span>
                                 </div>
                             </div>
                         </div>
@@ -133,11 +191,48 @@ export default function InvoiceDrawer({ invoice, isOpen, onClose }) {
                     <button onClick={onClose} className="px-4 py-2 text-slate-600 bg-white border border-slate-200 rounded-lg text-sm font-medium hover:bg-slate-50 transition-colors">
                         Close
                     </button>
-                    <button className="flex items-center gap-2 px-4 py-2 text-slate-600 bg-slate-100 rounded-lg text-sm font-medium hover:bg-slate-200 transition-colors">
-                        <Download className="w-4 h-4" /> PDF
+                    {invoice.status !== 'paid' && (
+                        <button
+                            onClick={async () => {
+                                try {
+                                    setIsSending(true);
+                                    const response = await fetch(`${process.env.NEXT_PUBLIC_API_URL || 'http://localhost:8000'}/api/invoices/${invoice._raw._id || invoice.id}/payment-status`, {
+                                        method: 'PATCH',
+                                        headers: { 'Content-Type': 'application/json' },
+                                        body: JSON.stringify({ paymentStatus: 'paid' }),
+                                        credentials: 'include'
+                                    });
+                                    if (!response.ok) throw new Error('Failed to update status');
+                                    toast.success('Invoice marked as paid');
+                                    window.location.reload(); // Quickest way to refresh the dashboard
+                                } catch (err) {
+                                    toast.error('Failed to mark as paid');
+                                } finally {
+                                    setIsSending(false);
+                                }
+                            }}
+                            disabled={isSending || isDownloading}
+                            className="flex items-center gap-2 px-4 py-2 text-emerald-700 bg-emerald-50 border border-emerald-200 rounded-lg text-sm font-medium hover:bg-emerald-100 transition-colors disabled:opacity-50"
+                        >
+                            <CheckCircle2 className="w-4 h-4" />
+                            Mark as Paid
+                        </button>
+                    )}
+                    <button
+                        onClick={handleDownloadPdf}
+                        disabled={isDownloading || isSending}
+                        className="flex items-center gap-2 px-4 py-2 text-slate-600 bg-slate-100 rounded-lg text-sm font-medium hover:bg-slate-200 transition-colors disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        {isDownloading ? <Loader2 className="w-4 h-4 animate-spin" /> : <Download className="w-4 h-4" />}
+                        {isDownloading ? 'Downloading...' : 'PDF'}
                     </button>
-                    <button className="flex items-center gap-2 px-6 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors shadow-sm">
-                        <Send className="w-4 h-4" /> Send Invoice
+                    <button
+                        onClick={handleSendInvoice}
+                        disabled={isSending || isDownloading}
+                        className="flex items-center gap-2 px-6 py-2 bg-blue-600 text-white rounded-lg text-sm font-medium hover:bg-blue-700 transition-colors shadow-sm disabled:opacity-50 disabled:cursor-not-allowed"
+                    >
+                        {isSending ? <Loader2 className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
+                        {isSending ? 'Sending...' : 'Send Invoice'}
                     </button>
                 </div>
             </div>

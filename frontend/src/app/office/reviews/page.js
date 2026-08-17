@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useDispatch } from 'react-redux';
 import { RefreshCw, Download, Filter, MessageSquareText } from 'lucide-react';
 import PageHeader from '@/components/office/PageHeader';
 import ReviewStatsCards from './components/ReviewStatsCards';
@@ -8,10 +9,32 @@ import ReviewFilters from './components/ReviewFilters';
 import ReviewList from './components/ReviewList';
 import ReviewSidebar from './components/ReviewSidebar';
 import ReviewDrawer from './components/ReviewDrawer';
+import { apiSlice } from '@/store/apiSlice';
+import { useGetFeedbackQuery } from '@/store/api/feedbackApi';
+import { exportToCSV } from '@/lib/csvExport';
 
 export default function ReviewsPage() {
     const [selectedReview, setSelectedReview] = useState(null);
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+    const dispatch = useDispatch();
+    const { data: rawFeedback = [], isFetching } = useGetFeedbackQuery();
+
+    const handleRefresh = () => dispatch(apiSlice.util.invalidateTags([{ type: 'Feedback', id: 'LIST' }]));
+    const handleExport = () => exportToCSV('reviews', rawFeedback.map(f => ({
+        customer: f.customerId?.name || 'Customer',
+        partner: f.workOrderId?.assignedPartnerId?.name || 'Service Team',
+        service: f.workOrderId?.serviceCategory || 'HomeCare Service',
+        rating: f.rating || 5,
+        comments: f.comments || '',
+        date: f.createdAt ? new Date(f.createdAt).toLocaleDateString() : '',
+    })), [
+        { key: 'customer', label: 'Customer' },
+        { key: 'partner', label: 'Partner' },
+        { key: 'service', label: 'Service' },
+        { key: 'rating', label: 'Rating' },
+        { key: 'comments', label: 'Comments' },
+        { key: 'date', label: 'Date' },
+    ]);
 
     const handleReviewClick = (review) => {
         setSelectedReview(review);
@@ -26,10 +49,10 @@ export default function ReviewsPage() {
 
     const actions = (
         <>
-            <button className="p-2 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors border border-transparent">
-                <RefreshCw className="w-4 h-4" />
+            <button onClick={handleRefresh} className="p-2 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors border border-transparent">
+                <RefreshCw className={`w-4 h-4 ${isFetching ? 'animate-spin' : ''}`} />
             </button>
-            <button className="flex items-center px-3 py-2 bg-white border border-slate-200 text-slate-700 rounded-lg text-sm font-medium hover:bg-slate-50 transition-colors shadow-sm">
+            <button onClick={handleExport} className="flex items-center px-3 py-2 bg-white border border-slate-200 text-slate-700 rounded-lg text-sm font-medium hover:bg-slate-50 transition-colors shadow-sm">
                 <Download className="w-4 h-4 mr-2" /> Export
             </button>
             <button className="hidden sm:flex items-center px-3 py-2 bg-white border border-slate-200 text-slate-700 rounded-lg text-sm font-medium hover:bg-slate-50 transition-colors shadow-sm">

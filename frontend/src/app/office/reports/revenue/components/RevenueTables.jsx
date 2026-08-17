@@ -1,33 +1,31 @@
-import { CheckCircle2, Clock, AlertCircle, AlertTriangle, Send } from 'lucide-react';
-import { useGetWorkOrdersQuery } from '@/store/api/workOrderApi';
-import { useGetPaymentsQuery } from '@/store/api/paymentApi';
-import { useGetCustomersQuery } from '@/store/api/customerApi';
+import { CheckCircle2, Clock, AlertCircle, AlertTriangle } from 'lucide-react';
+
+function toLabel(value) {
+    return String(value || '').replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+}
 
 function StatusBadge({ status }) {
     switch (status) {
-        case 'Paid': return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-emerald-50 text-emerald-700 border border-emerald-200"><CheckCircle2 className="w-3 h-3" /> Paid</span>;
-        case 'Pending': return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-amber-50 text-amber-700 border border-amber-200"><Clock className="w-3 h-3" /> Pending</span>;
-        case 'Partial': return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-blue-50 text-blue-700 border border-blue-200"><AlertCircle className="w-3 h-3" /> Partial</span>;
-        case 'Failed': return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-rose-50 text-rose-700 border border-rose-200"><AlertTriangle className="w-3 h-3" /> Failed</span>;
-        default: return null;
+        case 'verified': return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-emerald-50 text-emerald-700 border border-emerald-200"><CheckCircle2 className="w-3 h-3" /> Verified</span>;
+        case 'pending': return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-amber-50 text-amber-700 border border-amber-200"><Clock className="w-3 h-3" /> Pending</span>;
+        case 'failed': return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-rose-50 text-rose-700 border border-rose-200"><AlertTriangle className="w-3 h-3" /> Failed</span>;
+        default: return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-slate-50 text-slate-700 border border-slate-200"><AlertCircle className="w-3 h-3" /> {toLabel(status)}</span>;
     }
 }
 
-export function TopServicesTable() {
-    const { data: rawWorkOrders = [] } = useGetWorkOrdersQuery();
-
-    const servicesMap = rawWorkOrders.reduce((acc, wo) => {
-        const service = wo.enquiryId?.serviceCategory || wo.title || 'Unknown Service';
+export function TopServicesTable({ bookings = [] }) {
+    const servicesMap = bookings.reduce((acc, b) => {
+        const service = b.serviceName || b.category || 'Unknown Service';
         if (!acc[service]) acc[service] = { service, bookings: 0, revenue: 0 };
         acc[service].bookings += 1;
-        acc[service].revenue += (wo.price || 0);
+        acc[service].revenue += (b.amount || 0);
         return acc;
     }, {});
 
     const topServices = Object.values(servicesMap)
         .sort((a, b) => b.revenue - a.revenue)
         .slice(0, 5)
-        .map(s => ({ ...s, avgTicket: s.bookings > 0 ? (s.revenue / s.bookings).toFixed(0) : 0 }));
+        .map((s) => ({ ...s, avgTicket: s.bookings > 0 ? Math.round(s.revenue / s.bookings) : 0 }));
 
     return (
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
@@ -62,7 +60,7 @@ export function TopServicesTable() {
                                 <td className="px-6 py-4 text-right text-slate-600 font-medium">₹{Number(s.avgTicket).toLocaleString()}</td>
                             </tr>
                         )) : (
-                            <tr><td colSpan="5" className="px-6 py-4 text-center text-slate-500">No data available</td></tr>
+                            <tr><td colSpan="5" className="px-6 py-8 text-center text-slate-400">No data yet</td></tr>
                         )}
                     </tbody>
                 </table>
@@ -71,26 +69,20 @@ export function TopServicesTable() {
     );
 }
 
-export function TopCustomersTable() {
-    const { data: customers = [] } = useGetCustomersQuery();
-    const { data: payments = [] } = useGetPaymentsQuery();
+export function TopCustomersTable({ bookings = [] }) {
+    const customerMap = bookings.reduce((acc, b) => {
+        const key = b.customerId?._id || b.customerId || b.phone || b.customerName;
+        if (!key) return acc;
+        if (!acc[key]) acc[key] = { id: key, customer: b.customerName || 'Unknown', phone: b.phone || '', bookings: 0, revenue: 0, outstanding: 0 };
+        acc[key].bookings += 1;
+        acc[key].revenue += (b.amount || 0);
+        if (b.paymentStatus !== 'paid') acc[key].outstanding += (b.amount || 0);
+        return acc;
+    }, {});
 
-    const topCustomersList = [...customers]
-        .sort((a, b) => (b.lifetimeSpend || 0) - (a.lifetimeSpend || 0))
-        .slice(0, 5)
-        .map(c => {
-            const customerPayments = payments.filter(p => p.customerId?._id === c._id);
-            const outstanding = customerPayments.filter(p => p.status === 'Pending' || p.status === 'Partial')
-                .reduce((acc, p) => acc + ((p.amount || 0) - (p.amountPaid || 0)), 0);
-            return {
-                id: c._id,
-                customer: c.name || 'Unknown',
-                email: c.email || 'N/A',
-                bookings: c.totalBookings || 0,
-                revenue: c.lifetimeSpend || 0,
-                outstanding
-            };
-        });
+    const topCustomersList = Object.values(customerMap)
+        .sort((a, b) => b.revenue - a.revenue)
+        .slice(0, 5);
 
     return (
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
@@ -119,7 +111,7 @@ export function TopCustomersTable() {
                                 </td>
                                 <td className="px-6 py-4">
                                     <div className="font-semibold text-slate-900">{c.customer}</div>
-                                    <div className="text-[10px] text-slate-400 mt-0.5">{c.email}</div>
+                                    <div className="text-[10px] text-slate-400 mt-0.5">{c.phone}</div>
                                 </td>
                                 <td className="px-6 py-4 text-center">
                                     <span className="px-2 py-1 bg-blue-50 text-blue-700 border border-blue-100 rounded text-xs font-bold">{c.bookings}</span>
@@ -133,7 +125,7 @@ export function TopCustomersTable() {
                                 </td>
                             </tr>
                         )) : (
-                            <tr><td colSpan="5" className="px-6 py-4 text-center text-slate-500">No data available</td></tr>
+                            <tr><td colSpan="5" className="px-6 py-8 text-center text-slate-400">No data yet</td></tr>
                         )}
                     </tbody>
                 </table>
@@ -142,21 +134,28 @@ export function TopCustomersTable() {
     );
 }
 
-export function RecentPaymentsTable() {
-    const { data: payments = [] } = useGetPaymentsQuery();
+export function RecentPaymentsTable({ payments = [], invoices = [] }) {
+    const customerByInvoiceId = invoices.reduce((acc, inv) => {
+        const name = inv.workOrderId?.customerId?.name || inv.workOrderId?.customerName;
+        if (name) acc[inv._id] = name;
+        return acc;
+    }, {});
 
     const recentPaymentsList = [...payments]
         .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
         .slice(0, 5)
-        .map(p => ({
-            id: p._id,
-            invoice: p.invoiceId?.invoiceNumber || `#INV-${p._id?.slice(-4).toUpperCase()}`,
-            customer: p.customerId?.name || 'Customer',
-            amount: p.amountPaid || p.amount || 0,
-            method: p.paymentMethod || 'Cash',
-            status: p.status || 'Pending',
-            date: new Date(p.createdAt).toLocaleDateString()
-        }));
+        .map((p) => {
+            const invoiceId = p.invoiceId?._id || p.invoiceId;
+            return {
+                id: p._id,
+                invoice: p.invoiceId?.invoiceNumber || `#INV-${p._id?.slice(-4).toUpperCase()}`,
+                customer: customerByInvoiceId[invoiceId] || 'Customer',
+                amount: p.amount || 0,
+                method: toLabel(p.method || 'cash'),
+                status: p.status || 'pending',
+                date: p.createdAt ? new Date(p.createdAt).toLocaleDateString() : '-',
+            };
+        });
 
     return (
         <div className="bg-white rounded-2xl border border-slate-200 shadow-sm overflow-hidden">
@@ -165,7 +164,6 @@ export function RecentPaymentsTable() {
                     <h3 className="text-sm font-bold text-slate-900">Recent Payments</h3>
                     <p className="text-xs text-slate-500 mt-0.5">Latest payment transactions</p>
                 </div>
-                <button className="text-xs font-semibold text-blue-600 hover:underline">View All</button>
             </div>
             <div className="overflow-x-auto">
                 <table className="w-full text-sm">
@@ -192,7 +190,7 @@ export function RecentPaymentsTable() {
                                 <td className="px-6 py-4 text-right text-xs text-slate-500 whitespace-nowrap">{p.date}</td>
                             </tr>
                         )) : (
-                            <tr><td colSpan="6" className="px-6 py-4 text-center text-slate-500">No data available</td></tr>
+                            <tr><td colSpan="6" className="px-6 py-8 text-center text-slate-400">No data yet</td></tr>
                         )}
                     </tbody>
                 </table>

@@ -1,30 +1,26 @@
 import { TrendingUp, Star, User, AlertCircle, Receipt } from 'lucide-react';
-import { useGetWorkOrdersQuery } from '@/store/api/workOrderApi';
-import { useGetPaymentsQuery } from '@/store/api/paymentApi';
-import { useGetCustomersQuery } from '@/store/api/customerApi';
 
-export default function InsightsPanel() {
-    const { data: rawWorkOrders = [] } = useGetWorkOrdersQuery();
-    const { data: payments = [] } = useGetPaymentsQuery();
-    const { data: customers = [] } = useGetCustomersQuery();
-
-    // Highest Paying Customer
-    let highestPayingCustomer = 'N/A';
-    let highestSpend = 0;
-    if (customers.length > 0) {
-        const topCustomer = [...customers].sort((a, b) => (b.lifetimeSpend || 0) - (a.lifetimeSpend || 0))[0];
-        if (topCustomer) {
-            highestPayingCustomer = topCustomer.name || 'Unknown';
-            highestSpend = topCustomer.lifetimeSpend || 0;
-        }
+export default function InsightsPanel({ invoices = [], payments = [], bookings = [], expenses = [] }) {
+    // Highest Revenue Month (within the currently loaded invoices)
+    let highestRevenueMonth = 'N/A';
+    if (invoices.length > 0) {
+        const monthNames = ['January', 'February', 'March', 'April', 'May', 'June', 'July', 'August', 'September', 'October', 'November', 'December'];
+        const monthTotals = invoices.reduce((acc, inv) => {
+            if (!inv.createdAt) return acc;
+            const m = new Date(inv.createdAt).getMonth();
+            acc[m] = (acc[m] || 0) + (inv.total || 0);
+            return acc;
+        }, {});
+        const sortedMonths = Object.entries(monthTotals).sort((a, b) => b[1] - a[1]);
+        if (sortedMonths.length > 0) highestRevenueMonth = monthNames[sortedMonths[0][0]];
     }
 
     // Best Selling Service
     let bestSellingService = 'N/A';
     let maxServiceBookings = 0;
-    if (rawWorkOrders.length > 0) {
-        const servicesMap = rawWorkOrders.reduce((acc, wo) => {
-            const service = wo.enquiryId?.serviceCategory || wo.title || 'Unknown Service';
+    if (bookings.length > 0) {
+        const servicesMap = bookings.reduce((acc, b) => {
+            const service = b.serviceName || b.category || 'Unknown Service';
             acc[service] = (acc[service] || 0) + 1;
             return acc;
         }, {});
@@ -35,28 +31,46 @@ export default function InsightsPanel() {
         }
     }
 
-    // Outstanding Collections
-    const outstandingCollections = payments.filter(p => p.status === 'Pending' || p.status === 'Partial')
-        .reduce((acc, p) => acc + ((p.amount || 0) - (p.amountPaid || 0)), 0);
+    // Top Paying Customer
+    let highestPayingCustomer = 'N/A';
+    let highestSpend = 0;
+    if (bookings.length > 0) {
+        const customerMap = bookings.reduce((acc, b) => {
+            const key = b.customerId?._id || b.customerId || b.phone || b.customerName;
+            if (!key) return acc;
+            if (!acc[key]) acc[key] = { name: b.customerName || 'Unknown', total: 0 };
+            acc[key].total += (b.amount || 0);
+            return acc;
+        }, {});
+        const sortedCustomers = Object.values(customerMap).sort((a, b) => b.total - a.total);
+        if (sortedCustomers.length > 0) {
+            highestPayingCustomer = sortedCustomers[0].name;
+            highestSpend = sortedCustomers[0].total;
+        }
+    }
 
-    // Avg Invoice Value
-    const totalPayments = payments.reduce((acc, p) => acc + (p.amount || 0), 0);
-    const avgInvoiceValue = payments.length > 0 ? (totalPayments / payments.length).toFixed(0) : 0;
+    // Outstanding Collections
+    const totalRevenue = invoices.reduce((acc, inv) => acc + (inv.total || 0), 0);
+    const collectedAmount = payments.filter((p) => p.status === 'verified').reduce((acc, p) => acc + (p.amount || 0), 0);
+    const outstandingCollections = Math.max(totalRevenue - collectedAmount, 0);
+
+    // Average Invoice Value
+    const avgInvoiceValue = invoices.length > 0 ? Math.round(totalRevenue / invoices.length) : 0;
 
     const items = [
         {
             label: 'Highest Revenue Month',
-            value: new Date().toLocaleString('default', { month: 'long' }),
+            value: highestRevenueMonth,
             icon: TrendingUp,
             color: 'text-blue-600 bg-blue-50 border-blue-100',
-            sub: 'Based on current year data',
+            sub: 'Based on loaded invoices',
         },
         {
             label: 'Best Selling Service',
             value: bestSellingService,
             icon: Star,
             color: 'text-amber-600 bg-amber-50 border-amber-100',
-            sub: `${maxServiceBookings} bookings this year`,
+            sub: `${maxServiceBookings} bookings`,
         },
         {
             label: 'Top Paying Customer',
@@ -77,7 +91,7 @@ export default function InsightsPanel() {
             value: `₹${Number(avgInvoiceValue).toLocaleString()}`,
             icon: Receipt,
             color: 'text-indigo-600 bg-indigo-50 border-indigo-100',
-            sub: 'Per booking average',
+            sub: 'Per invoice average',
         },
     ];
 

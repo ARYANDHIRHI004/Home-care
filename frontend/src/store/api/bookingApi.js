@@ -16,6 +16,10 @@ export const bookingApi = apiSlice.injectEndpoints({
                     ? [...result.map(({ _id }) => ({ type: 'Booking', id: _id })), { type: 'Booking', id: 'LIST' }]
                     : [{ type: 'Booking', id: 'LIST' }],
         }),
+        getCustomerBookingById: builder.query({
+            query: (id) => `/api/bookings/me/${id}`,
+            providesTags: (result, error, id) => [{ type: 'Booking', id }],
+        }),
         getBookingById: builder.query({
             query: (id) => `/api/bookings/${id}`,
             providesTags: (result, error, id) => [{ type: 'Booking', id }],
@@ -54,6 +58,7 @@ export const bookingApi = apiSlice.injectEndpoints({
 export const {
     useGetBookingsQuery,
     useGetCustomerBookingsQuery,
+    useGetCustomerBookingByIdQuery,
     useGetBookingByIdQuery,
     useCreateBookingMutation,
     useUpdateBookingMutation,

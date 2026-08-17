@@ -5,7 +5,7 @@ import { mongodbAdapter } from "better-auth/adapters/mongodb";
 import { env } from "./env.js";
 import { sendEmail } from "./mailer.js";
 import { buildWelcomeEmailHtml } from "../emails/welcomeEmail.js";
-import Customer from "../models/customer.model.js";
+import Customer, { sanitizeCustomerIdentity } from "../models/customer.model.js";
 
 // Must match frontend/src/lib/auth.js's syntheticEmailForPhone() — phone
 // signups get a non-deliverable placeholder email under the hood (Better
@@ -135,14 +135,14 @@ export const auth = betterAuth({
                             await Customer.findOneAndUpdate(
                                 keyFilter,
                                 {
-                                    $setOnInsert: {
+                                    $setOnInsert: sanitizeCustomerIdentity({
                                         name: user.name || "Customer",
                                         ...(user.phoneNumber ? { phone: user.phoneNumber } : {}),
                                         email: realEmail,
                                         avatarUrl: user.image || null,
                                         otpVerified: !!user.phoneNumberVerified,
                                         registrationChannel: "website",
-                                    },
+                                    }),
                                 },
                                 { upsert: true }
                             );

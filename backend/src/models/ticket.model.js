@@ -28,7 +28,7 @@ const internalNoteSchema = new mongoose.Schema(
     employeeId: {
       type: mongoose.Schema.Types.ObjectId,
       ref: "Employee",
-      required: true,
+      default: null,
     },
     timestamp: {
       type: Date,

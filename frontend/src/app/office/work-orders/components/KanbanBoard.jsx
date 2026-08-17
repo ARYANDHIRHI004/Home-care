@@ -1,22 +1,21 @@
 'use client';
 import KanbanColumn from './KanbanColumn';
 
-// Matches WorkOrder.status in work-order.model.js exactly:
-// open/estimate_sent/approved/assigned/in_progress/completed/closed. A prior
-// fix here added 'Declined'/'Invoiced'/'Paid' columns for states that don't
-// exist anywhere in the schema — none of these seven real values are Title
-// Case or spaced like that, so every column filter silently matched zero
-// work orders and the whole board rendered empty regardless of real data.
-// Tracking partner-decline or invoicing status would need new fields on the
-// WorkOrder schema; that's a data-model change, not something a column
-// label can paper over.
+// Matches WorkOrder.status in work-order.model.js exactly — the field-
+// execution state machine: open -> assigned -> accepted -> on_route ->
+// in_progress -> completed -> invoiced -> paid, with declined looping back
+// to reassignment. estimate_sent/approved are legacy values from before the
+// current create/assign flow and are folded into the Open column.
 const columns = [
-    { id: 'open', title: 'Open', statusList: ['open'] },
-    { id: 'estimate_sent', title: 'Estimate Sent', statusList: ['estimate_sent'] },
-    { id: 'approved', title: 'Approved', statusList: ['approved'] },
+    { id: 'open', title: 'Open', statusList: ['open', 'estimate_sent', 'approved'] },
     { id: 'assigned', title: 'Assigned', statusList: ['assigned'] },
+    { id: 'accepted', title: 'Accepted', statusList: ['accepted'] },
+    { id: 'on_route', title: 'On Route', statusList: ['on_route'] },
     { id: 'in_progress', title: 'In Progress', statusList: ['in_progress'] },
     { id: 'completed', title: 'Completed', statusList: ['completed'] },
+    { id: 'invoiced', title: 'Invoiced', statusList: ['invoiced'] },
+    { id: 'paid', title: 'Paid', statusList: ['paid'] },
+    { id: 'declined', title: 'Declined', statusList: ['declined'] },
     { id: 'closed', title: 'Closed', statusList: ['closed'] },
 ];
 

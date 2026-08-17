@@ -15,7 +15,7 @@ export const apiSlice = createApi({
         'Customer', 'Enquiry', 'Ticket', 'WorkOrder', 'Estimate', 'Invoice', 
         'Payment', 'Category', 'Service', 'Partner', 'Booking', 'Coupon',
         'Complaint', 'Review', 'Dashboard', 'Employee', 'Conversation',
-        'Feedback', 'Notification', 'Setting', 'Term', 'Expense', 'ServiceArea'
+        'Feedback', 'Notification', 'Setting', 'Term', 'Expense', 'ServiceArea', 'Faq'
     ],
     // The "endpoints" represent operations and requests for this server
     // We will inject endpoints from other files to avoid circular dependencies

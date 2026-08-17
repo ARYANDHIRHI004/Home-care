@@ -196,3 +196,64 @@ export const deleteInvoice = async (req, res) => {
     res.status(500).json({ message: error.message });
   }
 };
+
+import { generateInvoicePdfBuffer } from "../utils/generateInvoicePdf.js";
+
+export const downloadInvoicePdf = async (req, res) => {
+  try {
+    const invoice = await Invoice.findById(req.params.id)
+      .populate({ path: "workOrderId", populate: { path: "customerId", select: "name phone email" } });
+      
+    if (!invoice) return res.status(404).json({ message: "Invoice not found" });
+
+    const pdfBuffer = await generateInvoicePdfBuffer(invoice.toObject ? invoice.toObject() : invoice);
+
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename=invoice-${invoice.invoiceNumber || invoice._id}.pdf`);
+    res.send(pdfBuffer);
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const sendInvoiceEmailWithPdf = async (req, res) => {
+  try {
+    const invoice = await Invoice.findById(req.params.id)
+      .populate({ path: "workOrderId", populate: { path: "customerId", select: "name phone email" } });
+
+    if (!invoice) return res.status(404).json({ message: "Invoice not found" });
+
+    const customer = await resolveCustomerFromInvoice(invoice);
+    if (!customer?.email) {
+      return res.status(200).json({ message: "No email on file — share the download link via WhatsApp instead." });
+    }
+
+    const pdfBuffer = await generateInvoicePdfBuffer(invoice.toObject ? invoice.toObject() : invoice);
+    const dashboardUrl = `${env.CUSTOMER_APP_URL}/customer/invoices/${invoice._id}/preview`;
+    
+    const html = `<p>Hi ${customer.name || 'Customer'},</p><p>Please find your invoice <strong>${invoice.invoiceNumber || invoice._id}</strong> attached.</p><p>You can also view it online here: <a href="${dashboardUrl}">View Invoice</a></p>`;
+
+    try {
+      await sendEmail({
+        to: customer.email,
+        subject: `Invoice ${invoice.invoiceNumber || invoice._id} from HomeCare247`,
+        html,
+        attachments: [{ filename: `invoice-${invoice.invoiceNumber || invoice._id}.pdf`, content: pdfBuffer }],
+      });
+      
+      invoice.emailSentAt = new Date();
+      invoice.emailSendError = null;
+      await invoice.save();
+      
+      res.json({ message: `Sent to ${customer.email}` });
+    } catch (emailError) {
+      invoice.emailSentAt = null;
+      invoice.emailSendError = emailError.message || "Unknown error sending email";
+      await invoice.save();
+      throw emailError;
+    }
+
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};

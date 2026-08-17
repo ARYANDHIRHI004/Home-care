@@ -12,6 +12,7 @@ import EditBookingModal from './components/EditBookingModal';
 import DeleteBookingDialog from './components/DeleteBookingDialog';
 import Pagination from '@/components/office/ui/Pagination';
 import { useGetBookingsQuery } from '@/store/api/bookingApi';
+import { exportToCSV } from '@/lib/csvExport';
 
 export default function BookingsPage() {
     const [selectedRow, setSelectedRow] = useState(null);
@@ -24,7 +25,8 @@ export default function BookingsPage() {
     const [viewMode, setViewMode] = useState('list');
     const [searchQuery, setSearchQuery] = useState('');
     const [currentPage, setCurrentPage] = useState(1);
-    const [itemsPerPage, setItemsPerPage] = useState(10);    const { data: rawBookings = [], isLoading, isError } = useGetBookingsQuery();
+    const [itemsPerPage, setItemsPerPage] = useState(10);
+    const { data: rawBookings = [], isLoading, isError, refetch, isFetching } = useGetBookingsQuery();
     const bookings = rawBookings.map((booking) => ({
         _id: booking._id,
         id: booking.bookingNumber,
@@ -65,11 +67,25 @@ export default function BookingsPage() {
                 description="Manage all confirmed customer bookings, assign professionals, track progress and monitor service execution."
                 actions={
                     <>
-                        <button className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 rounded-xl text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors shadow-sm">
-                            <RefreshCw className="w-4 h-4" />
+                        <button onClick={() => refetch()} className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 rounded-xl text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors shadow-sm">
+                            <RefreshCw className={`w-4 h-4 ${isFetching ? 'animate-spin' : ''}`} />
                             Refresh
                         </button>
-                        <button className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 rounded-xl text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors shadow-sm">
+                        <button
+                            onClick={() => exportToCSV('bookings', bookings, [
+                                { key: 'id', label: 'Booking ID' },
+                                { key: 'customer', label: 'Customer' },
+                                { key: 'phone', label: 'Phone' },
+                                { key: 'service', label: 'Service' },
+                                { key: 'date', label: 'Date' },
+                                { key: 'time', label: 'Time' },
+                                { key: 'assignedTo', label: 'Assigned To' },
+                                { key: 'status', label: 'Status' },
+                                { key: 'payment', label: 'Payment' },
+                                { key: 'amount', label: 'Amount' },
+                            ])}
+                            className="flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 text-slate-700 dark:text-slate-300 rounded-xl text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors shadow-sm"
+                        >
                             <Download className="w-4 h-4" />
                             Export
                         </button>

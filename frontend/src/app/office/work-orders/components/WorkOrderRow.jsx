@@ -1,6 +1,7 @@
 'use client';
 import { MoreVertical, Eye, UserPlus, Calendar as CalendarIcon, XCircle, FileDigit } from 'lucide-react';
 import { StatusBadge, PriorityBadge } from '@/components/office/ui/Badge';
+import { titleCase } from '@/lib/officeApiMappers';
 
 export default function WorkOrderRow({ wo, onClick, onEdit, onDelete }) {
     return (
@@ -38,10 +39,10 @@ export default function WorkOrderRow({ wo, onClick, onEdit, onDelete }) {
                 </span>
             </td>
             <td className="p-4">
-                <PriorityBadge priority={wo.priority} />
+                <PriorityBadge priority={titleCase(wo.priority)} />
             </td>
             <td className="p-4">
-                <StatusBadge status={wo.status} />
+                <StatusBadge status={titleCase(wo.status)} />
             </td>
             <td className="p-4 text-xs text-slate-500 dark:text-slate-400">
                 {wo.createdDate}
@@ -54,7 +55,7 @@ export default function WorkOrderRow({ wo, onClick, onEdit, onDelete }) {
                         <div onClick={onEdit} className="px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-800 text-left text-sm text-slate-700 dark:text-slate-300 flex items-center gap-2 cursor-pointer"><UserPlus className="w-4 h-4 text-slate-400" /> Reassign Partner</div>
                         <div className="px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-800 text-left text-sm text-slate-700 dark:text-slate-300 flex items-center gap-2 cursor-pointer"><CalendarIcon className="w-4 h-4 text-slate-400" /> Reschedule</div>
                         
-                        {(wo.status === 'Completed' || wo.status === 'Closed') && (
+                        {(wo.status === 'completed' || wo.status === 'invoiced' || wo.status === 'paid' || wo.status === 'closed') && (
                             <>
                                 <div className="border-t border-slate-100 dark:border-slate-800 my-1"></div>
                                 <div className="px-3 py-2 hover:bg-slate-50 dark:hover:bg-slate-800 text-left text-sm text-slate-700 dark:text-slate-300 flex items-center gap-2 cursor-pointer"><FileDigit className="w-4 h-4 text-slate-400" /> Generate Invoice</div>

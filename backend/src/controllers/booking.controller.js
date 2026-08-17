@@ -3,7 +3,7 @@ import { resolveCustomerIdForSession } from "../utils/resolveCustomer.js";
 
 const populateBooking = (query) =>
   query
-    .populate("customerId", "name phone email")
+    .populate("customerId", "name phone email addresses")
     .populate("serviceId", "name basePrice")
     .populate("partnerId", "name phone rating")
     .populate("estimateId")
@@ -36,6 +36,18 @@ export const getMyBookings = async (req, res) => {
     const customerId = await resolveCustomerIdForSession(req);
     if (!customerId) return res.json([]);
     res.json(await populateBooking(Booking.find({ customerId }).sort({ scheduledDate: 1, createdAt: -1 })));
+  } catch (error) {
+    res.status(500).json({ message: error.message });
+  }
+};
+
+export const getMyBookingById = async (req, res) => {
+  try {
+    const customerId = await resolveCustomerIdForSession(req);
+    if (!customerId) return res.status(401).json({ message: "Unauthorized" });
+    const booking = await populateBooking(Booking.findOne({ _id: req.params.id, customerId }));
+    if (!booking) return res.status(404).json({ message: "Booking not found" });
+    res.json(booking);
   } catch (error) {
     res.status(500).json({ message: error.message });
   }

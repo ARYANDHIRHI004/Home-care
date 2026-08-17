@@ -72,4 +72,10 @@ export function mapOfficeWorkOrder(wo) {
   };
 }
 
-export { inr, shortDate };
+// 'on_route' -> 'On Route' — for feeding the Title Case keys StatusBadge/
+// PriorityBadge expect, without losing the real lowercase enum value used
+// for filtering/comparisons everywhere else.
+const titleCase = (s) =>
+  (s || '').split('_').map((w) => w.charAt(0).toUpperCase() + w.slice(1)).join(' ');
+
+export { inr, shortDate, titleCase };

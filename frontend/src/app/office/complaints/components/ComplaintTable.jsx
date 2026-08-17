@@ -24,7 +24,7 @@ const statusConfig = {
     Closed:       'bg-slate-100 text-slate-500 border-slate-200',
 };
 
-export default function ComplaintTable({ searchQuery, onRowClick }) {
+export default function ComplaintTable({ searchQuery, statusFilter, priorityFilter, onRowClick }) {
     const { data: rawTickets = [], isLoading } = useGetTicketsQuery();
     const [deleteTicket] = useDeleteTicketMutation();
     const [updateStatus] = useUpdateTicketStatusMutation();
@@ -57,10 +57,12 @@ export default function ComplaintTable({ searchQuery, onRowClick }) {
     }));
 
     const filtered = tickets.filter(c =>
-        !searchQuery ||
-        c.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        c.customer.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        c.booking.toLowerCase().includes(searchQuery.toLowerCase())
+        (!searchQuery ||
+            c.id.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            c.customer.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            c.booking.toLowerCase().includes(searchQuery.toLowerCase())) &&
+        (!statusFilter || statusFilter === 'All Statuses' || c.status === statusFilter) &&
+        (!priorityFilter || priorityFilter === 'All Priorities' || c.priority === priorityFilter)
     );
 
     const handleDelete = async (id, e) => {

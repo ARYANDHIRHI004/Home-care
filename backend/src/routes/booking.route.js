@@ -7,6 +7,7 @@ import { PERMISSIONS as P } from "../constants/permissions.js";
 const router = Router();
 router.use(requireAuth);
 router.get("/me", controller.getMyBookings);
+router.get("/me/:id", controller.getMyBookingById);
 router.post("/", requirePermission(P.BOOKING_CREATE), controller.createBooking);
 router.get("/", requirePermission(P.BOOKING_READ), controller.getBookings);
 router.get("/:id", requirePermission(P.BOOKING_READ), controller.getBookingById);

@@ -128,6 +128,12 @@ const navGroups = [
             // { name: 'Partner Reports', href: '/office/reports/partners', icon: BarChart3 },
         ]
     },
+    {
+        title: 'Content Management',
+        items: [
+            { name: 'FAQs', href: '/office/faqs', icon: HelpCircle },
+        ]
+    },
     // System section removed — Settings moved to profile dropdown
 ];
 

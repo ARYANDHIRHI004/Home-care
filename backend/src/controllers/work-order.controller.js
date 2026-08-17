@@ -1,6 +1,7 @@
 import WorkOrder from "../models/work-order.model.js";
 import Enquiry from "../models/enquiry.model.js";
 import ServicePartner from "../models/servicePartner.model.js";
+import Ticket from "../models/ticket.model.js";
 import { sendEmail } from "../utils/mailer.js";
 import { buildStatusUpdateEmailHtml } from "../emails/statusUpdateEmail.js";
 import { resolveCustomerFromWorkOrder } from "../utils/resolveCustomer.js";
@@ -44,10 +45,58 @@ const trySendPartnerAssignedEmail = async (workOrder, partnerName) => {
   await workOrder.save();
 };
 
+// Valid next states from each status — enforced here, not just in the
+// frontend's restricted option list, since a direct API call could still
+// send an illegal jump (e.g. straight from 'assigned' to 'completed').
+const STATUS_TRANSITIONS = {
+  open: ["assigned"],
+  assigned: ["accepted", "declined"],
+  accepted: ["on_route"],
+  on_route: ["in_progress"],
+  in_progress: ["completed"],
+  completed: ["invoiced"],
+  invoiced: ["paid"],
+  declined: ["assigned"],
+  paid: [],
+  closed: [],
+  // Legacy states, kept reachable only via direct assignment, not this map.
+  estimate_sent: [],
+  approved: [],
+};
+
 const generateWorkOrderNumber = () => {
   const year = new Date().getFullYear();
   const random = Math.floor(1000 + Math.random() * 9000);
   return `WO-${year}-${random}`;
+};
+
+const generateTicketNumber = () => {
+  const year = new Date().getFullYear();
+  const random = Math.floor(1000 + Math.random() * 9000);
+  return `TCK-${year}-${random}`;
+};
+
+// Invoice.workOrderId refs Ticket, not WorkOrder — see the linkedTicketId
+// comment in work-order.model.js. Called once, the moment a work order first
+// becomes 'completed', so it's selectable in the Invoices module's
+// completed-order picker without a bigger migration of Invoice's ref.
+const ensureLinkedTicketForCompletion = async (workOrder) => {
+  if (workOrder.linkedTicketId) return;
+
+  const ticket = await Ticket.create({
+    ticketNumber: generateTicketNumber(),
+    enquiryId: workOrder.enquiryId,
+    customerId: workOrder.customerId,
+    customerName: workOrder.customerName,
+    customerPhone: workOrder.customerPhone,
+    priority: ["low", "normal", "high"].includes(workOrder.priority) ? workOrder.priority : "normal",
+    assignedPartnerId: workOrder.assignedPartnerId,
+    status: "completed",
+    timeline: [{ status: "completed", timestamp: new Date() }],
+  });
+
+  workOrder.linkedTicketId = ticket._id;
+  await workOrder.save();
 };
 
 export const createWorkOrder = async (req, res) => {
@@ -57,8 +106,15 @@ export const createWorkOrder = async (req, res) => {
     if (!enquiryId || !customerId)
       return res.status(400).json({ message: "enquiryId and customerId are required" });
 
+    let address = req.body.address;
+    if (!address) {
+      const enq = await Enquiry.findById(enquiryId);
+      if (enq?.address) address = enq.address;
+    }
+
     const workOrder = await WorkOrder.create({
       ...req.body,
+      address,
       workOrderNumber: req.body.workOrderNumber || generateWorkOrderNumber(),
       status: "open",
       timeline: [{ status: "open", timestamp: new Date(), byEmployeeId }],
@@ -80,8 +136,9 @@ export const getWorkOrders = async (req, res) => {
     if (req.query.customerId) filter.customerId = req.query.customerId;
 
     const workOrders = await WorkOrder.find(filter)
-      .populate("customerId", "name phone email")
-      .populate("assignedPartnerId", "name phone skills")
+      .populate("customerId", "name phone email addresses")
+      .populate("enquiryId", "address serviceCategory")
+      .populate("assignedPartnerId", "name phone skills avgRating")
       .sort({ createdAt: -1 });
 
     res.json(workOrders);
@@ -106,19 +163,39 @@ export const getWorkOrderById = async (req, res) => {
 
 export const updateWorkOrderStatus = async (req, res) => {
   try {
-    const { status, byEmployeeId } = req.body;
+    const { status, byEmployeeId, declineReason } = req.body;
     if (!status) return res.status(400).json({ message: "status is required" });
+
+    const current = await WorkOrder.findById(req.params.id).select("status");
+    if (!current) return res.status(404).json({ message: "Work order not found" });
+
+    const allowedNext = STATUS_TRANSITIONS[current.status] || [];
+    if (!allowedNext.includes(status)) {
+      return res.status(400).json({
+        message: `Cannot move a work order from '${current.status}' to '${status}'. Valid next state(s): ${allowedNext.join(", ") || "none"}.`,
+      });
+    }
+
+    if (status === "declined" && !declineReason) {
+      return res.status(400).json({ message: "declineReason is required when declining a work order" });
+    }
 
     const workOrder = await WorkOrder.findByIdAndUpdate(
       req.params.id,
       {
         status,
+        declineReason: status === "declined" ? declineReason : null,
         $push: { timeline: { status, timestamp: new Date(), byEmployeeId } },
       },
       { new: true }
     );
 
     if (!workOrder) return res.status(404).json({ message: "Work order not found" });
+
+    if (status === "completed") {
+      await ensureLinkedTicketForCompletion(workOrder);
+    }
+
     res.json(workOrder);
   } catch (error) {
     res.status(400).json({ message: error.message });
@@ -134,6 +211,7 @@ export const assignPartner = async (req, res) => {
       {
         assignedPartnerId,
         status: "assigned",
+        declineReason: null,
         $push: {
           timeline: { status: "assigned", timestamp: new Date(), byEmployeeId },
         },

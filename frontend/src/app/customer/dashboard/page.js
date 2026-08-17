@@ -67,6 +67,10 @@ export default function DashboardPage() {
     setShowProfileModal(true);
   }, [session]);
   const bookings = rawBookings.map(mapCustomerBooking);
+
+  // console.log(rawBookings, rawEnquiries, bookings);
+  
+
   // A submitted request has no Booking yet — that only exists once office
   // converts an approved Estimate — so without this it has nowhere to show
   // up at all despite the customer having just submitted it seconds ago.

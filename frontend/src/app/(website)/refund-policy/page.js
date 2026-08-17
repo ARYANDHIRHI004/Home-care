@@ -436,7 +436,7 @@ export default function RefundPolicy() {
                           </div>
                           <div>
                             <p className="text-[10px] text-blue-200 font-bold uppercase tracking-wider mb-1">Office Address</p>
-                            <p className="font-semibold text-white text-sm">Raipur, Chhattisgarh, India</p>
+                            <p className="font-semibold text-white text-sm">Risali, Bhilai, Durg, Chhattisgarh</p>
                           </div>
                         </div>
                         

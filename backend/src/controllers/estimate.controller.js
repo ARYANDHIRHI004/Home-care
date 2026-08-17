@@ -105,8 +105,15 @@ export const createEstimate = async (req, res) => {
       req.body.discount
     );
 
+    let address = req.body.address;
+    if (!address && req.body.enquiryId) {
+      const enq = await Enquiry.findById(req.body.enquiryId);
+      if (enq?.address) address = enq.address;
+    }
+
     const estimate = await Estimate.create({
       ...req.body,
+      address,
       estimateNumber: req.body.estimateNumber || (await nextNumber(Estimate, "estimateNumber", "EST")),
       total,
       approvalStatus: req.body.approvalStatus || "pending",
@@ -158,6 +165,7 @@ export const convertToBooking = async (req, res) => {
       customerId: customer?._id,
       customerName: estimate.customerName || "Unknown",
       phone: estimate.phone,
+      address: estimate.address,
       serviceName: estimate.serviceName || estimate.lineItems?.[0]?.name || "Service",
       serviceId: estimate.lineItems?.[0]?.serviceId || undefined,
       amount: estimate.total,

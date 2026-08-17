@@ -1,10 +1,11 @@
 import app from "./app.js";
 import connectDB from "./config/database.js";
 import { env } from "./utils/env.js";
+import logger from "./utils/logger.js";
 
 const PORT = env.PORT;
 
-connectDB()
+connectDB();
 app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
+    logger.info(`Server running on port ${PORT}`);
 });

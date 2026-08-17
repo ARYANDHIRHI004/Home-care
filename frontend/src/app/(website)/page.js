@@ -2,6 +2,7 @@
 
 import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { useGetServicesQuery } from '@/store/api/serviceApi';
 import { motion, AnimatePresence } from 'framer-motion';
 import { BsShieldCheck } from 'react-icons/bs';
 import { FiClock, FiLock, FiHeadphones, FiFileText } from 'react-icons/fi';
@@ -254,6 +255,24 @@ export default function HomeServiceLandingPage() {
   const [isScrolled, setIsScrolled] = useState(false);  
   const [activeFaq, setActiveFaq] = useState(null);
   const [sliderPos, setSliderPos] = useState({ 0: 50, 1: 50, 2: 50 });
+  const [searchQuery, setSearchQuery] = useState('');
+
+  const { data: rawServices = [], isLoading, isError } = useGetServicesQuery();
+
+  const filteredServices = rawServices.filter((s) => 
+    s.active && 
+    (searchQuery 
+      ? s.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
+        (s.categoryId?.name && s.categoryId.name.toLowerCase().includes(searchQuery.toLowerCase())) 
+      : true)
+  );
+
+  const servicesByCategory = filteredServices.reduce((acc, s) => {
+    const cat = s.categoryId?.name || 'General';
+    if (!acc[cat]) acc[cat] = [];
+    acc[cat].push(s);
+    return acc;
+  }, {});
 
   // Handle sticky header scroll transition
   useEffect(() => {
@@ -442,60 +461,93 @@ export default function HomeServiceLandingPage() {
       ========================================== */}
       <section id="services" className="py-24 bg-white">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="text-center max-w-3xl mx-auto space-y-4 mb-16">
+          <div className="text-center max-w-3xl mx-auto space-y-4 mb-12">
             <span className="text-xs font-bold uppercase tracking-widest text-[#2563EB] bg-blue-50 px-3.5 py-1.5 rounded-full border border-blue-100">
               Our Service Offerings
             </span>
             <h2 className="font-['Poppins',sans-serif] text-3xl sm:text-4xl font-bold text-[#111827]">
               Explore Premium Home Services
             </h2>
-            <p className="text-base text-gray-600">
+            <p className="text-base text-gray-600 mb-6">
               Select a category to request an instant callback and transparent quotation.
             </p>
+            <div className="relative max-w-md mx-auto mt-6">
+               <div className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">
+                 <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+               </div>
+               <input
+                 type="text"
+                 placeholder="Search for a service..."
+                 value={searchQuery}
+                 onChange={(e) => setSearchQuery(e.target.value)}
+                 className="w-full pl-10 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-[#2563EB] focus:border-transparent outline-none shadow-sm transition-all text-sm"
+               />
+            </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
-            {SERVICE_CATEGORIES.map((service) => (
-              <motion.div
-                key={service.id}
-                whileHover={{ y: -6 }}
-                className="group bg-white rounded-2xl border border-[#E5E7EB] p-4 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between"
-              >
-                <div>
-                  <div className="relative h-36 w-full rounded-xl overflow-hidden mb-4 bg-gray-100">
-                    <img
-                      src={service.image}
-                      alt={service.name}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                    />
-                    <div className="absolute top-2.5 right-2.5 bg-white/90 backdrop-blur-md p-2 rounded-lg text-[#2563EB] shadow-sm">
-                      <service.icon className="w-4 h-4" />
-                    </div>
+          {isLoading ? (
+            <div className="py-20 text-center text-gray-500">Loading services...</div>
+          ) : isError ? (
+            <div className="py-20 text-center text-red-500">Error loading services. Please try again later.</div>
+          ) : Object.keys(servicesByCategory).length === 0 ? (
+            <div className="py-20 text-center text-gray-500">No services found matching your search.</div>
+          ) : (
+            <div className="space-y-16">
+              {Object.entries(servicesByCategory).map(([cat, services]) => (
+                <div key={cat}>
+                  <h3 className="font-['Poppins',sans-serif] text-xl font-bold text-[#111827] mb-6 border-b border-[#E5E7EB] pb-2 flex items-center gap-2">
+                    {cat}
+                  </h3>
+                  <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
+                    {services.map((service) => (
+                      <motion.div
+                        key={service._id}
+                        whileHover={{ y: -6 }}
+                        className="group bg-white rounded-2xl border border-[#E5E7EB] p-4 shadow-sm hover:shadow-xl transition-all duration-300 flex flex-col justify-between"
+                      >
+                        <div>
+                          <div className="relative h-36 w-full rounded-xl overflow-hidden mb-4 bg-gray-100 border border-gray-100">
+                            {service.images?.[0] ? (
+                              // eslint-disable-next-line @next/next/no-img-element
+                              <img
+                                src={service.images[0]}
+                                alt={service.name}
+                                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
+                              />
+                            ) : (
+                              <div className="w-full h-full flex items-center justify-center bg-blue-50 text-blue-200">
+                                <Sparkles className="w-8 h-8 opacity-50" />
+                              </div>
+                            )}
+                          </div>
+
+                          <div className="flex items-center justify-between gap-2 mb-1">
+                            <h3 className="font-['Poppins',sans-serif] font-bold text-base text-[#111827] group-hover:text-[#2563EB] transition-colors line-clamp-1">
+                              {service.name}
+                            </h3>
+                          </div>
+
+                          <p className="text-xs text-gray-500 font-medium mb-2">Starts at <span className="text-gray-900 font-bold">₹{service.basePrice}</span></p>
+
+                          <p className="text-xs text-gray-600 line-clamp-2 leading-relaxed mb-4">
+                            {service.description || 'Professional home care service by verified experts.'}
+                          </p>
+                        </div>
+
+                        <Link
+                          href="/customer/book"
+                          className="w-full py-2.5 px-4 rounded-xl bg-gray-50 hover:bg-[#F97316] text-[#111827] hover:text-white font-semibold text-xs transition-colors duration-200 flex items-center justify-center gap-1.5 group-hover:shadow-md"
+                        >
+                          <span>Book Now</span>
+                          <ChevronRight className="w-3.5 h-3.5" />
+                        </Link>
+                      </motion.div>
+                    ))}
                   </div>
-
-                  <div className="flex items-center justify-between gap-2 mb-1">
-                    <h3 className="font-['Poppins',sans-serif] font-bold text-base text-[#111827] group-hover:text-[#2563EB] transition-colors">
-                      {service.name}
-                    </h3>
-                  </div>
-
-                  <p className="text-xs text-gray-500 font-medium mb-2">Starts at <span className="text-gray-900 font-bold">{service.price}</span></p>
-
-                  <p className="text-xs text-gray-600 line-clamp-2 leading-relaxed mb-4">
-                    {service.description}
-                  </p>
                 </div>
-
-                <a
-                  href="#book"
-                  className="w-full py-2.5 px-4 rounded-xl bg-gray-50 hover:bg-[#F97316] text-[#111827] hover:text-white font-semibold text-xs transition-colors duration-200 flex items-center justify-center gap-1.5 group-hover:shadow-md"
-                >
-                  <span>Book Now</span>
-                  <ChevronRight className="w-3.5 h-3.5" />
-                </a>
-              </motion.div>
-            ))}
-          </div>
+              ))}
+            </div>
+          )}
         </div>
       </section>
 

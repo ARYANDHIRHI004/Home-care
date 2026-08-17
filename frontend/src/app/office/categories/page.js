@@ -1,16 +1,35 @@
 'use client';
 
 import { useState } from 'react';
+import { useDispatch } from 'react-redux';
 import { RefreshCw, Download, Plus, Search } from 'lucide-react';
 import PageHeader from '@/components/office/PageHeader';
 import CategoryStatsCards from './components/CategoryStatsCards';
 import CategoryGrid from './components/CategoryGrid';
 import CategoryDrawer from './components/CategoryDrawer';
+import { apiSlice } from '@/store/apiSlice';
+import { useGetCategoriesQuery } from '@/store/api/categoryApi';
+import { exportToCSV } from '@/lib/csvExport';
 
 export default function CategoriesPage() {
     const [searchQuery, setSearchQuery] = useState('');
     const [selectedCategory, setSelectedCategory] = useState(null);
     const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+    const dispatch = useDispatch();
+    const { data: rawCategories = [], isFetching } = useGetCategoriesQuery();
+
+    const handleRefresh = () => dispatch(apiSlice.util.invalidateTags([{ type: 'Category', id: 'LIST' }]));
+    const handleExport = () => exportToCSV('categories', rawCategories.map(c => ({
+        name: c.name,
+        description: c.description || '',
+        servicesCount: c.servicesCount ?? '',
+        status: c.status || (c.isActive === false ? 'Inactive' : 'Active'),
+    })), [
+        { key: 'name', label: 'Name' },
+        { key: 'description', label: 'Description' },
+        { key: 'servicesCount', label: 'Services Count' },
+        { key: 'status', label: 'Status' },
+    ]);
 
     const handleCategoryClick = (category) => {
         setSelectedCategory(category);
@@ -30,10 +49,10 @@ export default function CategoriesPage() {
 
     const actions = (
         <>
-            <button className="p-2 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors border border-transparent">
-                <RefreshCw className="w-4 h-4" />
+            <button onClick={handleRefresh} className="p-2 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors border border-transparent">
+                <RefreshCw className={`w-4 h-4 ${isFetching ? 'animate-spin' : ''}`} />
             </button>
-            <button className="hidden sm:flex items-center gap-2 px-3 py-2 bg-white border border-slate-200 text-slate-700 rounded-lg text-sm font-medium hover:bg-slate-50 transition-colors shadow-sm">
+            <button onClick={handleExport} className="hidden sm:flex items-center gap-2 px-3 py-2 bg-white border border-slate-200 text-slate-700 rounded-lg text-sm font-medium hover:bg-slate-50 transition-colors shadow-sm">
                 <Download className="w-4 h-4" /> Export
             </button>
             <button 

@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { useDeleteCouponMutation, useGetCouponsQuery, useUpdateCouponStatusMutation } from '@/store/api/couponApi';
 
 
-export default function CouponTable({ searchQuery, onRowClick }) {
+export default function CouponTable({ searchQuery, statusFilter, typeFilter, onRowClick }) {
     const { data: rawCoupons = [], isLoading, isError } = useGetCouponsQuery();
     const [updateCouponStatus] = useUpdateCouponStatusMutation();
     const [deleteCoupon] = useDeleteCouponMutation();
@@ -37,9 +37,11 @@ export default function CouponTable({ searchQuery, onRowClick }) {
     }));
 
     const filtered = coupons.filter(c =>
-        !searchQuery ||
-        c.code.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        c.campaign.toLowerCase().includes(searchQuery.toLowerCase())
+        (!searchQuery ||
+            c.code.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            c.campaign.toLowerCase().includes(searchQuery.toLowerCase())) &&
+        (!statusFilter || statusFilter === 'All Statuses' || c._raw.status === statusFilter) &&
+        (!typeFilter || typeFilter === 'All Types' || c.type === typeFilter)
     );
 
     const handleStatus = async (coupon, status) => {

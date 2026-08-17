@@ -4,6 +4,7 @@ import { auth, db } from "./utils/auth.js";
 import cors from "cors";
 import adminAuthRouter from "./routes/adminAuth.routes.js";
 import apiRouter from "./routes/index.js";
+import logger from "./utils/logger.js";
 
 const app = express();
 
@@ -14,6 +15,19 @@ app.use(cors({
     allowedHeaders: ["Content-Type", "Authorization"]
 }));
 
+// Every request gets one line logged on response finish (not on receipt) so
+// the real status code and duration are known — `res.on("finish")` fires
+// even for responses the route handler sends directly via res.send/res.json,
+// unlike wrapping res.end which some handlers bypass.
+app.use((req, res, next) => {
+    const startedAt = process.hrtime.bigint();
+    res.on("finish", () => {
+        const durationMs = Number(process.hrtime.bigint() - startedAt) / 1e6;
+        const level = res.statusCode >= 500 ? "error" : res.statusCode >= 400 ? "warn" : "info";
+        logger[level](`${req.method} ${req.originalUrl} ${res.statusCode} ${durationMs.toFixed(1)}ms`);
+    });
+    next();
+});
 
 app.post("/api/auth/{*any}", toNodeHandler(auth));
 app.get("/api/auth/{*any}", toNodeHandler(auth));
@@ -75,6 +89,7 @@ if (process.env.NODE_ENV !== "production") {
 app.use((err, req, res, _next) => {
     const status = err.statusCode || err.status || 500;
     const message = err.message || "Internal Server Error";
+    logger.error(`${req.method} ${req.originalUrl} unhandled error:`, err);
     res.status(status).json({ success: false, status, message });
 });
 

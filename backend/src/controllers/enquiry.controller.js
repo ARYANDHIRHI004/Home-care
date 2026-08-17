@@ -1,5 +1,5 @@
 import Enquiry from "../models/enquiry.model.js";
-import Customer from "../models/customer.model.js";
+import Customer, { sanitizeCustomerIdentity } from "../models/customer.model.js";
 import { checkServiceability } from "../utils/service-area-matcher.js";
 import { sendEmail } from "../utils/mailer.js";
 import { buildStatusUpdateEmailHtml } from "../emails/statusUpdateEmail.js";
@@ -69,27 +69,47 @@ export const createEnquiry = async (req, res) => {
       // (requireAuth already populated req.user), not from unauthenticated
       // request-body fields. Trusting req.body here would let anyone attach
       // an enquiry to any phone number they typed in.
+      //
+      // Google OAuth sessions have no phoneNumber (see login/page.js) but
+      // always have a real email — matching the same phone-or-email
+      // keyFilter the Better Auth signup hook (utils/auth.js) uses to create
+      // the Customer record. Checking only sessionPhone here meant every
+      // Google-signed-up customer's enquiry was created with customerId:
+      // null (customer stayed undefined, the create-if-missing branch never
+      // ran because it also gated on sessionPhone) — invisible to their own
+      // dashboard and to office staff alike.
       const sessionPhone = req.user?.phoneNumber;
-      customer = sessionPhone ? await Customer.findOne({ phone: sessionPhone }) : null;
-      if (!customer && sessionPhone) {
-        customer = await Customer.create({
-          name: req.user.name || "Customer",
-          phone: sessionPhone,
-          email: realEmailOrUndefined(req.user.email),
-          otpVerified: true,
-          registrationChannel: "website",
-        });
+      const sessionEmail = realEmailOrUndefined(req.user?.email);
+      const keyFilter = sessionPhone ? { phone: sessionPhone } : sessionEmail ? { email: sessionEmail } : null;
+
+      customer = keyFilter ? await Customer.findOne(keyFilter) : null;
+      if (!customer && keyFilter) {
+        customer = await Customer.create(
+          sanitizeCustomerIdentity({
+            name: req.user.name || "Customer",
+            ...(sessionPhone ? { phone: sessionPhone } : {}),
+            email: sessionEmail,
+            otpVerified: !!req.user.phoneNumberVerified,
+            registrationChannel: "website",
+          })
+        );
       }
     } else {
-      customer = phone ? await Customer.findOne({ phone }) : null;
-      if (!customer && phone) {
-        customer = await Customer.create({
-          name,
-          phone,
-          email,
-          otpVerified: false,
-          registrationChannel: "call",
-        });
+      const normalizedPhone = typeof phone === "string" ? phone.trim() : phone;
+      customer = normalizedPhone ? await Customer.findOne({ phone: normalizedPhone }) : null;
+      if (!customer && email) {
+        customer = await Customer.findOne({ email });
+      }
+      if (!customer && (normalizedPhone || email)) {
+        customer = await Customer.create(
+          sanitizeCustomerIdentity({
+            name,
+            phone: normalizedPhone,
+            email,
+            otpVerified: false,
+            registrationChannel: "call",
+          })
+        );
       }
     }
 

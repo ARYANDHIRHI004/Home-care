@@ -23,4 +23,5 @@ export const API_PATHS = Object.freeze({
   EXPENSES: "/expenses",
   CONFIG: "/config",
   SERVICE_AREAS: "/service-areas",
+  FAQS: "/faqs",
 });

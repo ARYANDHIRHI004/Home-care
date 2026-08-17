@@ -529,7 +529,7 @@ export default function TermsAndConditions() {
                         </div>
                         <div>
                           <p className="text-xs text-gray-500 font-bold uppercase tracking-wider mb-1">Office Address</p>
-                          <p className="font-semibold text-gray-900 text-sm">Raipur, Chhattisgarh, India</p>
+                          <p className="font-semibold text-gray-900 text-sm">Risali, Bhilai, Durg, Chhattisgarh</p>
                         </div>
                       </div>
                       

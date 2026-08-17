@@ -3,7 +3,7 @@ import { useMemo, useState } from 'react';
 import Dialog from '@/components/office/ui/Dialog';
 import { useGetBookingsQuery } from '@/store/api/bookingApi';
 import { useGetPartnersQuery } from '@/store/api/partnerApi';
-import { useCreateWorkOrderMutation, useAssignWorkOrderPartnerMutation } from '@/store/api/workOrderApi';
+import { useCreateWorkOrderMutation, useAssignWorkOrderPartnerMutation, useGetWorkOrdersQuery } from '@/store/api/workOrderApi';
 import { shortDate } from '@/lib/officeApiMappers';
 import { useGetEnumsQuery } from '@/store/api/configApi';
 
@@ -23,6 +23,7 @@ export default function CreateWorkOrderModal({ isOpen, onClose }) {
     // completed and cancelled ones have nothing left to dispatch.
     const { data: bookingData, isLoading: bookingsLoading } = useGetBookingsQuery(undefined, { skip: !isOpen });
     const { data: partnerData, isLoading: partnersLoading } = useGetPartnersQuery(undefined, { skip: !isOpen });
+    const { data: workOrderData } = useGetWorkOrdersQuery(undefined, { skip: !isOpen });
     const { data: enums = {} } = useGetEnumsQuery(undefined, { skip: !isOpen });
 
     const bookings = useMemo(
@@ -35,22 +36,36 @@ export default function CreateWorkOrderModal({ isOpen, onClose }) {
 
     // Decision support for partner assignment — a bare name dropdown gives the
     // admin no way to choose well between a dozen partners. Surfacing rating and
-    // distance turns this into an actual decision instead of a guess. Sorted
-    // nearest-first; `toSorted` avoids mutating the RTK Query cache array, which
-    // an in-place `.sort()` during render would otherwise do.
+    // current workload turns this into an actual decision instead of a guess.
+    // ServicePartner has no geo fields (no lat/lng anywhere in the system), so
+    // there's no real distance to show — a prior version of this fabricated
+    // `distanceKm`/`jobsToday` from fields that don't exist on the model
+    // (`rating`, `isActive`) and always rendered zero/blank. `jobsToday` here
+    // is computed from real open work orders currently assigned to each
+    // partner instead. Sorted best-rated first.
+    const activeWorkOrderCountByPartner = useMemo(() => {
+        const counts = new Map();
+        (Array.isArray(workOrderData) ? workOrderData : []).forEach((wo) => {
+            if (!wo.assignedPartnerId) return;
+            if (['completed', 'invoiced', 'paid', 'closed', 'declined'].includes(wo.status)) return;
+            const pid = wo.assignedPartnerId?._id || wo.assignedPartnerId;
+            counts.set(pid, (counts.get(pid) || 0) + 1);
+        });
+        return counts;
+    }, [workOrderData]);
+
     const partners = useMemo(
         () =>
             (Array.isArray(partnerData) ? partnerData : [])
-                .filter((p) => p.isActive !== false)
+                .filter((p) => p.active !== false)
                 .map((p) => ({
                     id: p._id,
                     name: p.name,
-                    rating: Number(p.rating || 0),
-                    jobsToday: Number(p.jobsToday || 0),
-                    distanceKm: p.distanceKm != null ? Number(p.distanceKm) : null,
+                    rating: Number(p.avgRating || 0),
+                    activeJobs: activeWorkOrderCountByPartner.get(p._id) || 0,
                 }))
-                .toSorted((a, b) => (a.distanceKm ?? Infinity) - (b.distanceKm ?? Infinity)),
-        [partnerData]
+                .toSorted((a, b) => b.rating - a.rating),
+        [partnerData, activeWorkOrderCountByPartner]
     );
 
     const raw = bookings.find((b) => b._id === bookingId);
@@ -194,12 +209,11 @@ export default function CreateWorkOrderModal({ isOpen, onClose }) {
                                 </option>
                                 {partners.map((p) => (
                                     <option key={p.id} value={p.id}>
-                                        {p.name} — ★{p.rating || '—'} · {p.jobsToday} jobs today
-                                        {p.distanceKm != null ? ` · ${p.distanceKm}km away` : ''}
+                                        {p.name} — ★{p.rating.toFixed(1)} · {p.activeJobs} active job{p.activeJobs === 1 ? '' : 's'}
                                     </option>
                                 ))}
                             </select>
-                            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Sorted by distance — rating and today&apos;s job count shown so a busy or lower-rated partner isn&apos;t picked blind.</p>
+                            <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">Sorted by rating — active job count shown so a busy partner isn&apos;t picked blind.</p>
                         </div>
                         <div className="space-y-1">
                             <label className="text-sm font-medium text-slate-700 dark:text-slate-300">Priority</label>

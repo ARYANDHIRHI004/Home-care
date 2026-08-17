@@ -17,24 +17,26 @@ import {
     useUpdateEstimateMutation,
     useUpdateEstimateApprovalMutation,
     useConvertEstimateToBookingMutation,
+    useDeleteEstimateMutation,
 } from '@/store/api/estimateApi';
 import { mapOfficeEstimate } from '@/lib/officeApiMappers';
+import { exportToCSV } from '@/lib/csvExport';
 
 const StatCard = ({ title, value, icon: Icon, trend, trendValue, subtitle, accentColor }) => {
     const accentColors = {
-        default: 'bg-blue-50 text-blue-600',
-        yellow: 'bg-amber-50 text-amber-600',
-        red: 'bg-rose-50 text-rose-600',
-        green: 'bg-emerald-50 text-emerald-600',
-        gray: 'bg-slate-100 text-slate-600',
-        purple: 'bg-purple-50 text-purple-600',
-        indigo: 'bg-indigo-50 text-indigo-600',
+        default: 'bg-blue-50 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400',
+        yellow: 'bg-amber-50 dark:bg-amber-900/30 text-amber-600 dark:text-amber-400',
+        red: 'bg-rose-50 dark:bg-rose-900/30 text-rose-600 dark:text-rose-400',
+        green: 'bg-emerald-50 dark:bg-emerald-900/30 text-emerald-600 dark:text-emerald-400',
+        gray: 'bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-400',
+        purple: 'bg-purple-50 dark:bg-purple-900/30 text-purple-600 dark:text-purple-400',
+        indigo: 'bg-indigo-50 dark:bg-indigo-900/30 text-indigo-600 dark:text-indigo-400',
     };
 
     const accent = accentColors[accentColor] || accentColors.default;
 
     return (
-        <div className="bg-white p-6 rounded-2xl border border-slate-200 shadow-sm shadow-slate-100/50 flex flex-col justify-between hover:-translate-y-1 hover:shadow-md transition-all duration-300">
+        <div className="bg-white dark:bg-slate-900 p-6 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm shadow-slate-100/50 dark:shadow-none flex flex-col justify-between hover:-translate-y-1 hover:shadow-md transition-all duration-300">
             <div className="flex justify-between items-start mb-4">
                 <div className={`p-2.5 rounded-xl ${accent}`}>
                     <Icon className="w-5 h-5" />
@@ -47,9 +49,9 @@ const StatCard = ({ title, value, icon: Icon, trend, trendValue, subtitle, accen
                 )}
             </div>
             <div>
-                <h3 className="text-3xl font-bold text-slate-900 tracking-tight">{value}</h3>
-                <p className="text-sm font-medium text-slate-500 mt-1">{title}</p>
-                {subtitle && <p className="text-xs text-slate-400 mt-1">{subtitle}</p>}
+                <h3 className="text-3xl font-bold text-slate-900 dark:text-slate-100 tracking-tight">{value}</h3>
+                <p className="text-sm font-medium text-slate-500 dark:text-slate-400 mt-1">{title}</p>
+                {subtitle && <p className="text-xs text-slate-400 dark:text-slate-500 mt-1">{subtitle}</p>}
             </div>
         </div>
     );
@@ -84,11 +86,14 @@ export default function EstimatesPage() {
     const [activeTab, setActiveTab] = useState('details'); // details, pdf, versions
     const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
     const [isSendModalOpen, setIsSendModalOpen] = useState(false);
+    const [searchQuery, setSearchQuery] = useState('');
 
     const { data, isLoading, isError, error, refetch, isFetching } = useGetEstimatesQuery();
     const [updateEstimate] = useUpdateEstimateMutation();
     const [updateApproval, { isLoading: isApproving }] = useUpdateEstimateApprovalMutation();
     const [convertToBooking, { isLoading: isConverting }] = useConvertEstimateToBookingMutation();
+    const [deleteEstimate] = useDeleteEstimateMutation();
+    const [openMenuId, setOpenMenuId] = useState(null);
 
     const estimates = useMemo(
         () => (Array.isArray(data) ? data.map(mapOfficeEstimate) : []),
@@ -146,6 +151,25 @@ export default function EstimatesPage() {
         await convertToBooking(selectedRow.id).unwrap().catch(() => {});
     };
 
+    const handleRowApprove = (est) => {
+        updateApproval({ id: est.id, approvalStatus: 'approved' }).unwrap().catch(() => {});
+    };
+
+    const handleRowConvert = (est) => {
+        convertToBooking(est.id).unwrap().catch(() => {});
+    };
+
+    const handleRowSend = (est) => {
+        setSelectedId(est.id);
+        setIsSendModalOpen(true);
+    };
+
+    const handleRowDelete = (est) => {
+        if (window.confirm(`Delete estimate ${est.displayId}? This cannot be undone.`)) {
+            deleteEstimate(est.id).unwrap().catch(() => {});
+        }
+    };
+
     return (
         <div className="pb-10 relative">
             <PageHeader 
@@ -162,7 +186,19 @@ export default function EstimatesPage() {
                             <RefreshCw className={`w-4 h-4 ${isFetching ? 'animate-spin' : ''}`} />
                             Refresh
                         </button>
-                        <button className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 text-slate-700 rounded-xl text-sm font-medium hover:bg-slate-50 transition-colors shadow-sm">
+                        <button
+                            onClick={() => exportToCSV('estimates', estimates, [
+                                { key: 'displayId', label: 'Estimate ID' },
+                                { key: 'customer', label: 'Customer' },
+                                { key: 'phone', label: 'Phone' },
+                                { key: 'service', label: 'Service' },
+                                { key: 'amount', label: 'Estimate Amount' },
+                                { key: 'finalAmount', label: 'Final Amount' },
+                                { key: 'validity', label: 'Validity' },
+                                { key: 'status', label: 'Status' },
+                            ])}
+                            className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 text-slate-700 rounded-xl text-sm font-medium hover:bg-slate-50 transition-colors shadow-sm"
+                        >
                             <Download className="w-4 h-4" />
                             Export
                         </button>
@@ -191,18 +227,20 @@ export default function EstimatesPage() {
                 {/* Main Content Area */}
                 <div className="xl:col-span-3 space-y-6">
                     {/* Search and Filters */}
-                    <div className="bg-white p-4 rounded-2xl border border-slate-200 shadow-sm shadow-slate-100/50 flex flex-col md:flex-row gap-4 items-center justify-between">
+                    <div className="bg-white dark:bg-slate-900 p-4 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm shadow-slate-100/50 dark:shadow-none flex flex-col md:flex-row gap-4 items-center justify-between transition-colors">
                         <div className="relative w-full md:max-w-md">
                             <Search className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400 w-5 h-5" />
                             <input 
                                 type="text" 
+                                value={searchQuery}
+                                onChange={(e) => setSearchQuery(e.target.value)}
                                 placeholder="Search estimate ID, customer, phone..." 
-                                className="w-full pl-10 pr-4 py-2.5 bg-slate-50 border border-slate-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
+                                className="w-full pl-10 pr-4 py-2 bg-slate-50 dark:bg-slate-800/50 border border-slate-200 dark:border-slate-700 rounded-xl text-sm text-slate-900 dark:text-slate-100 placeholder:text-slate-400 dark:placeholder:text-slate-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 transition-all"
                             />
                         </div>
                         <div className="flex flex-wrap items-center gap-3 w-full md:w-auto">
                             {['Estimate Status', 'Service Category', 'Assigned Employee', 'Price Range'].map((filter) => (
-                                <button key={filter} className="px-3 py-2 bg-white border border-slate-200 text-slate-600 rounded-lg text-sm font-medium hover:bg-slate-50 flex items-center gap-2">
+                                <button key={filter} className="px-3 py-2 bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-700 text-slate-600 dark:text-slate-300 rounded-lg text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-800 flex items-center gap-2 transition-colors">
                                     {filter} <ChevronDown className="w-3 h-3 text-slate-400" />
                                 </button>
                             ))}
@@ -213,7 +251,7 @@ export default function EstimatesPage() {
                     </div>
 
                     {/* Estimate Table */}
-                    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm shadow-slate-100/50 overflow-hidden">
+                    <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm shadow-slate-100/50 dark:shadow-none overflow-hidden transition-colors">
                         <div className="overflow-x-auto">
                             <table className="w-full text-left border-collapse">
                                 <thead>
@@ -296,23 +334,64 @@ export default function EstimatesPage() {
                                             </td>
                                             <td className="p-4"><StatusBadge status={est.status} /></td>
                                             <td className="p-4 text-right" onClick={(e) => e.stopPropagation()}>
-                                                <button className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors relative group/action">
-                                                    <MoreVertical className="w-4 h-4" />
-                                                    <div className="absolute right-0 top-full mt-1 w-48 bg-white border border-slate-200 rounded-xl shadow-lg opacity-0 invisible group-hover/action:opacity-100 group-hover/action:visible transition-all z-20 py-1">
-                                                        <div className="px-3 py-2 hover:bg-slate-50 text-left text-sm text-slate-700 flex items-center gap-2"><Eye className="w-4 h-4 text-slate-400" /> View Estimate</div>
-                                                        <div className="px-3 py-2 hover:bg-slate-50 text-left text-sm text-slate-700 flex items-center gap-2"><Edit className="w-4 h-4 text-slate-400" /> Edit</div>
-                                                        <div className="px-3 py-2 hover:bg-slate-50 text-left text-sm text-slate-700 flex items-center gap-2"><Copy className="w-4 h-4 text-slate-400" /> Duplicate</div>
-                                                        <div className="border-t border-slate-100 my-1"></div>
-                                                        <div className="px-3 py-2 hover:bg-slate-50 text-left text-sm text-slate-700 flex items-center gap-2"><Send className="w-4 h-4 text-emerald-500" /> Share WhatsApp</div>
-                                                        <div className="px-3 py-2 hover:bg-slate-50 text-left text-sm text-slate-700 flex items-center gap-2"><Mail className="w-4 h-4 text-blue-500" /> Email Estimate</div>
-                                                        <div className="px-3 py-2 hover:bg-slate-50 text-left text-sm text-slate-700 flex items-center gap-2"><FileDown className="w-4 h-4 text-slate-400" /> Generate PDF</div>
-                                                        <div className="border-t border-slate-100 my-1"></div>
-                                                        <div className="px-3 py-2 hover:bg-slate-50 text-left text-sm text-slate-700 flex items-center gap-2"><CheckSquare className="w-4 h-4 text-emerald-600" /> Approve</div>
-                                                        <div className="px-3 py-2 hover:bg-slate-50 text-left text-sm text-slate-700 flex items-center gap-2"><ArrowRightLeft className="w-4 h-4 text-indigo-600 font-medium" /> Convert To Booking</div>
-                                                        <div className="border-t border-slate-100 my-1"></div>
-                                                        <div className="px-3 py-2 hover:bg-rose-50 text-left text-sm text-rose-600 flex items-center gap-2"><Trash2 className="w-4 h-4" /> Delete</div>
-                                                    </div>
-                                                </button>
+                                                <div className="relative inline-block">
+                                                    <button
+                                                        onClick={() => setOpenMenuId(openMenuId === est.id ? null : est.id)}
+                                                        className="p-1.5 rounded-lg text-slate-400 hover:text-slate-700 hover:bg-slate-100 transition-colors"
+                                                    >
+                                                        <MoreVertical className="w-4 h-4" />
+                                                    </button>
+                                                    {openMenuId === est.id && (
+                                                        <>
+                                                            <div className="fixed inset-0 z-10" onClick={() => setOpenMenuId(null)} />
+                                                            <div className="absolute right-0 top-full mt-1 w-48 bg-white border border-slate-200 rounded-xl shadow-lg z-20 py-1">
+                                                                <button
+                                                                    onClick={() => { setOpenMenuId(null); openDrawer(est); }}
+                                                                    className="w-full px-3 py-2 hover:bg-slate-50 text-left text-sm text-slate-700 flex items-center gap-2"
+                                                                >
+                                                                    <Eye className="w-4 h-4 text-slate-400" /> View Estimate
+                                                                </button>
+                                                                {est.status === 'Draft' && (
+                                                                    <button
+                                                                        onClick={() => { setOpenMenuId(null); handleRowSend(est); }}
+                                                                        className="w-full px-3 py-2 hover:bg-slate-50 text-left text-sm text-slate-700 flex items-center gap-2"
+                                                                    >
+                                                                        <Send className="w-4 h-4 text-emerald-500" /> Send to Customer
+                                                                    </button>
+                                                                )}
+                                                                {['Sent', 'Viewed', 'Negotiation', 'Pending Approval'].includes(est.status) && (
+                                                                    <button
+                                                                        onClick={() => { setOpenMenuId(null); handleRowApprove(est); }}
+                                                                        disabled={isApproving}
+                                                                        className="w-full px-3 py-2 hover:bg-slate-50 text-left text-sm text-slate-700 flex items-center gap-2 disabled:opacity-50"
+                                                                    >
+                                                                        <CheckSquare className="w-4 h-4 text-emerald-600" /> Mark Approved
+                                                                    </button>
+                                                                )}
+                                                                {est.status === 'Approved' && (
+                                                                    <button
+                                                                        onClick={() => { setOpenMenuId(null); handleRowConvert(est); }}
+                                                                        disabled={isConverting}
+                                                                        className="w-full px-3 py-2 hover:bg-slate-50 text-left text-sm text-slate-700 flex items-center gap-2 disabled:opacity-50"
+                                                                    >
+                                                                        <ArrowRightLeft className="w-4 h-4 text-indigo-600" /> Convert To Booking
+                                                                    </button>
+                                                                )}
+                                                                {!['Converted'].includes(est.status) && (
+                                                                    <>
+                                                                        <div className="border-t border-slate-100 my-1"></div>
+                                                                        <button
+                                                                            onClick={() => { setOpenMenuId(null); handleRowDelete(est); }}
+                                                                            className="w-full px-3 py-2 hover:bg-rose-50 text-left text-sm text-rose-600 flex items-center gap-2"
+                                                                        >
+                                                                            <Trash2 className="w-4 h-4" /> Delete
+                                                                        </button>
+                                                                    </>
+                                                                )}
+                                                            </div>
+                                                        </>
+                                                    )}
+                                                </div>
                                             </td>
                                         </tr>
                                     )) : (
@@ -361,16 +440,16 @@ export default function EstimatesPage() {
                 {/* Sidebar Widgets */}
                 <div className="xl:col-span-1 space-y-6">
                     {/* Quick Actions */}
-                    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
-                        <h3 className="text-base font-semibold text-slate-900 mb-4">Quick Actions</h3>
+                    <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm p-5 transition-colors">
+                        <h3 className="text-base font-semibold text-slate-900 dark:text-slate-100 mb-4">Quick Actions</h3>
                         <div className="grid grid-cols-2 gap-3">
-                            <button onClick={() => setIsCreateModalOpen(true)} className="flex flex-col items-center justify-center p-3 bg-slate-50 border border-slate-100 rounded-xl hover:border-blue-300 hover:bg-blue-50 transition-colors group">
-                                <Plus className="w-5 h-5 text-slate-500 group-hover:text-blue-600 mb-1.5" />
-                                <span className="text-xs font-medium text-slate-700 group-hover:text-blue-700">New Estimate</span>
+                            <button onClick={() => setIsCreateModalOpen(true)} className="flex flex-col items-center justify-center p-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700 rounded-xl hover:border-blue-300 dark:hover:border-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors group">
+                                <Plus className="w-5 h-5 text-slate-500 dark:text-slate-400 group-hover:text-blue-600 dark:group-hover:text-blue-400 mb-1.5" />
+                                <span className="text-xs font-medium text-slate-700 dark:text-slate-300 group-hover:text-blue-700 dark:group-hover:text-blue-400">New Estimate</span>
                             </button>
-                            <button className="flex flex-col items-center justify-center p-3 bg-slate-50 border border-slate-100 rounded-xl hover:border-blue-300 hover:bg-blue-50 transition-colors group">
-                                <Copy className="w-5 h-5 text-slate-500 group-hover:text-blue-600 mb-1.5" />
-                                <span className="text-xs font-medium text-slate-700 group-hover:text-blue-700 text-center leading-tight">Duplicate</span>
+                            <button className="flex flex-col items-center justify-center p-3 bg-slate-50 dark:bg-slate-800/50 border border-slate-100 dark:border-slate-700 rounded-xl hover:border-blue-300 dark:hover:border-blue-700 hover:bg-blue-50 dark:hover:bg-blue-900/20 transition-colors group">
+                                <Copy className="w-5 h-5 text-slate-500 dark:text-slate-400 group-hover:text-blue-600 dark:group-hover:text-blue-400 mb-1.5" />
+                                <span className="text-xs font-medium text-slate-700 dark:text-slate-300 group-hover:text-blue-700 dark:group-hover:text-blue-400 text-center leading-tight">Duplicate</span>
                             </button>
                             <button className="flex flex-col items-center justify-center p-3 bg-slate-50 border border-slate-100 rounded-xl hover:border-blue-300 hover:bg-blue-50 transition-colors group">
                                 <FileDown className="w-5 h-5 text-slate-500 group-hover:text-blue-600 mb-1.5" />
@@ -384,21 +463,21 @@ export default function EstimatesPage() {
                     </div>
 
                     {/* Pending Approvals */}
-                    <div className="bg-amber-50 rounded-2xl border border-amber-200 shadow-sm p-5">
-                        <h3 className="text-base font-semibold text-amber-900 mb-4 flex items-center gap-2">
-                            <Clock className="w-4 h-4 text-amber-600" />
+                    <div className="bg-amber-50 dark:bg-amber-900/10 rounded-2xl border border-amber-200 dark:border-amber-900/30 shadow-sm p-5 transition-colors">
+                        <h3 className="text-base font-semibold text-amber-900 dark:text-amber-500 mb-4 flex items-center gap-2">
+                            <Clock className="w-4 h-4 text-amber-600 dark:text-amber-500" />
                             Pending Approvals
                         </h3>
                         <div className="space-y-3">
                             {pendingApproval.length === 0 ? (
-                                <p className="text-xs text-amber-700/70">Nothing waiting on a manager right now.</p>
+                                <p className="text-xs text-amber-700/70 dark:text-amber-500/70">Nothing waiting on a manager right now.</p>
                             ) : pendingApproval.map((est) => (
-                                <div key={est.id} className="p-3 bg-white rounded-xl border border-amber-100 shadow-sm">
+                                <div key={est.id} className="p-3 bg-white dark:bg-slate-800/50 rounded-xl border border-amber-100 dark:border-amber-900/30 shadow-sm transition-colors">
                                     <div className="flex justify-between items-start mb-1">
-                                        <span className="text-sm font-bold text-slate-900">{est.displayId}</span>
-                                        <span className="text-xs font-medium text-amber-600">{est.finalAmount}</span>
+                                        <span className="text-sm font-bold text-slate-900 dark:text-slate-100">{est.displayId}</span>
+                                        <span className="text-xs font-medium text-amber-600 dark:text-amber-500">{est.finalAmount}</span>
                                     </div>
-                                    <div className="text-xs text-slate-500 mb-2">{est.customer} • {est.service}</div>
+                                    <div className="text-xs text-slate-500 dark:text-slate-400 mb-2">{est.customer} • {est.service}</div>
                                     <div className="flex gap-2">
                                         <button
                                             onClick={() => updateApproval({ id: est.id, approvalStatus: 'approved' })}
@@ -421,19 +500,19 @@ export default function EstimatesPage() {
                     </div>
 
                     {/* Expiry Warning Widget */}
-                    <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-5">
-                        <h3 className="text-base font-semibold text-slate-900 mb-4 flex items-center gap-2">
+                    <div className="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 shadow-sm p-5 transition-colors">
+                        <h3 className="text-base font-semibold text-slate-900 dark:text-slate-100 mb-4 flex items-center gap-2">
                             <AlertCircle className="w-4 h-4 text-rose-500" />
                             Upcoming Expiry
                         </h3>
                         <div className="space-y-3">
                             {expiringSoon.length === 0 ? (
-                                <p className="text-xs text-slate-400">No estimates expiring in the next week.</p>
+                                <p className="text-xs text-slate-400 dark:text-slate-500">No estimates expiring in the next week.</p>
                             ) : expiringSoon.map((est) => (
-                                <div key={est.id} className="flex justify-between items-center p-3 bg-slate-50 rounded-xl border border-slate-100">
+                                <div key={est.id} className="flex justify-between items-center p-3 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-100 dark:border-slate-700 transition-colors">
                                     <div>
-                                        <span className="block text-sm font-bold text-slate-900">{est.customer}</span>
-                                        <span className="block text-xs text-slate-500">{est.displayId} • {est.validity}</span>
+                                        <span className="block text-sm font-bold text-slate-900 dark:text-slate-100">{est.customer}</span>
+                                        <span className="block text-xs text-slate-500 dark:text-slate-400">{est.displayId} • {est.validity}</span>
                                     </div>
                                     <a
                                         href={`tel:${est.phone}`}

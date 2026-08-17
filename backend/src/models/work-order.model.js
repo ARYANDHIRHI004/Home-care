@@ -72,6 +72,16 @@ const workOrderSchema = new mongoose.Schema(
       trim: true,
     },
 
+    address: {
+      type: String,
+      trim: true,
+    },
+
+    // Full field-execution state machine: open -> assigned -> accepted ->
+    // on_route -> in_progress -> completed -> invoiced -> paid, with a
+    // declined -> (reassign) branch back to open. estimate_sent/approved are
+    // kept for backward compatibility with any pre-existing records but are
+    // not reachable through the current create/assign/status flow.
     status: {
       type: String,
       enum: [
@@ -79,8 +89,13 @@ const workOrderSchema = new mongoose.Schema(
         "estimate_sent",
         "approved",
         "assigned",
+        "accepted",
+        "on_route",
         "in_progress",
         "completed",
+        "invoiced",
+        "paid",
+        "declined",
         "closed",
       ],
       default: "open",
@@ -98,6 +113,26 @@ const workOrderSchema = new mongoose.Schema(
       ref: "ServicePartner",
       default: null,
       index: true,
+    },
+
+    // Set when a partner declines an assignment (status -> 'declined').
+    // Cleared automatically the next time this work order is (re)assigned.
+    declineReason: {
+      type: String,
+      trim: true,
+      default: null,
+    },
+
+    // Invoice.workOrderId refs the Ticket collection, not this one — Invoice
+    // and Complaints share the Ticket model, while WorkOrder is the separate
+    // collection this "Work Orders" ERP module actually uses. Rather than
+    // migrating Invoice's ref (a bigger, riskier change), completing a
+    // WorkOrder auto-creates/links a completed Ticket so it becomes
+    // selectable in the Invoices module without duplicating on repeat calls.
+    linkedTicketId: {
+      type: mongoose.Schema.Types.ObjectId,
+      ref: "Ticket",
+      default: null,
     },
 
     timeline: [timelineSchema],

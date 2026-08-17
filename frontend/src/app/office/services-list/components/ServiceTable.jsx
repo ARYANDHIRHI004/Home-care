@@ -5,7 +5,7 @@ import { useState } from 'react';
 import { useGetServicesQuery, useToggleServiceMutation, useDeleteServiceMutation } from '@/store/api/serviceApi';
 
 
-export default function ServiceTable({ searchQuery, onRowClick }) {
+export default function ServiceTable({ searchQuery, filters, onRowClick }) {
     const { data: rawServices = [], isLoading, isError } = useGetServicesQuery();
     const [toggleService] = useToggleServiceMutation();
     const [deleteService] = useDeleteServiceMutation();
@@ -24,27 +24,42 @@ export default function ServiceTable({ searchQuery, onRowClick }) {
         : <ChevronDown className="w-3.5 h-3.5 text-slate-300" />;
 
     const services = rawServices.map(s => ({
-            id: `SRV-${s._id?.slice(-4).toUpperCase()}`,
-            _id: s._id,
-            name: s.name,
-            category: s.categoryId?.name || (typeof s.categoryId === 'string' ? s.categoryId : 'General'),
-            categoryId: s.categoryId?._id || s.categoryId,
-            price: `₹${(s.basePrice || 0).toLocaleString()}`,
-            basePrice: s.basePrice || 0,
-            duration: s.duration || '1-2 Hours',
-            warranty: s.warranty || '30 Days',
-            status: s.active !== false ? 'Active' : 'Inactive',
-            active: s.active !== false,
-            featured: !!s.featured,
-            description: s.description || '',
-            _raw: s,
-        }));
+        id: `SRV-${s._id?.slice(-4).toUpperCase()}`,
+        _id: s._id,
+        name: s.name,
+        category: s.categoryId?.name || (typeof s.categoryId === 'string' ? s.categoryId : 'General'),
+        categoryId: s.categoryId?._id || s.categoryId,
+        price: `₹${(s.basePrice || 0).toLocaleString()}`,
+        basePrice: s.basePrice || 0,
+        duration: s.duration || '1-2 Hours',
+        warranty: s.warranty || '30 Days',
+        status: s.active !== false ? 'Active' : 'Inactive',
+        active: s.active !== false,
+        featured: !!s.featured,
+        description: s.description || '',
+        _raw: s,
+    }));
 
-    const filtered = services.filter(s =>
-        !searchQuery ||
-        s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        s.category.toLowerCase().includes(searchQuery.toLowerCase())
-    );
+    const filtered = services.filter(s => {
+        const matchesSearch = !searchQuery || 
+            s.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+            s.category.toLowerCase().includes(searchQuery.toLowerCase());
+            
+        const matchesCategory = !filters?.category || filters.category === 'All Categories' || s.category === filters.category;
+        
+        const matchesStatus = !filters?.status || filters.status === 'All Statuses' || s.status === filters.status;
+        
+        const matchesFeatured = !filters?.featured || filters.featured === 'Any' || (filters.featured === 'Yes' ? s.featured : !s.featured);
+
+        const matchesPopular = !filters?.popular || filters.popular === 'Any' || (filters.popular === 'Yes' ? s.popular : !s.popular);
+
+        let matchesDuration = true;
+        if (filters?.duration && filters.duration !== 'Any Duration') {
+             matchesDuration = s.duration === filters.duration;
+        }
+
+        return matchesSearch && matchesCategory && matchesStatus && matchesFeatured && matchesPopular && matchesDuration;
+    });
 
     const handleToggle = async (id, e) => {
         e?.stopPropagation();

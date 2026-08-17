@@ -312,9 +312,9 @@ function Alternatives() {
             <p className="text-lg text-slate-600 mb-8">
               We want to ensure your home maintenance needs are met. Before deciding to cancel completely, our team can help you with these flexible alternatives.
             </p>
-            <button className="px-8 py-4 bg-white border border-slate-200 text-blue-600 font-bold rounded-xl shadow-sm hover:shadow-md transition-all flex items-center justify-center gap-2 mx-auto lg:mx-0">
+            <a href="tel:+919111466642" className="px-8 py-4 bg-white border border-slate-200 text-blue-600 font-bold rounded-xl shadow-sm hover:shadow-md transition-all flex items-center justify-center gap-2 mx-auto lg:mx-0 w-fit">
               Speak to an Expert <ArrowRight className="w-5 h-5" />
-            </button>
+            </a>
           </div>
 
           <div className="w-full lg:w-7/12 grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -420,7 +420,7 @@ function FinalCTA() {
               <a href="tel:+919111466642" className="px-8 py-4 bg-white text-blue-700 font-bold rounded-2xl shadow-lg hover:-translate-y-0.5 transition-all flex items-center gap-2">
                 <Phone className="w-5 h-5" /> Call Support
               </a>
-              <a href="#" className="px-8 py-4 bg-green-500 hover:bg-green-600 text-white font-bold rounded-2xl shadow-lg hover:-translate-y-0.5 transition-all flex items-center gap-2">
+              <a href="https://wa.me/919111466642" target="_blank" rel="noopener noreferrer" className="px-8 py-4 bg-green-500 hover:bg-green-600 text-white font-bold rounded-2xl shadow-lg hover:-translate-y-0.5 transition-all flex items-center gap-2">
                 <FaWhatsapp className="w-5 h-5" /> WhatsApp Support
               </a>
               <a href="mailto:homecarre2405@gmail.com" className="px-8 py-4 bg-blue-700 border border-blue-500 hover:bg-blue-800 text-white font-bold rounded-2xl shadow-lg hover:-translate-y-0.5 transition-all flex items-center gap-2">

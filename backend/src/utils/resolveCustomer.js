@@ -52,15 +52,32 @@ export async function resolveCustomerFromInvoice(invoice) {
   return ticket?.customerId ? Customer.findById(ticket.customerId).select("name phone email").lean() : null;
 }
 
-// The Customer collection (mongoose, keyed by phone) and Better Auth's `user`
-// collection are two entirely separate ID spaces — a Customer document's
-// _id is never the same as the logged-in session's req.user.id. Every
-// customer-facing "my bookings/estimates/invoices/payments" endpoint has to
-// resolve the real Customer._id via the session's phone number first; using
-// req.user.id directly as if it were a Customer._id silently matches nothing.
+// The Customer collection (mongoose, keyed by phone OR email — see
+// customer.model.js) and Better Auth's `user` collection are two entirely
+// separate ID spaces — a Customer document's _id is never the same as the
+// logged-in session's req.user.id. Every customer-facing "my bookings/
+// estimates/invoices/payments" endpoint has to resolve the real Customer._id
+// via the session first; using req.user.id directly as if it were a
+// Customer._id silently matches nothing.
+//
+// Phone/password signups always have a phoneNumber; Google OAuth signups
+// never do (see login/page.js) but always have a real email — matching the
+// databaseHooks.user.create keyFilter logic in utils/auth.js that creates
+// the Customer record in the first place. Checking only phone here meant
+// every Google-signed-up customer's session resolved to no Customer at all,
+// so their real bookings/enquiries existed in the database but could never
+// be found — the dashboard just looked empty.
+const SYNTHETIC_EMAIL_SUFFIX = "@phone.homecare247.internal";
+
 export async function resolveCustomerIdForSession(req) {
   const phone = req.user?.phoneNumber;
-  if (!phone) return null;
-  const customer = await Customer.findOne({ phone }).select("_id").lean();
+  const email = req.user?.email && !req.user.email.endsWith(SYNTHETIC_EMAIL_SUFFIX)
+    ? req.user.email
+    : null;
+
+  if (!phone && !email) return null;
+
+  const query = phone && email ? { $or: [{ phone }, { email }] } : phone ? { phone } : { email };
+  const customer = await Customer.findOne(query).select("_id").lean();
   return customer?._id || null;
 }

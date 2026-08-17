@@ -93,6 +93,7 @@ const estimateSchema = new mongoose.Schema(
     customerName: { type: String, trim: true },
     phone: { type: String, trim: true },
     serviceName: { type: String, trim: true },
+    address: { type: String, trim: true },
 
     // Lifecycle status, distinct from `approvalStatus` (which is the internal
     // manager sign-off). This is what the customer-facing flow moves through.

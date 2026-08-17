@@ -8,7 +8,7 @@ import {
 } from 'lucide-react';
 import StatusPill from '@/components/customer/StatusPill';
 import EstimateDocument from '@/components/customer/EstimateDocument';
-import { useGetBookingByIdQuery } from '@/store/api/bookingApi';
+import { useGetCustomerBookingByIdQuery } from '@/store/api/bookingApi';
 import { useRespondToMyEstimateMutation } from '@/store/api/estimateApi';
 import { mapCustomerBooking, mapCustomerEstimate, TIMELINE_STEPS } from '@/lib/customerApiMappers';
 
@@ -22,7 +22,7 @@ const RESCHEDULE_CUTOFF_STEP = 5;
 export default function ServiceDetailsPage() {
   const { bookingId } = useParams();
   const router = useRouter();
-  const { data: rawBooking, isLoading, isError } = useGetBookingByIdQuery(bookingId);
+  const { data: rawBooking, isLoading, isError } = useGetCustomerBookingByIdQuery(bookingId);
   const booking = rawBooking ? mapCustomerBooking(rawBooking) : null;
   const estimate = rawBooking?.estimateId ? mapCustomerEstimate(rawBooking.estimateId, rawBooking) : null;
   const estimateDocRef = useRef(null);

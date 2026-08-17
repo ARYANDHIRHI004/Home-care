@@ -23,6 +23,7 @@ import customerProfileRoutes from "./customerProfile.route.js";
 import expenseRoutes from "./expense.route.js";
 import configRoutes from "./config.routes.js";
 import serviceAreaRoutes from "./serviceArea.route.js";
+import faqRoutes from "./faq.route.js";
 
 import { API_PATHS } from "../constants/api-paths.js";
 
@@ -50,6 +51,7 @@ router.use(API_PATHS.IMAGEKIT, imagekitRoutes);
 router.use(API_PATHS.EXPENSES, expenseRoutes);
 router.use(API_PATHS.CONFIG, configRoutes);
 router.use(API_PATHS.SERVICE_AREAS, serviceAreaRoutes);
+router.use(API_PATHS.FAQS, faqRoutes);
 // Mounted at /api/auth/customer/* — safe alongside the Better Auth catch-all
 // in app.js (app.post/app.get "/api/auth/{*any}"), since this router only
 // registers a PATCH handler and Express falls through by method, not just path.

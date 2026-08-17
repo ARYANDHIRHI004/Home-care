@@ -27,12 +27,12 @@ export const ESTIMATE_APPROVAL_STATUS = ["pending", "approved", "rejected"];
 export const BOOKING_STATUS = ["active", "upcoming", "completed", "cancelled", "pending_assignment", "confirmed", "in_progress"];
 export const BOOKING_PAYMENT_STATUS = ["pending", "partial", "paid", "under_verification"];
 
-// Verified against work-order.model.js directly. Declined/Invoiced/Paid do
-// NOT exist in this schema — a Kanban board fix elsewhere in the frontend
-// invented columns for them, which is why those columns render permanently
-// empty. That's a schema gap, not something this constants file can paper
-// over by inventing values the database will reject.
-export const WORK_ORDER_STATUS = ["open", "estimate_sent", "approved", "assigned", "in_progress", "completed", "closed"];
+// Verified against work-order.model.js directly. The real field-execution
+// state machine is: open -> assigned -> accepted -> on_route -> in_progress
+// -> completed -> invoiced -> paid, with declined looping back to assigned
+// via reassignment. estimate_sent/approved are legacy values, not reachable
+// through the current create/assign/status flow.
+export const WORK_ORDER_STATUS = ["open", "estimate_sent", "approved", "assigned", "accepted", "on_route", "in_progress", "completed", "invoiced", "paid", "declined", "closed"];
 export const WORK_ORDER_PRIORITY = ["low", "normal", "high"];
 
 // Ticket is the backing collection for office/complaints. Its schema is

@@ -25,7 +25,7 @@ import ServiceCard from './components/ServiceCard';
 import ServiceGrid from './components/ServiceGrid';
 import EmptyState from './components/EmptyState';
 import ServiceSection from './components/ServiceSection';
-import { CATEGORIES } from './components/constants';
+
 
 export default function ServicesPage() {
   const searchParams = useSearchParams();
@@ -66,8 +66,7 @@ export default function ServicesPage() {
 
   // Categories Mapping
   const allCategories = useMemo(() => {
-    if (!liveCategories || liveCategories.length === 0) return CATEGORIES;
-    const mapped = liveCategories.map(c => ({
+    const mapped = (liveCategories || []).map(c => ({
       id: c._id || c.name.toLowerCase(),
       name: c.name,
       icon: Sparkles, // Can be dynamic based on category later
@@ -75,13 +74,6 @@ export default function ServicesPage() {
     return [{ id: 'all', name: 'All Services', icon: Sparkles }, ...mapped];
   }, [liveCategories]);
 
-  // Services Mapping — real catalog only. No mock-catalog fallback: a
-  // customer could otherwise "book" a service (e.g. one of the old
-  // SERVICES_DATA placeholder entries) that doesn't exist in the real
-  // backend catalog at all. rating/reviewCount/duration/availability/
-  // verified are left unset rather than fabricated — the Service model has
-  // no such fields yet, and ServiceCard/RatingBadge/AvailabilityBadge all
-  // hide their badge when the value is absent.
   const allServices = useMemo(() => {
     return liveServices.map(s => ({
       id: s._id,

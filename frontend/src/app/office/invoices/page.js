@@ -1,6 +1,7 @@
 'use client';
 
 import { useState } from 'react';
+import { useDispatch } from 'react-redux';
 import { RefreshCw, Download, Plus } from 'lucide-react';
 import PageHeader from '@/components/office/PageHeader';
 import InvoiceStatsCards from './components/InvoiceStatsCards';
@@ -8,6 +9,9 @@ import InvoiceFilters from './components/InvoiceFilters';
 import InvoiceTable from './components/InvoiceTable';
 import InvoiceDrawer from './components/InvoiceDrawer';
 import InvoiceEditorDrawer from './components/InvoiceEditorDrawer';
+import { apiSlice } from '@/store/apiSlice';
+import { useGetInvoicesQuery } from '@/store/api/invoiceApi';
+import { exportToCSV } from '@/lib/csvExport';
 
 export default function InvoicesPage() {
     const [searchQuery, setSearchQuery] = useState('');
@@ -15,6 +19,27 @@ export default function InvoicesPage() {
     const [isViewDrawerOpen, setIsViewDrawerOpen] = useState(false);
     const [isEditDrawerOpen, setIsEditDrawerOpen] = useState(false);
     const [invoiceToEdit, setInvoiceToEdit] = useState(null);
+    const dispatch = useDispatch();
+    const { data: rawInvoices = [], isFetching } = useGetInvoicesQuery();
+
+    const handleRefresh = () => dispatch(apiSlice.util.invalidateTags([{ type: 'Invoice', id: 'LIST' }]));
+    const handleExport = () => exportToCSV('invoices', rawInvoices.map(inv => ({
+        displayId: inv.invoiceNumber || inv._id,
+        customer: inv.workOrderId?.customerId?.name || inv.workOrderId?.customerName || 'Unknown',
+        gst: inv.tax || 0,
+        discount: inv.discount || 0,
+        total: inv.total || 0,
+        status: inv.paymentStatus || 'unpaid',
+        date: inv.createdAt ? new Date(inv.createdAt).toLocaleDateString() : '',
+    })), [
+        { key: 'displayId', label: 'Invoice ID' },
+        { key: 'customer', label: 'Customer' },
+        { key: 'gst', label: 'GST' },
+        { key: 'discount', label: 'Discount' },
+        { key: 'total', label: 'Total' },
+        { key: 'status', label: 'Status' },
+        { key: 'date', label: 'Date' },
+    ]);
 
     const handleRowClick = (invoice) => {
         setSelectedInvoice(invoice);
@@ -39,10 +64,10 @@ export default function InvoicesPage() {
 
     const actions = (
         <>
-            <button className="p-2 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors border border-transparent">
-                <RefreshCw className="w-4 h-4" />
+            <button onClick={handleRefresh} className="p-2 text-slate-500 hover:text-slate-700 hover:bg-slate-100 rounded-lg transition-colors border border-transparent">
+                <RefreshCw className={`w-4 h-4 ${isFetching ? 'animate-spin' : ''}`} />
             </button>
-            <button className="hidden sm:flex items-center gap-2 px-3 py-2 bg-white border border-slate-200 text-slate-700 rounded-lg text-sm font-medium hover:bg-slate-50 transition-colors shadow-sm">
+            <button onClick={handleExport} className="hidden sm:flex items-center gap-2 px-3 py-2 bg-white border border-slate-200 text-slate-700 rounded-lg text-sm font-medium hover:bg-slate-50 transition-colors shadow-sm">
                 <Download className="w-4 h-4" /> Export
             </button>
             <button 

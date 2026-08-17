@@ -1,4 +1,4 @@
-import { X, Tag, Calendar, ShieldAlert, Percent, MapPin, Users, Settings2, CheckCircle2, Ticket } from 'lucide-react';
+import { X, Tag, Calendar, Percent, Settings2, CheckCircle2, Ticket } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useCreateCouponMutation, useUpdateCouponMutation } from '@/store/api/couponApi';
 import { useGetEnumsQuery } from '@/store/api/configApi';
@@ -14,6 +14,9 @@ export default function CouponDrawer({ coupon, isOpen, onClose }) {
     const [campaign, setCampaign] = useState('');
     const [discountType, setDiscountType] = useState('percentage');
     const [discountValue, setDiscountValue] = useState('10');
+    const [services, setServices] = useState('All Services');
+    const [usageLimit, setUsageLimit] = useState('');
+    const [startDate, setStartDate] = useState('');
     const [endDate, setEndDate] = useState('2024-12-31');
     const [createCoupon] = useCreateCouponMutation();
     const [updateCoupon] = useUpdateCouponMutation();
@@ -21,14 +24,18 @@ export default function CouponDrawer({ coupon, isOpen, onClose }) {
 
     useEffect(() => {
         if (coupon) {
+            const raw = coupon._raw || {};
             setCode(coupon.code || '');
             setCampaign(coupon.campaign || '');
             setDiscountType(coupon.type || 'percentage');
-            // Mock parsing value from string for preview demo
-            const val = coupon.discount ? coupon.discount.replace(/[^0-9]/g, '') : coupon.discountValue || '10';
-            setDiscountValue(val);
+            setDiscountValue(String(raw.discountValue ?? ''));
+            setServices(raw.services || 'All Services');
+            setUsageLimit(raw.usageLimit != null ? String(raw.usageLimit) : '');
+            setStartDate(raw.startsAt ? new Date(raw.startsAt).toISOString().slice(0, 10) : '');
+            setEndDate(raw.expiresAt ? new Date(raw.expiresAt).toISOString().slice(0, 10) : '');
         } else {
             setCode(''); setCampaign(''); setDiscountType('percentage'); setDiscountValue('');
+            setServices('All Services'); setUsageLimit(''); setStartDate(''); setEndDate('');
         }
     }, [coupon]);
 
@@ -55,8 +62,11 @@ export default function CouponDrawer({ coupon, isOpen, onClose }) {
             code,
             campaign,
             type: discountType,
-            discountValue: Number(discountValue),
-            expiresAt: endDate,
+            discountValue: Number(discountValue) || 0,
+            services: services || 'All Services',
+            usageLimit: usageLimit ? Number(usageLimit) : null,
+            startsAt: startDate || null,
+            expiresAt: endDate || null,
         };
         try {
             if (isNew) {
@@ -123,14 +133,6 @@ export default function CouponDrawer({ coupon, isOpen, onClose }) {
                                         />
                                     </div>
                                 </div>
-                                <div>
-                                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Internal Description</label>
-                                    <textarea
-                                        rows={2}
-                                        className="w-full text-sm border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-800 resize-none"
-                                        placeholder="Notes for the team..."
-                                    />
-                                </div>
                             </div>
 
                             {/* Discount Configuration */}
@@ -164,16 +166,16 @@ export default function CouponDrawer({ coupon, isOpen, onClose }) {
                                         </div>
                                     )}
 
-                                    {discountType === 'percentage' && (
-                                        <div className="w-1/3">
-                                            <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Max Discount (₹)</label>
-                                            <input type="number" className="w-full text-sm border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-800" placeholder="Leave empty for no limit" />
-                                        </div>
-                                    )}
                                 </div>
-                                <div className="w-1/3">
-                                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Min Booking Amount (₹)</label>
-                                    <input type="number" className="w-full text-sm border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-800" placeholder="e.g. 1000" />
+                                <div className="w-2/3">
+                                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Applicable Services</label>
+                                    <input
+                                        type="text"
+                                        value={services}
+                                        onChange={e => setServices(e.target.value)}
+                                        className="w-full text-sm border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-800"
+                                        placeholder="e.g. All Services, Deep Cleaning"
+                                    />
                                 </div>
                             </div>
 
@@ -184,8 +186,12 @@ export default function CouponDrawer({ coupon, isOpen, onClose }) {
                                 <div className="grid grid-cols-2 gap-6">
                                     <div className="space-y-3">
                                         <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">Starts</label>
-                                        <input type="date" className="w-full text-sm border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-800" />
-                                        <input type="time" className="w-full text-sm border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-800" />
+                                        <input
+                                            type="date"
+                                            value={startDate}
+                                            onChange={e => setStartDate(e.target.value)}
+                                            className="w-full text-sm border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-800"
+                                        />
                                     </div>
                                     <div className="space-y-3">
                                         <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300">Ends</label>
@@ -195,7 +201,6 @@ export default function CouponDrawer({ coupon, isOpen, onClose }) {
                                             onChange={e => setEndDate(e.target.value)}
                                             className="w-full text-sm border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-800"
                                         />
-                                        <input type="time" className="w-full text-sm border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-800" />
                                     </div>
                                 </div>
                             </div>
@@ -204,58 +209,15 @@ export default function CouponDrawer({ coupon, isOpen, onClose }) {
                             <div className="bg-white dark:bg-slate-800/50 p-5 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm space-y-4">
                                 <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100 mb-4 flex items-center gap-1.5"><Settings2 className="w-4 h-4" /> Usage Limits</h3>
 
-                                <div className="grid grid-cols-2 gap-4">
-                                    <div>
-                                        <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Total Usage Limit</label>
-                                        <input type="number" className="w-full text-sm border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-800" placeholder="Total number of times coupon can be used" />
-                                    </div>
-                                    <div>
-                                        <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Limit Per Customer</label>
-                                        <input type="number" defaultValue="1" className="w-full text-sm border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-800" />
-                                    </div>
-                                </div>
-                            </div>
-
-                            {/* Restrictions & Eligibility */}
-                            <div className="bg-white dark:bg-slate-800/50 p-5 rounded-xl border border-slate-200 dark:border-slate-700 shadow-sm space-y-4">
-                                <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100 mb-4 flex items-center gap-1.5"><ShieldAlert className="w-4 h-4" /> Restrictions & Eligibility</h3>
-
-                                <div className="space-y-4">
-                                    <div>
-                                        <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5 flex items-center gap-1.5"><Users className="w-3.5 h-3.5" /> Customer Eligibility</label>
-                                        <select className="w-full text-sm border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-800 cursor-pointer">
-                                            <option value="all">All Customers</option>
-                                            <option value="first_time">First Time Customers Only</option>
-                                            <option value="returning">Returning Customers Only</option>
-                                        </select>
-                                    </div>
-
-                                    <div className="pt-2">
-                                        <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Specific Services/Categories</label>
-                                        <button className="w-full py-2 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-500 dark:text-slate-400 font-medium hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
-                                            + Select specific services or categories (Default: All)
-                                        </button>
-                                    </div>
-
-                                    <div className="pt-2">
-                                        <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5 flex items-center gap-1.5"><MapPin className="w-3.5 h-3.5" /> Specific Cities</label>
-                                        <button className="w-full py-2 border-2 border-dashed border-slate-200 dark:border-slate-700 rounded-lg text-sm text-slate-500 dark:text-slate-400 font-medium hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">
-                                            + Select specific cities (Default: All)
-                                        </button>
-                                    </div>
-
-                                    <div className="pt-4 border-t border-slate-100 dark:border-slate-800 space-y-3">
-                                        <label className="relative inline-flex items-center cursor-pointer gap-3">
-                                            <input type="checkbox" className="sr-only peer" defaultChecked />
-                                            <div className="w-9 h-5 bg-slate-200 dark:bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
-                                            <span className="text-sm text-slate-700 dark:text-slate-300">Cannot be combined with other coupons</span>
-                                        </label>
-                                        <label className="relative inline-flex items-center cursor-pointer gap-3">
-                                            <input type="checkbox" className="sr-only peer" />
-                                            <div className="w-9 h-5 bg-slate-200 dark:bg-slate-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-blue-600"></div>
-                                            <span className="text-sm text-slate-700 dark:text-slate-300">Exclude services that are already discounted</span>
-                                        </label>
-                                    </div>
+                                <div>
+                                    <label className="block text-xs font-semibold text-slate-700 dark:text-slate-300 mb-1.5">Total Usage Limit</label>
+                                    <input
+                                        type="number"
+                                        value={usageLimit}
+                                        onChange={e => setUsageLimit(e.target.value)}
+                                        className="w-full text-sm border border-slate-200 dark:border-slate-700 text-slate-900 dark:text-slate-100 rounded-lg px-3 py-2.5 focus:outline-none focus:ring-2 focus:ring-blue-500 bg-white dark:bg-slate-800"
+                                        placeholder="Leave empty for unlimited"
+                                    />
                                 </div>
                             </div>
 

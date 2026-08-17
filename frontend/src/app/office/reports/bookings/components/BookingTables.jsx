@@ -1,14 +1,15 @@
 import { CheckCircle2, Clock, XCircle, Loader2, Star } from 'lucide-react';
-import { useGetWorkOrdersQuery } from '@/store/api/workOrderApi';
-import { useGetPartnersQuery } from '@/store/api/partnerApi';
+
+function toLabel(value) {
+    return String(value || '').replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+}
 
 function StatusBadge({ status }) {
     switch (status) {
-        case 'Completed': return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-emerald-50 text-emerald-700 border border-emerald-200"><CheckCircle2 className="w-3 h-3" /> Completed</span>;
-        case 'In Progress': return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-blue-50 text-blue-700 border border-blue-200"><Loader2 className="w-3 h-3" /> In Progress</span>;
-        case 'Pending': return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-amber-50 text-amber-700 border border-amber-200"><Clock className="w-3 h-3" /> Pending</span>;
-        case 'Cancelled': return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-rose-50 text-rose-700 border border-rose-200"><XCircle className="w-3 h-3" /> Cancelled</span>;
-        default: return null;
+        case 'completed': return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-emerald-50 text-emerald-700 border border-emerald-200"><CheckCircle2 className="w-3 h-3" /> Completed</span>;
+        case 'in_progress': return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-blue-50 text-blue-700 border border-blue-200"><Loader2 className="w-3 h-3" /> In Progress</span>;
+        case 'cancelled': return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-rose-50 text-rose-700 border border-rose-200"><XCircle className="w-3 h-3" /> Cancelled</span>;
+        default: return <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded text-[10px] font-bold uppercase bg-amber-50 text-amber-700 border border-amber-200"><Clock className="w-3 h-3" /> {toLabel(status)}</span>;
     }
 }
 
@@ -21,20 +22,20 @@ function RatingStars({ rating }) {
     );
 }
 
-export function RecentBookingsTable() {
-    const { data: rawWorkOrders = [] } = useGetWorkOrdersQuery();
+export function RecentBookingsTable({ bookings = [], partners = [] }) {
+    const partnerNameById = partners.reduce((acc, p) => { acc[p._id] = p.name; return acc; }, {});
 
-    const recentBookingsList = [...rawWorkOrders]
+    const recentBookingsList = [...bookings]
         .sort((a, b) => new Date(b.createdAt) - new Date(a.createdAt))
         .slice(0, 5)
-        .map(wo => ({
-            id: wo.workOrderNumber || `#WO-${wo._id?.slice(-4).toUpperCase()}`,
-            customer: wo.customerId?.name || 'Customer',
-            service: wo.title || wo.enquiryId?.serviceCategory || 'Service',
-            partner: wo.assignedPartnerId?.name || 'Unassigned',
-            status: wo.status || 'New',
-            amount: wo.price || 0,
-            date: new Date(wo.createdAt).toLocaleDateString()
+        .map((b) => ({
+            id: b.bookingNumber || `#BKG-${b._id?.slice(-4).toUpperCase()}`,
+            customer: b.customerName || 'Customer',
+            service: b.serviceName || b.category || 'Service',
+            partner: partnerNameById[b.partnerId?._id || b.partnerId] || b.assignedTo || 'Unassigned',
+            status: b.status || 'upcoming',
+            amount: b.amount || 0,
+            date: b.createdAt ? new Date(b.createdAt).toLocaleDateString() : '-',
         }));
 
     return (
@@ -44,7 +45,6 @@ export function RecentBookingsTable() {
                     <h3 className="text-sm font-bold text-slate-900">Recent Bookings</h3>
                     <p className="text-xs text-slate-500 mt-0.5">Latest booking activity</p>
                 </div>
-                <button className="text-xs font-semibold text-blue-600 hover:underline">View All</button>
             </div>
             <div className="overflow-x-auto">
                 <table className="w-full text-sm min-w-[800px]">
@@ -76,7 +76,7 @@ export function RecentBookingsTable() {
                                 <td className="px-6 py-4 text-right text-xs text-slate-500 whitespace-nowrap">{b.date}</td>
                             </tr>
                         )) : (
-                            <tr><td colSpan="7" className="px-6 py-4 text-center text-slate-500">No data available</td></tr>
+                            <tr><td colSpan="7" className="px-6 py-8 text-center text-slate-400">No data yet</td></tr>
                         )}
                     </tbody>
                 </table>
@@ -85,22 +85,20 @@ export function RecentBookingsTable() {
     );
 }
 
-export function TopServicesTable() {
-    const { data: rawWorkOrders = [] } = useGetWorkOrdersQuery();
-
-    const servicesMap = rawWorkOrders.reduce((acc, wo) => {
-        const service = wo.enquiryId?.serviceCategory || wo.title || 'Unknown Service';
+export function TopServicesTable({ bookings = [] }) {
+    const servicesMap = bookings.reduce((acc, b) => {
+        const service = b.serviceName || b.category || 'Unknown Service';
         if (!acc[service]) acc[service] = { service, bookings: 0, completed: 0, revenue: 0 };
         acc[service].bookings += 1;
-        acc[service].revenue += (wo.price || 0);
-        if (wo.status === 'Completed') acc[service].completed += 1;
+        acc[service].revenue += (b.amount || 0);
+        if (b.status === 'completed') acc[service].completed += 1;
         return acc;
     }, {});
 
     const topServicesList = Object.values(servicesMap)
         .sort((a, b) => b.bookings - a.bookings)
         .slice(0, 5)
-        .map(s => ({
+        .map((s) => ({
             ...s,
             completionRate: s.bookings > 0 ? ((s.completed / s.bookings) * 100).toFixed(0) : 0
         }));
@@ -146,7 +144,7 @@ export function TopServicesTable() {
                                 <td className="px-6 py-4 text-right font-bold text-slate-900">₹{Number(s.revenue).toLocaleString()}</td>
                             </tr>
                         )) : (
-                            <tr><td colSpan="5" className="px-6 py-4 text-center text-slate-500">No data available</td></tr>
+                            <tr><td colSpan="5" className="px-6 py-8 text-center text-slate-400">No data yet</td></tr>
                         )}
                     </tbody>
                 </table>
@@ -155,25 +153,23 @@ export function TopServicesTable() {
     );
 }
 
-export function TopPartnersTable() {
-    const { data: rawWorkOrders = [] } = useGetWorkOrdersQuery();
-    const { data: partners = [] } = useGetPartnersQuery();
-
-    const partnerStats = partners.map(p => {
-        const jobs = rawWorkOrders.filter(wo => wo.assignedPartnerId?._id === p._id);
-        const completedJobs = jobs.filter(wo => wo.status === 'Completed').length;
+export function TopPartnersTable({ bookings = [], partners = [] }) {
+    const partnerStats = partners.map((p) => {
+        const jobs = bookings.filter((b) => (b.partnerId?._id || b.partnerId) === p._id);
+        const completedJobs = jobs.filter((b) => b.status === 'completed').length;
         const totalAssigned = jobs.length;
-        
+
         return {
             id: p._id,
             partner: p.name || 'Unknown Partner',
             completedJobs,
-            rating: p.rating || 4.5, // default if missing
-            acceptanceRate: totalAssigned > 0 ? (((totalAssigned - jobs.filter(wo => wo.status === 'Cancelled').length) / totalAssigned) * 100).toFixed(0) : 100
+            rating: p.avgRating || 0,
+            acceptanceRate: totalAssigned > 0 ? (((totalAssigned - jobs.filter((b) => b.status === 'cancelled').length) / totalAssigned) * 100).toFixed(0) : 100
         };
     });
 
     const topPartnersList = partnerStats
+        .filter((p) => p.completedJobs > 0)
         .sort((a, b) => b.completedJobs - a.completedJobs)
         .slice(0, 5);
 
@@ -218,7 +214,7 @@ export function TopPartnersTable() {
                                 </td>
                             </tr>
                         )) : (
-                            <tr><td colSpan="5" className="px-6 py-4 text-center text-slate-500">No data available</td></tr>
+                            <tr><td colSpan="5" className="px-6 py-8 text-center text-slate-400">No data yet</td></tr>
                         )}
                     </tbody>
                 </table>

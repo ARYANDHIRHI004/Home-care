@@ -58,8 +58,8 @@ export default function InvoicePreviewPage() {
       <div className="bg-white border border-[#0F172A]/10 rounded-2xl p-8 print:border-0 print:rounded-none print:p-0">
         <div className="flex items-start justify-between pb-6 border-b border-[#0F172A]/10 mb-6">
           <div className="flex items-center gap-2.5">
-            <div className="w-9 h-9 rounded-lg bg-[#2554F0] text-white flex items-center justify-center">
-              <Sparkles className="w-4 h-4" />
+            <div className="w-12 h-12 rounded-lg  text-white flex items-center justify-center">
+              <img src="/logo.png" className='w-full' />
             </div>
             <div>
               <p className="font-bold text-[#0F172A]" style={{ fontFamily: "'Plus Jakarta Sans', sans-serif" }}>HomeCare247</p>

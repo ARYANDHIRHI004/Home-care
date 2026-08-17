@@ -1,16 +1,35 @@
 import { Search, Filter, X, SlidersHorizontal } from 'lucide-react';
 import { useState } from 'react';
+import { useGetCategoriesQuery } from '@/store/api/categoryApi';
 
-export default function ServiceFilters({ searchQuery, onSearchChange }) {
+export default function ServiceFilters({ searchQuery, onSearchChange, filters, setFilters }) {
     const [isFiltersOpen, setIsFiltersOpen] = useState(false);
+    const { data: categoriesData = [] } = useGetCategoriesQuery();
+
+    const categoryOptions = ['All Categories', ...categoriesData.map(c => c.name)];
 
     const filterOptions = [
-        { label: 'Category', options: ['All Categories', 'Deep Cleaning', 'Plumbing', 'Electrical', 'AC Repair', 'Pest Control'] },
-        { label: 'Status', options: ['All Statuses', 'Active', 'Inactive', 'Draft'] },
-        { label: 'Featured', options: ['Any', 'Yes', 'No'] },
-        { label: 'Popular', options: ['Any', 'Yes', 'No'] },
-        { label: 'Duration', options: ['Any Duration', '< 1 Hour', '1-2 Hours', '2-4 Hours', 'Full Day'] },
+        { key: 'category', label: 'Category', options: categoryOptions },
+        { key: 'status', label: 'Status', options: ['All Statuses', 'Active', 'Inactive', 'Draft'] },
+        { key: 'featured', label: 'Featured', options: ['Any', 'Yes', 'No'] },
+        { key: 'popular', label: 'Popular', options: ['Any', 'Yes', 'No'] },
+        { key: 'duration', label: 'Duration', options: ['Any Duration', '< 1 Hour', '1-2 Hours', '2-4 Hours', 'Full Day'] },
     ];
+
+    const handleFilterChange = (key, value) => {
+        setFilters?.(prev => ({ ...prev, [key]: value }));
+    };
+
+    const clearFilters = () => {
+        setFilters?.({
+            category: 'All Categories',
+            status: 'All Statuses',
+            featured: 'Any',
+            popular: 'Any',
+            duration: 'Any Duration',
+        });
+        onSearchChange?.('');
+    };
 
     return (
         <div className="bg-white rounded-xl border border-slate-200 shadow-sm p-4 mb-6 sticky top-20 z-10 min-w-0">
@@ -46,6 +65,8 @@ export default function ServiceFilters({ searchQuery, onSearchChange }) {
                 {filterOptions.map((filter, index) => (
                     <select
                         key={index}
+                        value={filters?.[filter.key] || ''}
+                        onChange={(e) => handleFilterChange(filter.key, e.target.value)}
                         className="w-full px-3 py-2 text-sm border border-slate-200 rounded-lg bg-white text-slate-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 cursor-pointer"
                     >
                         {filter.options.map((opt, i) => (
@@ -62,7 +83,7 @@ export default function ServiceFilters({ searchQuery, onSearchChange }) {
                         <Filter className="w-3.5 h-3.5" />
                         Advanced
                     </button>
-                    <button className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-md transition-colors">
+                    <button onClick={clearFilters} className="flex items-center gap-1.5 px-3 py-1.5 text-xs font-medium text-rose-500 hover:text-rose-700 hover:bg-rose-50 rounded-md transition-colors">
                         <X className="w-3.5 h-3.5" />
                         Clear All
                     </button>

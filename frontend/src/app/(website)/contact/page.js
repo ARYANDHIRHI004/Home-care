@@ -104,7 +104,7 @@ function ContactCards() {
       detail: 'Instant Support',
       subtext: 'Usually replies within 5 mins',
       action: 'Chat Now',
-      href: '#'
+      href: 'https://wa.me/919111466642'
     },
     {
       title: 'Email',
@@ -119,8 +119,8 @@ function ContactCards() {
       title: 'Office',
       icon: Building,
       color: 'purple',
-      detail: '123 HomeCare Tower',
-      subtext: 'New Delhi, 110001, India',
+      detail: 'Krishna Talkies Road, Risali',
+      subtext: 'Bhilai, Durg, Chhattisgarh 490006',
       action: 'View on Maps',
       href: '#map'
     }
@@ -141,8 +141,10 @@ function ContactCards() {
           initial="hidden" whileInView="visible" viewport={{ once: true, margin: "-50px" }} variants={staggerContainer}
         >
           {cards.map((card, idx) => (
-            <motion.a 
+            <motion.a
               href={card.href}
+              target={card.href.startsWith('http') ? '_blank' : undefined}
+              rel={card.href.startsWith('http') ? 'noopener noreferrer' : undefined}
               key={idx}
               variants={fadeUp}
               className="group flex flex-col p-8 bg-white border border-slate-100 rounded-3xl shadow-sm hover:shadow-xl hover:border-slate-200 transition-all duration-300 hover:-translate-y-1"
@@ -320,9 +322,8 @@ function ContactForm() {
                         className="w-full pl-11 pr-4 py-3 bg-white border border-slate-200 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent outline-none transition-all appearance-none text-slate-700"
                       >
                         <option value="">Select City</option>
-                        <option value="delhi">New Delhi</option>
-                        <option value="mumbai">Mumbai</option>
-                        <option value="bangalore">Bangalore</option>
+                        <option value="bhilai">Bhilai</option>
+                        <option value="durg">Durg</option>
                       </select>
                       <ChevronDown className="absolute right-4 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400 pointer-events-none" />
                     </div>
@@ -445,7 +446,7 @@ function MapSection() {
         
         <div className="rounded-[2rem] overflow-hidden border border-slate-200 shadow-sm bg-white mb-10 h-[400px] lg:h-[500px]">
           <iframe
-            src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d112004.83981126749!2d77.1278144!3d28.6436846!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x390cfd5b347eb62d%3A0x37205b715389640!2sNew%20Delhi%2C%20Delhi!5e0!3m2!1sen!2sin!4v1715000000000!5m2!1sen!2sin"
+            src="https://www.google.com/maps?q=Krishna+Talkies+Road,+Risali,+Bhilai,+Durg,+Chhattisgarh+490006&output=embed"
             width="100%"
             height="100%"
             style={{ border: 0 }}
@@ -462,17 +463,22 @@ function MapSection() {
               <MapPin className="w-6 h-6" />
             </div>
             <h4 className="font-semibold text-slate-900 mb-2">Office Address</h4>
-            <p className="text-sm text-slate-600">123 HomeCare Tower, Business Bay,<br/>New Delhi, 110001, India</p>
+            <p className="text-sm text-slate-600">Design Consultant, Krishna Talkies Road,<br/>Risali, Bhilai, Durg, Chhattisgarh 490006</p>
           </div>
           <div className="flex flex-col items-center text-center p-6 bg-[#F8FAFC] rounded-3xl">
             <div className="w-12 h-12 bg-orange-100 text-orange-600 rounded-full flex items-center justify-center mb-4">
               <Car className="w-6 h-6" />
             </div>
             <h4 className="font-semibold text-slate-900 mb-2">Parking & Access</h4>
-            <p className="text-sm text-slate-600">Free visitor parking available.<br/>Nearby Landmark: Metro Station Gate 3</p>
+            <p className="text-sm text-slate-600">Free visitor parking available.<br/>Near Risali, Bhilai</p>
           </div>
           <div className="flex flex-col items-center text-center p-6 bg-[#F8FAFC] rounded-3xl justify-center">
-            <a href="#" className="inline-flex items-center gap-2 px-6 py-3 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-semibold transition-colors">
+            <a
+              href="https://www.google.com/maps/dir/?api=1&destination=Krishna+Talkies+Road,+Risali,+Bhilai,+Durg,+Chhattisgarh+490006"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 px-6 py-3 bg-slate-900 hover:bg-slate-800 text-white rounded-xl font-semibold transition-colors"
+            >
               <Navigation className="w-5 h-5" /> Get Directions
             </a>
           </div>
@@ -622,9 +628,9 @@ function FinalCTA() {
               Book a trusted professional today or speak directly with our support team to get your home back in order.
             </p>
             <div className="flex flex-col sm:flex-row justify-center gap-4">
-              <button className="px-8 py-4 bg-white text-blue-700 font-bold rounded-2xl shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all">
+              <Link href="/services" className="px-8 py-4 bg-white text-blue-700 font-bold rounded-2xl shadow-lg hover:shadow-xl hover:-translate-y-0.5 transition-all">
                 Book Service Online
-              </button>
+              </Link>
               <a href="tel:+919111466642" className="px-8 py-4 bg-blue-700 hover:bg-blue-800 text-white border border-blue-500 font-bold rounded-2xl transition-all">
                 Call Support Team
               </a>
@@ -654,7 +660,7 @@ export default function ContactPage() {
         <a href="tel:+919111466642" className="flex-1 bg-blue-600 text-white font-semibold py-3 rounded-xl flex items-center justify-center gap-2">
           <Phone className="w-5 h-5" /> Call
         </a>
-        <a href="#" className="flex-1 bg-green-500 text-white font-semibold py-3 rounded-xl flex items-center justify-center gap-2">
+        <a href="https://wa.me/919111466642" target="_blank" rel="noopener noreferrer" className="flex-1 bg-green-500 text-white font-semibold py-3 rounded-xl flex items-center justify-center gap-2">
           <FaWhatsapp className="w-5 h-5" /> WhatsApp
         </a>
       </div>

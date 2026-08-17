@@ -2,6 +2,7 @@ import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 import StoreProvider from "../store/StoreProvider";
 import LenisProvider from "../components/LenisProvider";
+import { Toaster } from "react-hot-toast";
 const geistSans = Geist({
   variable: "--font-geist-sans",
   subsets: ["latin"],
@@ -45,6 +46,7 @@ export default function RootLayout({ children }) {
            {children}
          </LenisProvider>
         </StoreProvider>
+        <Toaster position="bottom-right" />
       </body>
 
     </html>
